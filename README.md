@@ -3,6 +3,7 @@
 A web-based platform for **personalized nutrition consultation** and **AI-assisted calorie estimation**, developed as an academic project for L3 Computer Science.
 
 The system combines:
+
 - Professional nutritionist consultations
 - Structured diet plans and subscriptions
 - AI-based food recognition for approximate calorie estimation
@@ -15,6 +16,7 @@ The system combines:
 ## 🧠 Project Overview
 
 Users can:
+
 - Create a personal profile and health history
 - Upload meal images for AI-assisted calorie estimation
 - Follow personalized nutrition plans designed by professionals
@@ -22,11 +24,13 @@ Users can:
 - Track progress over time
 
 Nutritionists can:
+
 - Manage consultations
 - Create and adjust nutrition plans
 - Monitor user progress
 
 Administrators can:
+
 - Manage users, nutritionists, and content
 - Oversee subscriptions and platform operations
 
@@ -42,7 +46,6 @@ Backend API (Express / Django)
 ↓
 AI Service (FastAPI + YOLOv8)
 
-
 - Frontend handles UI and user interactions
 - Backend handles authentication, business logic, and data storage
 - AI service performs food recognition and estimation
@@ -52,20 +55,24 @@ AI Service (FastAPI + YOLOv8)
 ## 🧰 Tech Stack
 
 **Frontend**
+
 - React (Vite)
 - HTML / CSS / JavaScript
 
 **Backend**
+
 - Node.js (Express) or Django REST Framework
 - JWT Authentication
 - PostgreSQL
 
 **AI Service**
+
 - Python
 - FastAPI
 - YOLOv8 (pretrained)
 
 **DevOps**
+
 - GitHub (monorepo)
 - Docker (later phase)
 
@@ -81,7 +88,6 @@ AI Service (FastAPI + YOLOv8)
 ├── .github/ # GitHub automation & templates
 └── README.md
 
-
 ---
 
 ## 🚀 Getting Started (Development)
@@ -93,6 +99,7 @@ AI Service (FastAPI + YOLOv8)
 ## 👥 Team & Workflow
 
 This project is developed using:
+
 - Feature-based Git branches
 - Pull Requests with mandatory review
 - Documented API contracts
