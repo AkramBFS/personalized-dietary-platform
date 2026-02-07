@@ -1,11 +1,23 @@
-How to contribute:
+# Git Workflow & Collaboration Guide
 
-git checkout dev
+To keep our code clean and avoid breaking the project, everyone **must** follow this workflow.
 
-git pull origin dev
+## 1. Branching Strategy
 
-git checkout -b feature/your-task-name
+- **main**: Only stable, tested, and demo-ready code.
+- **dev**: The integration branch where all features meet.
+- **feature/<name>**: Individual tasks (e.g., `feature/login-ui`).
 
-Work... Commit... git push origin feature/your-task-name
+## 2. Daily Routine
 
-Open a PR into dev, not main.
+1. **Update your local dev**: `git checkout dev` then `git pull origin dev`.
+2. **Start a task**: Create a branch from dev: `git checkout -b feature/your-task`.
+3. **Work & Commit**: Use clear messages (e.g., `feat: add calorie calculator logic`).
+4. **Push**: `git push origin feature/your-task`.
+
+## 3. Pull Requests (PRs)
+
+- **NEVER** push directly to `main` or `dev`.
+- Open a PR from your `feature` branch into `dev`.
+- At least one team member must review the code before it is merged.
+- Once the feature is verified in `dev`, the Project Lead will merge `dev` into `main` for milestones.
