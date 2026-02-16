@@ -3,7 +3,7 @@ import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
 
 export const metadata = {
-  title: "REgimo",
+  title: "Dieton",
   description:
     "A web application for managing and tracking your fitness goals and calorie intake.",
 };
