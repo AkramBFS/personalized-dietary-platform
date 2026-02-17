@@ -31,7 +31,7 @@ export const HeroHeader = () => {
         className={cn(
           "fixed z-20 w-full transition-all duration-300",
           isScrolled &&
-            "bg-secondary text-secondary-foreground border-b border-border backdrop-blur-lg",
+            "bg-background/40 backdrop-blur-md border-b border-border/40",
         )}
       >
         {/* ⬇️ more horizontal breathing room */}
@@ -48,7 +48,7 @@ export const HeroHeader = () => {
                 <span
                   className={cn(
                     "text-2xl font-semibold tracking-tight transition-colors duration-300",
-                    isScrolled ? "text-secondary-foreground" : "text-primary",
+                    isScrolled ? "text-green" : "text-primary",
                   )}
                 >
                   Dieton
