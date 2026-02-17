@@ -5,12 +5,14 @@ export default function Stats() {
     <section className="bg-background @container pt-24">
       <div className="mx-auto max-w-2xl px-6">
         <div className="space-y-4">
-          <h2 className="text-balance font-serif text-4xl font-medium">
-            Trusted by Teams Worldwide
+          <h2 className="text-balance text-4xl font-medium">
+            Trusted by Users and Experts Worldwide
           </h2>
           <p className="text-muted-foreground text-balance">
-            Our platform delivers measurable results that help businesses scale
-            faster and work smarter.
+            Our platform has been trusted by users and experts worldwide to
+            provide personalized meal plans and expert advice. With a commitment
+            to quality and user satisfaction, we have built a reputation for
+            delivering exceptional service and support to our users.
           </p>
         </div>
         <div className="@xl:grid-cols-3 mt-12 grid gap-6 text-sm">
@@ -23,15 +25,15 @@ export default function Stats() {
 
           <div className="border-t py-6">
             <p className="text-muted-foreground text-xl">
-              <span className="text-foreground font-medium">10M+</span> API
-              requests processed daily.
+              <span className="text-foreground font-medium">10M+</span> Meals
+              planned and counting.
             </p>
           </div>
 
           <div className="border-t py-6">
             <p className="text-muted-foreground text-xl">
-              <span className="text-foreground font-medium">500+</span>{" "}
-              Enterprise customers.
+              <span className="text-foreground font-medium">500+</span> Expert
+              consultations.
             </p>
           </div>
         </div>
