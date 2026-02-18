@@ -40,6 +40,12 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
+  /* Dedicated Popover Colors */
+  --color-popover: oklch(0.99 0.01 142); /* Very crisp light green/white */
+  --color-popover-foreground: oklch(0.15 0.02 150);
+  
+  /* Refined Border for depth */
+  --color-border-subtle: oklch(0.88 0.03 140);
 }
 
 :root {
