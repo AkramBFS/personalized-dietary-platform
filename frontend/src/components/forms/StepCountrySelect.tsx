@@ -5,7 +5,7 @@ interface Props {
   setFormData: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const countries = [
+const COUNTRIES = [
   "United States",
   "Canada",
   "United Kingdom",
@@ -15,32 +15,78 @@ const countries = [
   "Qatar",
   "Saudi Arabia",
   "UAE",
+  "Algeria",
+];
+
+const LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Arabic",
+  "Mandarin",
+  "Hindi",
 ];
 
 export default function StepCountrySelect({ formData, setFormData }: Props) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">
-        Where are you currently located?
-      </h2>
+      <div className="space-y-1">
+        <h2 className="text-xl font-bold text-gray-800">Regional Settings</h2>
+        <p className="text-sm text-gray-500">
+          Please provide your location and language preference.
+        </p>
+      </div>
 
-      <select
-        value={formData.country || ""}
-        onChange={(e) =>
-          setFormData((prev: any) => ({
-            ...prev,
-            country: e.target.value,
-          }))
-        }
-        className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="">Select country</option>
-        {countries.map((country) => (
-          <option key={country} value={country}>
-            {country}
-          </option>
-        ))}
-      </select>
+      <div className="space-y-4">
+        {/* Country Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 ml-1">
+            Current Location
+          </label>
+          <select
+            value={formData.country || ""}
+            onChange={(e) =>
+              setFormData((prev: any) => ({
+                ...prev,
+                country: e.target.value,
+              }))
+            }
+            className="w-full border border-gray-300 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white"
+          >
+            <option value="">Select country</option>
+            {COUNTRIES.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Language Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 ml-1">
+            Preferred Language
+          </label>
+          <select
+            value={formData.language || ""}
+            onChange={(e) =>
+              setFormData((prev: any) => ({
+                ...prev,
+                language: e.target.value,
+              }))
+            }
+            className="w-full border border-gray-300 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white"
+          >
+            <option value="">Select preferred language</option>
+            {LANGUAGES.map((language) => (
+              <option key={language} value={language}>
+                {language}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }

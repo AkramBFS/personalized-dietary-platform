@@ -28,7 +28,9 @@ export default function RegistrationFlow() {
   const [formData, setFormData] = useState(() => {
     const defaultData = {
       country: "",
+      language: "",
       goal: "",
+      goalCustom: "",
       activityLevel: "",
       diet: "",
       age: 25,
