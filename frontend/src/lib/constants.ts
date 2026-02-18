@@ -1,8 +1,22 @@
 import { z } from "zod";
 
 export const stepSchemas = [
-  z.object({ country: z.string().min(1, "Required") }), // Step 1
-  z.object({ goal: z.string().min(1, "Required") }),    // Step 2
+  z.object({ 
+    country: z.string().min(1, "Please select a country"),
+    language: z.string().min(1, "Please select a language") 
+  }), // Step 1
+  z.object({
+  goal: z.string().min(1, "Required"),
+  goalCustom: z.string().optional(),
+}).refine((data) => {
+  if (data.goal === "Other") {
+    return data.goalCustom && data.goalCustom.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Please describe your custom goal",
+  path: ["goalCustom"], // This points the error to the custom input field
+}),    // Step 2
   z.object({ activityLevel: z.string().min(1) }),       // Step 3
   z.object({ diet: z.string().min(1) }),                // Step 4
   z.object({ 
