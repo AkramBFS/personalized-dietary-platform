@@ -77,8 +77,8 @@ export default function Navbar() {
             {/* Logo */}
             <Link href="/" className="flex shrink-0 items-center gap-2">
               <Image
-                alt="REgimo Logo"
-                src="/logo.png"
+                alt="Dieton Logo"
+                src="/branding/logo.svg"
                 width={32}
                 height={32}
                 className="h-8 w-auto"
