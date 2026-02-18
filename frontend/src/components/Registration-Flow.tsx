@@ -1,427 +1,170 @@
 "use client";
-import { submitRegistration } from "@/app/actions/register";
 
-import { useState, useEffect, useMemo, useTransition, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  Target,
-  Globe,
-  Languages,
-  User,
-  Ruler,
-  Weight,
-  HeartPulse,
-  Flame,
-  ArrowLeft,
-  ArrowRight,
-  Check,
-} from "lucide-react";
+import { useState, useEffect, useMemo, useRef, useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
+import { submitRegistration } from "@/app/actions/submitRegistration";
+import { stepSchemas } from "@/lib/constants";
+import ProgressBar from "./ui/ProgressBar";
 
-// Types
-
-type FormData = {
-  goal: string;
-  country: string;
-  language: string;
-  age: number | null;
-  gender: string;
-  height: number | null;
-  weight: number | null;
-  medicalHistory: string;
-  metabolism: string;
-};
-
-// Constants
-
-const TOTAL_STEPS = 4;
-const STORAGE_KEY = "registration-flow-v1";
-
-// Main Component
+// Dynamic Imports
+const StepCountry = dynamic(() => import("./forms/StepCountrySelect"));
+const StepGoal = dynamic(() => import("./forms/StepGoal"));
+const StepActivity = dynamic(() => import("./forms/StepActivity"));
+const StepDiet = dynamic(() => import("./forms/StepDiet"));
+const StepAgeWeight = dynamic(() => import("./forms/StepAgeWeight"));
+const StepHeight = dynamic(() => import("./forms/StepHeight"));
+const StepBMI = dynamic(() => import("./forms/StepBMI"));
+const StepMedical = dynamic(() => import("./forms/StepMedicalHistory"));
+const StepLifestyle = dynamic(() => import("./forms/StepLifestyle"));
+const StepReview = dynamic(() => import("./forms/StepReview"));
 
 export default function RegistrationFlow() {
-  const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState<1 | -1>(1);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [direction, setDirection] = useState(1);
   const [isPending, startTransition] = useTransition();
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const [formData, setFormData] = useState<FormData>({
-    goal: "",
-    country: "",
-    language: "",
-    age: null,
-    gender: "",
-    height: null,
-    weight: null,
-    medicalHistory: "",
-    metabolism: "",
+  // FIX: Incomplete initialization/SSR safety
+  const [formData, setFormData] = useState(() => {
+    const defaultData = {
+      country: "",
+      goal: "",
+      activityLevel: "",
+      diet: "",
+      age: 25,
+      weight: 70,
+      height: 170,
+      bmi: 24.2,
+      medicalConditions: [],
+      sleepHours: 8,
+      agreedToTerms: false,
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("registrationData");
+      return saved ? JSON.parse(saved) : defaultData;
+    }
+    return defaultData; // Return default data when window is undefined (SSR)
   });
 
-  // Auto-scroll on step change
-
   useEffect(() => {
-    containerRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, [step]);
-
-  // Load from localStorage
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setFormData(JSON.parse(stored));
-    }
-  }, []);
-
-  // Save to localStorage
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    localStorage.setItem("registrationData", JSON.stringify(formData));
   }, [formData]);
 
-  // Update form field
+  // FIX: Typed ref for motion.div
+  const stepRef = useRef<HTMLDivElement>(null);
 
-  const updateField = (field: keyof FormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  // Validation
+  useEffect(() => {
+    const focusable = stepRef.current?.querySelector(
+      "input, select, button",
+    ) as HTMLElement;
+    focusable?.focus();
+  }, [currentStep]);
 
   const isStepValid = useMemo(() => {
-    switch (step) {
-      case 0:
-        return (
-          formData.goal && formData.country.trim() && formData.language.trim()
-        );
-      case 1:
-        return (
-          formData.age &&
-          formData.age >= 12 &&
-          formData.age <= 100 &&
-          formData.gender &&
-          formData.height &&
-          formData.height >= 120 &&
-          formData.height <= 250 &&
-          formData.weight &&
-          formData.weight >= 30 &&
-          formData.weight <= 300
-        );
-      case 2:
-        return formData.medicalHistory.trim().length > 5;
-      case 3:
-        return formData.metabolism !== "";
-      default:
-        return false;
-    }
-  }, [formData, step]);
-
-  // Navigation
+    const schema = stepSchemas[currentStep - 1];
+    return schema?.safeParse(formData).success;
+  }, [currentStep, formData]);
 
   const nextStep = () => {
-    if (!isStepValid) return;
-
-    setDirection(1);
-
-    if (step === TOTAL_STEPS - 1) {
-      startTransition(async () => {
-        await submitRegistration(formData);
-      });
-    } else {
-      setStep((prev) => prev + 1);
+    if (currentStep < 10 && isStepValid) {
+      setDirection(1);
+      setCurrentStep((s) => s + 1);
     }
   };
 
   const prevStep = () => {
-    setDirection(-1);
-    setStep((prev) => Math.max(prev - 1, 0));
+    if (currentStep > 1) {
+      setDirection(-1);
+      setCurrentStep((s) => s - 1);
+    }
   };
 
-  const progressPercent = ((step + 1) / TOTAL_STEPS) * 100;
+  const handleSubmit = () => {
+    startTransition(async () => {
+      try {
+        await submitRegistration(formData);
+        alert("Registration Successful!");
+        localStorage.removeItem("registrationData");
+      } catch (err) {
+        alert("Error submitting form");
+      }
+    });
+  };
 
-  // Render
+  const renderStep = () => {
+    const props = { formData, setFormData };
+    switch (currentStep) {
+      case 1:
+        return <StepCountry {...props} />;
+      case 2:
+        return <StepGoal {...props} />;
+      case 3:
+        return <StepActivity {...props} />;
+      case 4:
+        return <StepDiet {...props} />;
+      case 5:
+        return <StepAgeWeight {...props} />;
+      case 6:
+        return <StepHeight {...props} />;
+      case 7:
+        return <StepBMI {...props} />;
+      case 8:
+        return <StepMedical {...props} />;
+      case 9:
+        return <StepLifestyle {...props} />;
+      case 10:
+        return <StepReview {...props} />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div
-      ref={containerRef}
-      className="min-h-screen flex flex-col bg-[#f7faf7] dark:bg-zinc-900 transition-colors"
-    >
-      {/* Progress */}
-      <div className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-zinc-900/80 border-b">
-        <div className="h-2 bg-gray-200 dark:bg-zinc-800">
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-2xl shadow-sm border mt-10">
+      <ProgressBar step={currentStep} total={10} />
+
+      <div className="relative overflow-hidden mt-8 min-h-[350px]">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            className="h-full bg-[#0e9859]"
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ type: "spring", stiffness: 120, damping: 20 }}
-          />
-        </div>
-
-        {/* Step Dots */}
-        <div className="flex justify-center gap-4 py-4">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <motion.button
-              key={i}
-              onClick={() => setStep(i)}
-              className={`w-3 h-3 rounded-full ${
-                i <= step ? "bg-[#0e9859]" : "bg-gray-300 dark:bg-zinc-700"
-              }`}
-              layout
-              transition={{ type: "spring", stiffness: 200 }}
-              aria-label={`Go to step ${i + 1}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-2xl relative overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ x: direction > 0 ? 20 : -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: direction > 0 ? -20 : 20, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              {step === 0 && <StepGoals data={formData} update={updateField} />}
-              {step === 1 && (
-                <StepPhysical data={formData} update={updateField} />
-              )}
-              {step === 2 && (
-                <StepMedical data={formData} update={updateField} />
-              )}
-              {step === 3 && (
-                <StepMetabolism data={formData} update={updateField} />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="p-6 border-t bg-white dark:bg-zinc-900">
-        <div className="max-w-2xl mx-auto flex justify-between">
-          <button
-            onClick={prevStep}
-            disabled={step === 0}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl border disabled:opacity-40"
+            key={currentStep}
+            ref={stepRef}
+            initial={{ x: direction * 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: direction * -50, opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
-            <ArrowLeft size={18} />
-            Back
-          </button>
+            {renderStep()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
+      <div className="mt-8 flex justify-between">
+        <button
+          onClick={prevStep}
+          disabled={currentStep === 1}
+          className="px-6 py-2 text-gray-500 disabled:opacity-30"
+        >
+          Back
+        </button>
+
+        {currentStep < 10 ? (
           <button
             onClick={nextStep}
-            disabled={!isStepValid || isPending}
-            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[#0e9859] text-white disabled:opacity-40"
+            disabled={!isStepValid}
+            className="px-8 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-300 transition-colors"
           >
-            {step === TOTAL_STEPS - 1 ? "Submit" : "Next"}
-            <ArrowRight size={18} />
+            Next
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Selectable card component
-
-function SelectableCard({
-  children,
-  selected,
-  onClick,
-}: {
-  children: React.ReactNode;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <motion.button
-      role="radio"
-      aria-checked={selected}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 200 }}
-      onClick={onClick}
-      className={`relative p-5 rounded-2xl border text-lg font-medium transition
-        ${
-          selected
-            ? "border-[#0e9859] bg-[#bcf4b3]/30 dark:bg-[#0e9859]/20"
-            : "border-gray-200 dark:border-zinc-700 hover:border-[#0e9859]"
-        }`}
-    >
-      {children}
-
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            className="absolute top-3 right-3 text-[#0e9859]"
+        ) : (
+          <button
+            onClick={handleSubmit}
+            disabled={isPending || !isStepValid}
+            className="px-8 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 transition-colors"
           >
-            <Check size={20} />
-          </motion.div>
+            {isPending ? "Submitting..." : "Complete Setup"}
+          </button>
         )}
-      </AnimatePresence>
-    </motion.button>
-  );
-}
-// Step 1: Goals
-
-function StepGoals({
-  data,
-  update,
-}: {
-  data: FormData;
-  update: (field: keyof FormData, value: any) => void;
-}) {
-  const goals = ["Weight loss", "Better sleep", "Hormone balance", "Energy"];
-
-  return (
-    <div className="space-y-8">
-      <h2 className="text-3xl font-bold">What do you need?</h2>
-
-      <div className="grid grid-cols-2 gap-4">
-        {goals.map((goal) => (
-          <SelectableCard
-            key={goal}
-            selected={data.goal === goal}
-            onClick={() => update("goal", goal)}
-          >
-            {goal}
-          </SelectableCard>
-        ))}
-      </div>
-
-      <div className="grid gap-4">
-        <input
-          type="text"
-          placeholder="Country"
-          value={data.country}
-          onChange={(e) => update("country", e.target.value)}
-          className="w-full border p-3 rounded-xl"
-        />
-        <input
-          type="text"
-          placeholder="Language"
-          value={data.language}
-          onChange={(e) => update("language", e.target.value)}
-          className="w-full border p-3 rounded-xl"
-        />
-      </div>
-    </div>
-  );
-}
-
-// Step 2: Physical profile
-
-function StepPhysical({
-  data,
-  update,
-}: {
-  data: FormData;
-  update: (field: keyof FormData, value: any) => void;
-}) {
-  const genders = ["Male", "Female", "Other"];
-
-  return (
-    <div className="space-y-8">
-      <h2 className="text-3xl font-bold">Your Physical Profile</h2>
-
-      <input
-        type="number"
-        placeholder="Age"
-        value={data.age ?? ""}
-        onChange={(e) =>
-          update("age", e.target.value ? Number(e.target.value) : null)
-        }
-        className="w-full border p-3 rounded-xl"
-      />
-
-      <div className="grid grid-cols-3 gap-4">
-        {genders.map((gender) => (
-          <SelectableCard
-            key={gender}
-            selected={data.gender === gender}
-            onClick={() => update("gender", gender)}
-          >
-            {gender}
-          </SelectableCard>
-        ))}
-      </div>
-
-      <input
-        type="number"
-        placeholder="Height (cm)"
-        value={data.height ?? ""}
-        onChange={(e) =>
-          update("height", e.target.value ? Number(e.target.value) : null)
-        }
-        className="w-full border p-3 rounded-xl"
-      />
-
-      <input
-        type="number"
-        placeholder="Weight (kg)"
-        value={data.weight ?? ""}
-        onChange={(e) =>
-          update("weight", e.target.value ? Number(e.target.value) : null)
-        }
-        className="w-full border p-3 rounded-xl"
-      />
-    </div>
-  );
-}
-
-// Step 3: Medical history
-
-function StepMedical({
-  data,
-  update,
-}: {
-  data: FormData;
-  update: (field: keyof FormData, value: any) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold">Medical Background</h2>
-
-      <textarea
-        placeholder="Describe any medical conditions or past treatments..."
-        value={data.medicalHistory}
-        onChange={(e) => update("medicalHistory", e.target.value)}
-        className="w-full p-4 border rounded-xl"
-        rows={6}
-      />
-    </div>
-  );
-}
-
-// Step 4: Metabolism type
-
-function StepMetabolism({
-  data,
-  update,
-}: {
-  data: FormData;
-  update: (field: keyof FormData, value: any) => void;
-}) {
-  const types = ["Slow", "Normal", "Fast"];
-
-  return (
-    <div className="space-y-8">
-      <h2 className="text-3xl font-bold">Metabolism Type</h2>
-
-      <div className="grid grid-cols-3 gap-4">
-        {types.map((type) => (
-          <SelectableCard
-            key={type}
-            selected={data.metabolism === type}
-            onClick={() => update("metabolism", type)}
-          >
-            {type}
-          </SelectableCard>
-        ))}
       </div>
     </div>
   );
