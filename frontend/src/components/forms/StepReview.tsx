@@ -2,19 +2,46 @@
 
 export default function StepReview({ formData, setFormData }: any) {
   const summary = [
-    { label: "Goal", value: formData.goal },
-    { label: "BMI", value: formData.bmi },
     { label: "Country", value: formData.country },
+    { label: "Primary Goal", value: formData.goal },
+    { label: "Activity Level", value: formData.activityLevel },
+    { label: "Diet Preference", value: formData.diet },
+    { label: "Age", value: formData.age ? `${formData.age} years` : "Not set" },
+    {
+      label: "Weight",
+      value: formData.weight ? `${formData.weight} kg` : "Not set",
+    },
+    {
+      label: "Height",
+      value: formData.height ? `${formData.height} cm` : "Not set",
+    },
+    { label: "BMI", value: formData.bmi ? formData.bmi.toFixed(1) : "Not set" },
+    {
+      label: "Medical Conditions",
+      value:
+        formData.medicalConditions?.length > 0
+          ? formData.medicalConditions.join(", ")
+          : "None",
+    },
+    {
+      label: "Sleep Hours",
+      value: formData.sleepHours ? `${formData.sleepHours} hours` : "Not set",
+    },
   ];
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Check your details</h2>
-      <div className="bg-gray-50 rounded-2xl p-6 space-y-3">
+      <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
         {summary.map((item) => (
-          <div key={item.label} className="flex justify-between">
-            <span className="text-gray-500">{item.label}</span>
-            <span className="font-semibold">{item.value || "Not set"}</span>
+          <div
+            key={item.label}
+            className="flex justify-between border-b pb-3 last:border-b-0"
+          >
+            <span className="text-gray-500 font-medium">{item.label}</span>
+            <span className="font-semibold text-gray-800">
+              {item.value || "Not set"}
+            </span>
           </div>
         ))}
       </div>

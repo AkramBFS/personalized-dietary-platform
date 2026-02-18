@@ -17,7 +17,7 @@ export async function submitRegistration(formData: any) {
     throw new Error("Validation failed.");
   }
 
-  // Simulate DB latency
+
   await new Promise((res) => setTimeout(res, 2000));
 
   return { success: true };
