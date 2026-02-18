@@ -1,196 +1,235 @@
 "use client";
 
-import Image from "next/image";
-import React, { useState, useRef, useEffect } from "react";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from "@headlessui/react";
+import {
+  Bars3Icon,
+  BellIcon,
+  XMarkIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 
-interface NavItem {
-  label: string;
-  href?: string;
-  children?: { label: string; href: string }[];
+const navigation = [
+  {
+    name: "Shop",
+    children: [
+      { name: "Our Plans", href: "/shop/plans" },
+      { name: "Schedule consult", href: "/shop/schedule" },
+    ],
+  },
+  {
+    name: "Blog",
+    children: [
+      { name: "Recent Posts", href: "/blog" },
+      { name: "Write Your Own", href: "/blog/write" },
+    ],
+  },
+  {
+    name: "AI Features",
+    children: [
+      { name: "Chatbot Helper", href: "/ai/chatbot" },
+      { name: "Calorie Estimate", href: "/ai/calories" },
+    ],
+  },
+  { name: "About", href: "/about" },
+];
+
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(" ");
 }
 
-const Navbar: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const navRef = useRef<HTMLDivElement>(null);
-
-  const navLinks: NavItem[] = [
-    {
-      label: "Shop",
-      children: [
-        { label: "Our Plans", href: "/shop/plans" },
-        { label: "Schedule consult", href: "/shop/schedule" },
-      ],
-    },
-    {
-      label: "Blog",
-      children: [
-        { label: "Recent Posts", href: "/blog" },
-        { label: "Write Your Own", href: "/blog/write" },
-      ],
-    },
-    {
-      label: "AI Features",
-      children: [
-        { label: "Chatbot Helper", href: "/ai/chatbot" },
-        { label: "Calorie Estimate", href: "/ai/calories" },
-      ],
-    },
-    { label: "About", href: "/about" },
-  ];
-
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
-        setIsMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+export default function Navbar() {
+  const pathname = usePathname();
 
   return (
-    <nav
-      ref={navRef}
-      className="bg-white border-b border-gray-200 sticky top-0 z-50"
+    <Disclosure
+      as="nav"
+      className="sticky top-0 z-50 bg-gray-900 border-b border-white/10"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          {/* --- Left: Logo --- */}
-          <Link
-            href="/"
-            className="flex items-center gap-3 flex-shrink-0 group"
-          >
-            <Image
-              src="/logo.png"
-              alt="REgimo Logo"
-              width={48} // Desired width in pixels
-              height={48} // Desired height in pixels
-              style={{ height: "auto", width: "36px" }} // Maintains aspect ratio
-              className="object-contain transition-transform group-hover:scale-105"
-              priority
-            />
-            <span className="text-xl font-bold text-gray-900 tracking-tight">
-              REgimo
-            </span>
-          </Link>
-
-          {/* --- Desktop Menu (Hidden on Mobile) --- */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <div key={link.label} className="relative">
-                {link.children ? (
-                  <>
-                    <button
-                      onClick={() =>
-                        setOpenDropdown(
-                          openDropdown === link.label ? null : link.label,
-                        )
-                      }
-                      className="text-gray-600 hover:text-blue-600 font-medium flex items-center gap-1"
-                    >
-                      {link.label} <span>▾</span>
-                    </button>
-                    {openDropdown === link.label && (
-                      <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-100 shadow-xl rounded-md py-2 transition-all">
-                        {link.children.map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href={link.href!}
-                    className="text-gray-600 hover:text-blue-600 font-medium"
-                  >
-                    {link.label}
-                  </Link>
-                )}
-              </div>
-            ))}
+      <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+        <div className="relative flex h-16 items-center justify-between">
+          {/* Mobile menu button*/}
+          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
+            <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+              <span className="sr-only">Open main menu</span>
+              <Bars3Icon
+                aria-hidden="true"
+                className="block size-6 group-data-[open]:hidden"
+              />
+              <XMarkIcon
+                aria-hidden="true"
+                className="hidden size-6 group-data-[open]:block"
+              />
+            </DisclosureButton>
           </div>
 
-          {/* --- Mobile Hamburger Button --- */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-gray-600 hover:text-gray-900 focus:outline-none"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {isMobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+          <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
+            {/* Logo */}
+            <Link href="/" className="flex shrink-0 items-center gap-2">
+              <Image
+                alt="REgimo Logo"
+                src="/logo.png"
+                width={32}
+                height={32}
+                className="h-8 w-auto"
+              />
+              <span className="text-white font-bold text-xl hidden md:block">
+                REgimo
+              </span>
+            </Link>
+
+            {/* Desktop Menu */}
+            <div className="hidden sm:ml-6 sm:block">
+              <div className="flex space-x-4">
+                {navigation.map((item) =>
+                  item.children ? (
+                    <Menu as="div" key={item.name} className="relative">
+                      <MenuButton className="flex items-center gap-x-1 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                        {item.name}
+                        <ChevronDownIcon
+                          className="size-4 text-gray-400"
+                          aria-hidden="true"
+                        />
+                      </MenuButton>
+                      <MenuItems
+                        transition
+                        className="absolute left-0 z-10 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
+                      >
+                        {item.children.map((child) => (
+                          <MenuItem key={child.href}>
+                            <Link
+                              href={child.href}
+                              className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                            >
+                              {child.name}
+                            </Link>
+                          </MenuItem>
+                        ))}
+                      </MenuItems>
+                    </Menu>
+                  ) : (
+                    <Link
+                      key={item.name}
+                      href={item.href || "#"}
+                      className={classNames(
+                        pathname === item.href
+                          ? "bg-gray-950 text-white"
+                          : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                        "rounded-md px-3 py-2 text-sm font-medium",
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  ),
                 )}
-              </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Right side: Notifications & Profile */}
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+            <button
+              type="button"
+              className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
+            >
+              <span className="sr-only">View notifications</span>
+              <BellIcon aria-hidden="true" className="size-6" />
             </button>
+
+            {/* Profile dropdown */}
+            <Menu as="div" className="relative ml-3">
+              <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white">
+                <Image
+                  alt="User profile"
+                  src="/professionals/pf1.jpg"
+                  width={32}
+                  height={32}
+                  className="size-8 rounded-full"
+                />
+              </MenuButton>
+              <MenuItems
+                transition
+                className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
+              >
+                <MenuItem>
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                  >
+                    Your Profile
+                  </Link>
+                </MenuItem>
+                <MenuItem>
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                  >
+                    Settings
+                  </Link>
+                </MenuItem>
+                <MenuItem>
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                  >
+                    Sign out
+                  </Link>
+                </MenuItem>
+              </MenuItems>
+            </Menu>
           </div>
         </div>
       </div>
 
-      {/* --- Mobile Menu Dropdown (Vertical) --- */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 pb-4 shadow-lg">
-          {navLinks.map((link) => (
-            <div key={link.label} className="px-4 py-2">
-              {link.children ? (
+      {/* Mobile Menu Panel */}
+      <DisclosurePanel className="sm:hidden">
+        <div className="space-y-1 px-2 pb-3 pt-2">
+          {navigation.map((item) => (
+            <div key={item.name}>
+              {item.children ? (
                 <>
-                  <div className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-2 mt-2">
-                    {link.label}
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {item.name}
                   </div>
-                  <div className="flex flex-col gap-2 pl-2">
-                    {link.children.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-gray-700 py-1 hover:text-blue-600"
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
+                  {item.children.map((child) => (
+                    <DisclosureButton
+                      key={child.href}
+                      as={Link}
+                      href={child.href}
+                      className="block rounded-md px-3 py-2 pl-6 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+                    >
+                      {child.name}
+                    </DisclosureButton>
+                  ))}
                 </>
               ) : (
-                <Link
-                  href={link.href!}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-2 font-medium text-gray-700 hover:text-blue-600"
+                <DisclosureButton
+                  as={Link}
+                  href={item.href || "#"}
+                  className={classNames(
+                    pathname === item.href
+                      ? "bg-gray-950 text-white"
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                    "block rounded-md px-3 py-2 text-base font-medium",
+                  )}
                 >
-                  {link.label}
-                </Link>
+                  {item.name}
+                </DisclosureButton>
               )}
             </div>
           ))}
         </div>
-      )}
-    </nav>
+      </DisclosurePanel>
+    </Disclosure>
   );
-};
-
-export default Navbar;
+}

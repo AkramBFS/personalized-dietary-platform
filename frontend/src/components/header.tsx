@@ -186,7 +186,7 @@ export const HeroHeader = () => {
                     <Link href="/login">Login</Link>
                   </Button>
                   <Button asChild>
-                    <Link href="/signup">Sign Up</Link>
+                    <Link href="/register">Sign Up</Link>
                   </Button>
                 </>
               ) : (
@@ -194,7 +194,7 @@ export const HeroHeader = () => {
                   className="animate-in fade-in zoom-in duration-300"
                   asChild
                 >
-                  <Link href="/get-started">Get Started</Link>
+                  <Link href="/register">Get Started</Link>
                 </Button>
               )}
             </div>
@@ -263,7 +263,7 @@ export const HeroHeader = () => {
                   <Link href="/login">Login</Link>
                 </Button>
                 <Button className="w-full" asChild>
-                  <Link href="/get-started">Get Started</Link>
+                  <Link href="/register">Get Started</Link>
                 </Button>
               </div>
             </div>
