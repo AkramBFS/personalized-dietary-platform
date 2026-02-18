@@ -1,6 +1,6 @@
 "use client";
 
-const DIETS = ["Omnivore", "Vegetarian", "Vegan", "Keto", "Paleo"];
+const DIETS = ["None", "Omnivore", "Vegetarian", "Vegan", "Keto", "Paleo"];
 
 export default function StepDiet({ formData, setFormData }: any) {
   return (
