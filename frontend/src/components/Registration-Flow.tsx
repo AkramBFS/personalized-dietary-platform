@@ -16,7 +16,7 @@ const StepAgeWeight = dynamic(() => import("./forms/StepAgeWeight"));
 const StepHeight = dynamic(() => import("./forms/StepHeight"));
 const StepBMI = dynamic(() => import("./forms/StepBMI"));
 const StepMedical = dynamic(() => import("./forms/StepMedicalHistory"));
-const StepLifestyle = dynamic(() => import("./forms/StepLifestyle"));
+const StepSignUp = dynamic(() => import("./forms/StepSignUp"));
 const StepReview = dynamic(() => import("./forms/StepReview"));
 
 export default function RegistrationFlow() {
@@ -114,7 +114,7 @@ export default function RegistrationFlow() {
       case 8:
         return <StepMedical {...props} />;
       case 9:
-        return <StepLifestyle {...props} />;
+        return <StepSignUp {...props} />;
       case 10:
         return <StepReview {...props} />;
       default:
