@@ -28,7 +28,7 @@ export const stepSchemas = [
   z.object({
   medicalConditions: z.array(z.string()).min(1, "Please select at least one option (or 'None')"),
 }), // Step 8
-  z.object({ sleepHours: z.number().min(3).max(12) }),  // Step 9
+
   z.object({
     firstName: z.string().min(1, "First name is required").min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(1, "Last name is required").min(2, "Last name must be at least 2 characters"),

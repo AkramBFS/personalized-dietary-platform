@@ -24,7 +24,7 @@ export default function RegistrationFlow() {
   const [direction, setDirection] = useState(1);
   const [isPending, startTransition] = useTransition();
 
-  // FIX: Incomplete initialization/SSR safety
+  // for inncomplete initialization and SSR safety
   const [formData, setFormData] = useState(() => {
     const defaultData = {
       country: "",
@@ -38,7 +38,10 @@ export default function RegistrationFlow() {
       height: 170,
       bmi: 24.2,
       medicalConditions: [],
-      sleepHours: 8,
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
       agreedToTerms: false,
     };
 
@@ -53,7 +56,7 @@ export default function RegistrationFlow() {
     localStorage.setItem("registrationData", JSON.stringify(formData));
   }, [formData]);
 
-  // FIX: Typed ref for motion.div
+  // Typed ref for motion.div
   const stepRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
