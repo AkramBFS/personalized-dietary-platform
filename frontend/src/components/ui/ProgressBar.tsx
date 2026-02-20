@@ -6,9 +6,16 @@ import { useEffect } from "react";
 interface Props {
   step: number;
   total: number;
+  color?: string; // Added: e.g., "bg-blue-600"
+  trackColor?: string; // Added: e.g., "bg-gray-200"
 }
 
-export default function ProgressBar({ step, total }: Props) {
+export default function ProgressBar({
+  step,
+  total,
+  color = "bg-blue-600",
+  trackColor = "bg-gray-200",
+}: Props) {
   const percentage = (step / total) * 100;
 
   const spring = useSpring(percentage, {
@@ -30,12 +37,11 @@ export default function ProgressBar({ step, total }: Props) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(percentage)}
-        aria-label="Registration progress"
-        className="w-full h-2 bg-gray-200 rounded-full overflow-hidden"
+        className={`w-full h-2 ${trackColor} rounded-full overflow-hidden`}
       >
         <motion.div
           style={{ width: widthPercentage }}
-          className="h-full bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.6)]"
+          className={`h-full ${color} rounded-full transition-colors duration-500`}
         />
       </div>
 

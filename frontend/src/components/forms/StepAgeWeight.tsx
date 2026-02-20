@@ -1,6 +1,11 @@
 "use client";
 
 export default function StepAgeWeight({ formData, setFormData }: any) {
+  const genderOptions = [
+    { id: "male", label: "Male" },
+    { id: "female", label: "Female" },
+  ];
+
   return (
     <div className="flex flex-col items-center w-full space-y-8">
       {/* Header Section */}
@@ -13,7 +18,33 @@ export default function StepAgeWeight({ formData, setFormData }: any) {
         </p>
       </div>
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-6">
+        {/* Gender Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-600 ml-1">
+            Gender
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            {genderOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setFormData({ ...formData, gender: option.id })}
+                className={`
+                  p-4 rounded-2xl border font-medium transition-all active:scale-[0.98]
+                  ${
+                    formData.gender === option.id
+                      ? "border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-100"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                  }
+                `}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           {/* Age Input */}
           <div className="space-y-2">
