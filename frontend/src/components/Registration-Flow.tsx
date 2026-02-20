@@ -61,14 +61,13 @@ export default function RegistrationFlow() {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Logic Requirements: The Animation Map
   const cardVariants: Variants = {
     initial: (step: number) => {
       if (step === 10) return { opacity: 1, x: 0, scale: 1 };
       if ([3, 6, 9].includes(step)) return { scale: 0.5, opacity: 0, x: 0 };
       if ([2, 5, 8].includes(step))
         return { x: "-100%", opacity: 0, rotate: -5 };
-      return { x: "100%", opacity: 0, rotate: 5 }; // Steps 1, 4, 7
+      return { x: "100%", opacity: 0, rotate: 5 };
     },
     animate: (step: number) => ({
       x: 0,
@@ -92,7 +91,6 @@ export default function RegistrationFlow() {
 
   const bgImage = BACKGROUNDS[currentStep - 1] || BACKGROUNDS[0];
 
-  // 4. Layout & Continuity: Scroll Reset
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
@@ -105,24 +103,32 @@ export default function RegistrationFlow() {
   }, [currentStep, formData]);
 
   const nextStep = () => {
+    // Immediate lock check + immediate lock set
     if (currentStep < 10 && isStepValid && !isAnimating) {
+      setIsAnimating(true);
       setCurrentStep((s) => s + 1);
     }
   };
 
   const prevStep = () => {
+    // Immediate lock check + immediate lock set
     if (currentStep > 1 && !isAnimating) {
+      setIsAnimating(true);
       setCurrentStep((s) => s - 1);
     }
   };
 
   const handleSubmit = () => {
+    if (isAnimating || isPending) return;
+    setIsAnimating(true);
     startTransition(async () => {
       try {
         await submitRegistration(formData);
         alert("Registration Successful!");
       } catch (err) {
         alert("Error submitting form");
+      } finally {
+        setIsAnimating(false);
       }
     });
   };
@@ -157,7 +163,6 @@ export default function RegistrationFlow() {
 
   return (
     <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden">
-      {/* 4. Background Continuity: Cross-fade Layer */}
       <AnimatePresence>
         <motion.div
           key={bgImage}
@@ -182,7 +187,6 @@ export default function RegistrationFlow() {
         </motion.div>
       </AnimatePresence>
 
-      {/* 1. Rhythmic Sequence Wrapper */}
       <AnimatePresence mode="popLayout" custom={currentStep}>
         <motion.div
           key={currentStep}
@@ -191,6 +195,7 @@ export default function RegistrationFlow() {
           initial="initial"
           animate="animate"
           exit="exit"
+          // We keep this to ensure the lock is active for the full duration of the spring
           onAnimationStart={() => setIsAnimating(true)}
           onAnimationComplete={() => setIsAnimating(false)}
           onMouseEnter={() => setIsHovered(true)}
