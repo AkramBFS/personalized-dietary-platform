@@ -21,8 +21,11 @@ export const stepSchemas = [
   z.object({ diet: z.string().min(1) }),                // Step 4
   z.object({ 
     age: z.number().min(16).max(100), 
-    weight: z.number().min(30).max(300) 
-  }),                                                   // Step 5
+    weight: z.number().min(30).max(300),
+    gender: z.enum(["male", "female"], {
+  message: "Please select your gender",
+}),
+  }),                                                 // Step 5
   z.object({ height: z.number().min(120).max(250) }),   // Step 6
   z.object({ bmi: z.number().min(10).max(60) }),        // Step 7
   z.object({
