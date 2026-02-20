@@ -29,7 +29,21 @@ export const stepSchemas = [
   z.object({ height: z.number().min(120).max(250) }),   // Step 6
   z.object({ bmi: z.number().min(10).max(60) }),        // Step 7
   z.object({
-  medicalConditions: z.array(z.string()).min(1, "Please select at least one option (or 'None')"),
+  medicalConditions: z
+    .array(z.string())
+    .min(1, "Please select at least one option (or 'None')"),
+  medicalConditionsCustom: z.string().optional(),
+}).refine((data) => {
+  if (data.medicalConditions.includes("Other")) {
+    return (
+      data.medicalConditionsCustom &&
+      data.medicalConditionsCustom.trim().length > 0
+    );
+  }
+  return true;
+}, {
+  message: "Please specify your medical condition",
+  path: ["medicalConditionsCustom"],
 }), // Step 8
 
   z.object({
