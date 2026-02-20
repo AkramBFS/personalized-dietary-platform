@@ -23,10 +23,9 @@ export default function StepReview({ formData, setFormData }: any) {
           ? formData.medicalConditions.join(", ")
           : "None",
     },
-    {
-      label: "Sleep Hours",
-      value: formData.sleepHours ? `${formData.sleepHours} hours` : "Not set",
-    },
+    { label: "First Name", value: formData.firstName || "Not set" },
+    { label: "Last Name", value: formData.lastName || "Not set" },
+    { label: "Email", value: formData.email || "Not set" },
   ];
 
   return (
