@@ -1,4 +1,5 @@
 "use client";
+import React, { useState, useRef, useEffect } from "react";
 
 interface Props {
   formData: any;
@@ -17,6 +18,7 @@ const COUNTRIES = [
   "UAE",
   "Algeria",
 ];
+
 const LANGUAGES = [
   "English",
   "Spanish",
@@ -28,38 +30,59 @@ const LANGUAGES = [
 ];
 
 export default function StepCountrySelect({ formData, setFormData }: Props) {
-  // Common styles for the select inputs
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setOpenDropdown(null);
+  };
+
   const selectClasses = `
     w-full 
-    appearance-none 
+    flex items-center justify-between
     bg-white 
     border border-gray-200 
     text-gray-700 
-    py-3.5 px-5 pr-10
+    py-3.5 px-5
     rounded-2xl 
     shadow-sm
-    leading-tight 
     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
     transition-all
     cursor-pointer
   `;
 
-  // Custom arrow component to keep the JSX clean
-  const DropdownArrow = () => (
-    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-      <svg
-        className="fill-current h-4 w-4"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-      >
-        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-      </svg>
-    </div>
-  );
+  const dropdownMenuClasses = `
+    absolute z-20 w-full mt-2 
+    bg-white border border-gray-100 
+    shadow-xl rounded-2xl 
+    overflow-hidden 
+    py-2 animate-in fade-in zoom-in duration-150
+  `;
 
   return (
-    <div className="flex flex-col items-center w-full space-y-8">
-      {/* Header - Centered text */}
+    <div
+      className="flex flex-col items-center w-full space-y-8"
+      ref={containerRef}
+    >
+      {/* Header */}
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-gray-800">Regional Settings</h2>
         <p className="text-sm text-gray-500 max-w-xs mx-auto">
@@ -69,61 +92,83 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
 
       <div className="w-full max-w-md space-y-6">
         {/* Country Selection */}
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
           <label className="text-sm font-semibold text-gray-600 ml-1">
             Current Location
           </label>
-          <div className="relative">
-            <select
-              value={formData.country || ""}
-              onChange={(e) =>
-                setFormData((prev: any) => ({
-                  ...prev,
-                  country: e.target.value,
-                }))
-              }
-              className={selectClasses}
+
+          <button
+            type="button"
+            onClick={() =>
+              setOpenDropdown(openDropdown === "country" ? null : "country")
+            }
+            className={selectClasses}
+          >
+            <span className={!formData.country ? "text-gray-400" : ""}>
+              {formData.country || "Select country"}
+            </span>
+            <svg
+              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${openDropdown === "country" ? "rotate-180" : ""}`}
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <option value="" disabled>
-                Select country
-              </option>
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </button>
+
+          {openDropdown === "country" && (
+            <ul className={dropdownMenuClasses}>
               {COUNTRIES.map((country) => (
-                <option key={country} value={country}>
+                <li
+                  key={country}
+                  onClick={() => handleSelect("country", country)}
+                  className="px-5 py-3 hover:bg-blue-50 hover:text-blue-600 cursor-pointer transition-colors text-gray-700 text-sm"
+                >
                   {country}
-                </option>
+                </li>
               ))}
-            </select>
-            <DropdownArrow />
-          </div>
+            </ul>
+          )}
         </div>
 
         {/* Language Selection */}
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
           <label className="text-sm font-semibold text-gray-600 ml-1">
             Preferred Language
           </label>
-          <div className="relative">
-            <select
-              value={formData.language || ""}
-              onChange={(e) =>
-                setFormData((prev: any) => ({
-                  ...prev,
-                  language: e.target.value,
-                }))
-              }
-              className={selectClasses}
+
+          <button
+            type="button"
+            onClick={() =>
+              setOpenDropdown(openDropdown === "language" ? null : "language")
+            }
+            className={selectClasses}
+          >
+            <span className={!formData.language ? "text-gray-400" : ""}>
+              {formData.language || "Select preferred language"}
+            </span>
+            <svg
+              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${openDropdown === "language" ? "rotate-180" : ""}`}
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <option value="" disabled>
-                Select preferred language
-              </option>
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </button>
+
+          {openDropdown === "language" && (
+            <ul className={dropdownMenuClasses}>
               {LANGUAGES.map((language) => (
-                <option key={language} value={language}>
+                <li
+                  key={language}
+                  onClick={() => handleSelect("language", language)}
+                  className="px-5 py-3 hover:bg-blue-50 hover:text-blue-600 cursor-pointer transition-colors text-gray-700 text-sm"
+                >
                   {language}
-                </option>
+                </li>
               ))}
-            </select>
-            <DropdownArrow />
-          </div>
+            </ul>
+          )}
         </div>
       </div>
     </div>

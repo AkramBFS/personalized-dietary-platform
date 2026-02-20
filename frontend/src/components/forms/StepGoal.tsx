@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useRef } from "react";
 
 const GOALS = [
   "Weight Loss",
@@ -12,6 +13,7 @@ const GOALS = [
 
 export default function StepGoal({ formData, setFormData }: any) {
   const isOtherSelected = formData.goal === "Other";
+  const otherInputRef = useRef<HTMLDivElement | null>(null);
 
   const handleSelect = (g: string) => {
     setFormData({
@@ -19,6 +21,15 @@ export default function StepGoal({ formData, setFormData }: any) {
       goal: g,
       goalCustom: g === "Other" ? formData.goalCustom : "",
     });
+  };
+
+  const scrollToOther = () => {
+    if (otherInputRef.current) {
+      otherInputRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
   };
 
   return (
@@ -44,7 +55,7 @@ export default function StepGoal({ formData, setFormData }: any) {
                 className={`
                   w-full flex items-center justify-center p-5 
                   border-2 rounded-2xl transition-all duration-200
-                  active:scale-[0.98] 
+                  active:scale-[0.98]
                   ${
                     isSelected
                       ? "border-blue-600 bg-blue-50/50 shadow-sm"
@@ -53,7 +64,11 @@ export default function StepGoal({ formData, setFormData }: any) {
                 `}
               >
                 <span
-                  className={`text-lg transition-colors ${isSelected ? "text-blue-700 font-bold" : "text-gray-600 font-semibold"}`}
+                  className={`text-lg ${
+                    isSelected
+                      ? "text-blue-700 font-bold"
+                      : "text-gray-600 font-semibold"
+                  }`}
                 >
                   {g}
                 </span>
@@ -65,18 +80,19 @@ export default function StepGoal({ formData, setFormData }: any) {
         <AnimatePresence>
           {isOtherSelected && (
             <motion.div
+              ref={otherInputRef}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
+              onAnimationComplete={scrollToOther}
               className="overflow-hidden"
             >
-              <div className="space-y-2 pt-4">
+              <div className="space-y-2 pt-4 p-2">
                 <label className="text-sm font-semibold text-gray-600 ml-1">
                   Please specify your goal
                 </label>
                 <input
-                  type="text"
                   autoFocus
                   value={formData.goalCustom || ""}
                   onChange={(e) =>
@@ -86,8 +102,7 @@ export default function StepGoal({ formData, setFormData }: any) {
                   className="
                     w-full p-4 bg-white border border-gray-200 
                     rounded-2xl shadow-sm outline-none 
-                    focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-                    transition-all text-gray-700
+                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   "
                 />
               </div>
