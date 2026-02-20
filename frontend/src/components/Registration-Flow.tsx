@@ -8,18 +8,17 @@ import { submitRegistration } from "@/app/actions/submitRegistration";
 import { stepSchemas } from "@/lib/constants";
 import ProgressBar from "./ui/ProgressBar";
 
-// 1. Expanded to 10 unique background images
 const BACKGROUNDS = [
-  "/branding/bg-1.jpg", // Step 1: Country
-  "/branding/bg-2.jpg", // Step 2: Goal
-  "/branding/bg-3.jpg", // Step 3: Activity
-  "/branding/bg-4.jpg", // Step 4: Diet
-  "/branding/bg-5.jpg", // Step 5: Age/Weight
-  "/branding/bg-6.jpg", // Step 6: Height
-  "/branding/bg-7.jpg", // Step 7: BMI
-  "/branding/bg-8.jpg", // Step 8: Medical
-  "/branding/bg-9.jpg", // Step 9: Sign Up
-  "/branding/bg-10.jpg", // Step 10: Review
+  "/branding/bg-1.jpg",
+  "/branding/bg-2.jpg",
+  "/branding/bg-3.jpg",
+  "/branding/bg-4.jpg",
+  "/branding/bg-5.jpg",
+  "/branding/bg-6.jpg",
+  "/branding/bg-7.jpg",
+  "/branding/bg-8.jpg",
+  "/branding/bg-9.jpg",
+  "/branding/bg-10.jpg",
 ];
 
 const StepCountry = dynamic(() => import("./forms/StepCountrySelect"));
@@ -61,11 +60,15 @@ export default function RegistrationFlow() {
   });
 
   const stepRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // 2. Direct 1:1 mapping for the background
   const bgImage = BACKGROUNDS[currentStep - 1] || BACKGROUNDS[0];
 
   useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+
     const focusable = stepRef.current?.querySelector(
       "input, select, button",
     ) as HTMLElement | null;
@@ -131,15 +134,13 @@ export default function RegistrationFlow() {
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden">
-      {/* 3. Animated Background Layer */}
+    <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden">
       <AnimatePresence>
         <motion.div
           key={bgImage}
           initial={{ opacity: 0 }}
           animate={{
             opacity: 1,
-            // Sharp when mouse is out, blurred & dimmed when mouse is over the card
             filter: isHovered
               ? "blur(5px) brightness(0.8)"
               : "blur(0px) brightness(1)",
@@ -161,20 +162,34 @@ export default function RegistrationFlow() {
         </motion.div>
       </AnimatePresence>
 
-      {/* 4. The Form Card */}
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative z-10 w-full max-w-xl p-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20"
+        /* FIX: We set a fixed height relative to the viewport (h-[calc(100vh-2rem)])
+           but cap it with a max-height (max-h-[850px]) so it doesn't get ridiculously 
+           tall on 4K monitors. This keeps the card dimensions constant 
+           even if the form inside is empty.
+        */
+        className="relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden"
       >
-        <ProgressBar
-          step={currentStep}
-          total={10}
-          color="bg-blue-600"
-          trackColor="bg-blue-50"
-        />
+        <div className="p-6 pb-0">
+          <ProgressBar
+            step={currentStep}
+            total={10}
+            color="bg-blue-600"
+            trackColor="bg-blue-50"
+          />
+        </div>
 
-        <div className="relative overflow-hidden mt-8 min-h-[350px]">
+        {/* FIX: flex-1 tells this div to take up ALL remaining space 
+            between the progress bar and the footer.
+            Because the parent has a fixed height, this will also have 
+            a stable, unchanging height.
+        */}
+        <div
+          ref={scrollContainerRef}
+          className="relative mt-4 flex-1 overflow-y-auto overflow-x-hidden px-6 py-2 custom-scrollbar"
+        >
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentStep}
@@ -183,48 +198,51 @@ export default function RegistrationFlow() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: direction * -50, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
+              className="outline-none"
             >
               {renderStep()}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        <div className="mt-8 flex justify-between items-center">
-          <button
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            className="px-6 py-2 text-gray-500 hover:text-gray-800 disabled:opacity-30 transition-colors"
-          >
-            Back
-          </button>
-
-          {currentStep < 10 ? (
+        <div className="p-6 pt-4 bg-white/50 border-t border-gray-100 mt-auto">
+          <div className="flex justify-between items-center">
             <button
-              onClick={nextStep}
-              disabled={!isStepValid}
-              className="px-8 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-300 transition-all hover:bg-blue-700 shadow-md active:scale-95"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="px-6 py-2 text-gray-500 hover:text-gray-800 disabled:opacity-30 transition-colors"
             >
-              Next
+              Back
             </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={isPending || !isStepValid}
-              className="px-8 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 transition-all hover:bg-green-700 shadow-md"
-            >
-              {isPending ? "Submitting..." : "Complete Setup"}
-            </button>
-          )}
-        </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center text-sm text-gray-600">
-          Already onboard?{" "}
-          <a
-            href="/login"
-            className="text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-4"
-          >
-            Sign in!
-          </a>
+            {currentStep < 10 ? (
+              <button
+                onClick={nextStep}
+                disabled={!isStepValid}
+                className="px-8 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-300 transition-all hover:bg-blue-700 shadow-md active:scale-95"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={isPending || !isStepValid}
+                className="px-8 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 transition-all hover:bg-green-700 shadow-md"
+              >
+                {isPending ? "Submitting..." : "Complete Setup"}
+              </button>
+            )}
+          </div>
+
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Already onboard?{" "}
+            <a
+              href="/login"
+              className="text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-4"
+            >
+              Sign in!
+            </a>
+          </div>
         </div>
       </div>
     </main>
