@@ -129,3 +129,13 @@
   }
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3b82f6; /* blue-600 */
+  border-radius: 10px;
+}
