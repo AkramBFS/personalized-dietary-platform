@@ -11,16 +11,21 @@ const GOALS = [
   "Other",
 ];
 
-export default function StepGoal({ formData, setFormData }: any) {
+interface Props {
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+}
+
+export default function StepGoal({ formData, setFormData }: Props) {
   const isOtherSelected = formData.goal === "Other";
   const otherInputRef = useRef<HTMLDivElement | null>(null);
 
   const handleSelect = (g: string) => {
-    setFormData({
-      ...formData,
+    setFormData((prev: any) => ({
+      ...prev,
       goal: g,
-      goalCustom: g === "Other" ? formData.goalCustom : "",
-    });
+      goalCustom: g === "Other" ? prev.goalCustom : "",
+    }));
   };
 
   const scrollToOther = () => {
@@ -32,19 +37,30 @@ export default function StepGoal({ formData, setFormData }: any) {
     }
   };
 
+  // Consistent with StepCountrySelect's button styling
+  const cardClasses = `
+    w-full flex items-center justify-center 
+    py-4 px-6 rounded-2xl 
+    border transition-all duration-300
+    cursor-pointer font-medium text-lg
+    shadow-[0_8px_32px_rgba(0,0,0,0.05)]
+    backdrop-blur-md
+  `;
+
   return (
-    <div className="flex flex-col items-center w-full space-y-8">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-800">
+    <div className="flex flex-col items-center w-full space-y-10">
+      {/* Header Section */}
+      <div className="text-center space-y-3">
+        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
           What is your primary goal?
         </h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
           Select the option that best describes your objective.
         </p>
       </div>
 
       <div className="w-full max-w-md space-y-4">
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-4">
           {GOALS.map((g) => {
             const isSelected = formData.goal === g;
             return (
@@ -53,25 +69,15 @@ export default function StepGoal({ formData, setFormData }: any) {
                 type="button"
                 onClick={() => handleSelect(g)}
                 className={`
-                  w-full flex items-center justify-center p-5 
-                  border-2 rounded-2xl transition-all duration-200
-                  active:scale-[0.98]
+                  ${cardClasses}
                   ${
                     isSelected
-                      ? "border-blue-600 bg-blue-50/50 shadow-sm"
-                      : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                      ? "bg-emerald-400 text-white border-emerald-400 scale-[1.02] shadow-emerald-200/50"
+                      : "bg-white/40 border-white/50 text-slate-800 hover:bg-white/60"
                   }
                 `}
               >
-                <span
-                  className={`text-lg ${
-                    isSelected
-                      ? "text-blue-700 font-bold"
-                      : "text-gray-600 font-semibold"
-                  }`}
-                >
-                  {g}
-                </span>
+                {g}
               </button>
             );
           })}
@@ -81,15 +87,15 @@ export default function StepGoal({ formData, setFormData }: any) {
           {isOtherSelected && (
             <motion.div
               ref={otherInputRef}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.3 }}
               onAnimationComplete={scrollToOther}
-              className="overflow-hidden"
+              className="pt-4"
             >
-              <div className="space-y-2 pt-4 p-2">
-                <label className="text-sm font-semibold text-gray-600 ml-1">
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-slate-700 ml-1">
                   Please specify your goal
                 </label>
                 <input
@@ -100,9 +106,13 @@ export default function StepGoal({ formData, setFormData }: any) {
                   }
                   placeholder="e.g. Training for a marathon..."
                   className="
-                    w-full p-4 bg-white border border-gray-200 
-                    rounded-2xl shadow-sm outline-none 
-                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    w-full py-4 px-6 rounded-2xl
+                    bg-white/60 backdrop-blur-md 
+                    border border-white/50 
+                    text-slate-800 font-medium
+                    shadow-[0_8px_32px_rgba(0,0,0,0.05)]
+                    focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400
+                    outline-none transition-all
                   "
                 />
               </div>
