@@ -201,17 +201,13 @@ export default function RegistrationFlow() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={`relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] 
-            bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 
+            bg-gradient-to-br from-white/40 via-white/10 to-white/30 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
+border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
             flex flex-col overflow-hidden transition-colors duration-500
             ${isAnimating ? "pointer-events-none" : ""}`}
         >
           <div className="p-6 pb-0">
-            <ProgressBar
-              step={currentStep}
-              total={10}
-              color="bg-blue-600"
-              trackColor="bg-blue-50"
-            />
+            <ProgressBar step={currentStep} total={10} />
           </div>
 
           <div
@@ -221,7 +217,7 @@ export default function RegistrationFlow() {
             {renderStep()}
           </div>
 
-          <div className="p-6 pt-4 bg-white/50 border-t border-gray-100 mt-auto">
+          <div className="p-6 pt-4 bg-white/30 border-t border-gray-100 mt-auto">
             <div className="flex justify-between items-center">
               <button
                 onClick={prevStep}
@@ -235,8 +231,9 @@ export default function RegistrationFlow() {
                 <button
                   onClick={nextStep}
                   disabled={!isStepValid || isAnimating}
-                  className="px-8 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-300 
-                    transition-all hover:bg-blue-700 shadow-md active:scale-95"
+                  className="px-8 py-2 bg-gradient-to-r from-emerald-400 to-yellow-400 text-white rounded-lg 
+    transition-all hover:bg-gray-700 shadow-md active:scale-95 
+    disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -256,7 +253,7 @@ export default function RegistrationFlow() {
               Already onboard?{" "}
               <a
                 href="/login"
-                className="text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-4"
+                className="bg-gradient-to-r from-emerald-400 to-yellow-400 bg-clip-text text-transparent hover:text-emerald-800 font-semibold underline underline-offset-4"
               >
                 Sign in!
               </a>

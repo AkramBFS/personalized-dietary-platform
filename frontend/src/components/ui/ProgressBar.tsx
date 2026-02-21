@@ -1,51 +1,36 @@
 "use client";
 
-import { motion, useSpring, useTransform } from "framer-motion";
-import { useEffect } from "react";
+import { motion } from "framer-motion";
 
 interface Props {
   step: number;
   total: number;
-  color?: string; // Added: e.g., "bg-blue-600"
-  trackColor?: string; // Added: e.g., "bg-gray-200"
 }
 
-export default function ProgressBar({
-  step,
-  total,
-  color = "bg-blue-600",
-  trackColor = "bg-gray-200",
-}: Props) {
-  const percentage = (step / total) * 100;
-
-  const spring = useSpring(percentage, {
-    stiffness: 120,
-    damping: 20,
-    mass: 0.8,
-  });
-
-  const widthPercentage = useTransform(spring, (value) => `${value}%`);
-
-  useEffect(() => {
-    spring.set(percentage);
-  }, [percentage, spring]);
-
+export default function ProgressBar({ step, total }: Props) {
   return (
     <div className="w-full">
-      <div
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(percentage)}
-        className={`w-full h-2 ${trackColor} rounded-full overflow-hidden`}
-      >
-        <motion.div
-          style={{ width: widthPercentage }}
-          className={`h-full ${color} rounded-full transition-colors duration-500`}
-        />
+      {/* Segmented Track */}
+      <div className="flex gap-2 h-2.5 w-full">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className="relative flex-1 h-full bg-gray-200 rounded-full overflow-hidden border border-gray-300"
+          >
+            {i + 1 <= step && (
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-yellow-400"
+              />
+            )}
+          </div>
+        ))}
       </div>
 
-      <div className="text-xs text-gray-500 mt-2 text-center">
+      {/* Step Label */}
+      <div className="text-[11px] font-bold text-slate-500 mt-3 text-center uppercase tracking-widest">
         Step {step} of {total}
       </div>
     </div>

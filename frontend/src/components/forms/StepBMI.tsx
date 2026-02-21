@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 
-export default function StepBMI({ formData, setFormData }: any) {
+interface Props {
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+}
+
+export default function StepBMI({ formData, setFormData }: Props) {
   useEffect(() => {
     // 1. Calculate BMI
     const heightInMeters = formData.height / 100;
@@ -27,7 +32,6 @@ export default function StepBMI({ formData, setFormData }: any) {
     }
     calculatedBmr = Math.round(calculatedBmr);
 
-    // Only update if values actually changed to avoid infinite loops
     if (formData.bmi !== calculatedBmi || formData.bmr !== calculatedBmr) {
       setFormData((prev: any) => ({
         ...prev,
@@ -54,50 +58,60 @@ export default function StepBMI({ formData, setFormData }: any) {
 
   const { label, color } = getBMIDetails(formData.bmi);
 
+  const cardClasses = `
+    w-full bg-white/40 backdrop-blur-md 
+    border border-white/50 
+    rounded-2xl p-8 
+    shadow-[0_8px_32px_rgba(0,0,0,0.05)]
+    text-center
+  `;
+
   return (
-    <div className="flex flex-col items-center w-full space-y-8">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-800">
+    <div className="flex flex-col items-center w-full space-y-10">
+      {/* Header Section */}
+      <div className="text-center space-y-3">
+        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
           Your Health Metrics
         </h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
           We've calculated your baseline metrics based on your profile.
         </p>
       </div>
 
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-md space-y-6">
         {/* BMI Card */}
-        <div className="relative bg-blue-50 px-12 py-6 rounded-3xl border border-blue-100 shadow-sm text-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-1">
+        <div className={cardClasses}>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">
             Body Mass Index
           </p>
-          <div className="text-6xl font-black text-blue-600 tabular-nums">
+          <div className="text-6xl font-black text-slate-800 tabular-nums mb-2">
             {formData.bmi}
           </div>
-          <span
-            className={`text-sm font-bold ${color} uppercase tracking-wide`}
+          <div
+            className={`text-sm font-bold ${color} uppercase tracking-wider`}
           >
             {label}
-          </span>
+          </div>
         </div>
 
         {/* BMR Card */}
-        <div className="bg-gray-50 px-12 py-6 rounded-3xl border border-gray-100 shadow-sm text-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">
+        <div className={cardClasses}>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">
             Basal Metabolic Rate
           </p>
-          <div className="text-4xl font-black text-gray-700 tabular-nums">
-            {formData.bmr}{" "}
-            <span className="text-lg font-medium text-gray-400">kcal</span>
+          <div className="text-4xl font-black text-slate-700 tabular-nums">
+            {formData.bmr}
+            <span className="text-lg font-bold text-slate-400 ml-2">kcal</span>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1 uppercase">
+          <p className="text-[11px] text-slate-500 mt-2 font-medium uppercase tracking-wide">
             Daily calories burned at rest
           </p>
         </div>
 
-        <p className="text-center text-[11px] text-gray-400 italic px-6">
+        {/* Disclaimer */}
+        <p className="text-center text-[11px] text-slate-400 italic px-8 leading-relaxed">
           Note: These calculations are estimates based on standard clinical
-          formulas.
+          formulas (Harris-Benedict).
         </p>
       </div>
     </div>
