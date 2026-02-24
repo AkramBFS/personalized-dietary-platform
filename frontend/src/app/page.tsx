@@ -2,14 +2,13 @@ import HeroSection from "@/components/hero-section";
 import Features from "@/components/features";
 import ContentSection from "@/components/content";
 import FAQs from "@/components/faqs";
-import Stats from "@/components/stats";
 import FooterSection from "@/components/layout/footer";
 import FadeIn from "@/components/FadeIn";
 
 export default function HomePage() {
   return (
     <main>
-      <HeroSection /> {/* Hero should not wait for scroll */}
+      <HeroSection />
       <FadeIn>
         <Features />
       </FadeIn>
