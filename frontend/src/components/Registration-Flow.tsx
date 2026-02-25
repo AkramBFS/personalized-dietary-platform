@@ -102,8 +102,8 @@ export default function RegistrationFlow() {
     return schema?.safeParse(formData).success ?? false;
   }, [currentStep, formData]);
 
+  //lock check + lock set for next and back
   const nextStep = () => {
-    // Immediate lock check + immediate lock set
     if (currentStep < 10 && isStepValid && !isAnimating) {
       setIsAnimating(true);
       setCurrentStep((s) => s + 1);
@@ -111,7 +111,6 @@ export default function RegistrationFlow() {
   };
 
   const prevStep = () => {
-    // Immediate lock check + immediate lock set
     if (currentStep > 1 && !isAnimating) {
       setIsAnimating(true);
       setCurrentStep((s) => s - 1);
@@ -195,7 +194,7 @@ export default function RegistrationFlow() {
           initial="initial"
           animate="animate"
           exit="exit"
-          // We keep this to ensure the lock is active for the full duration of the spring
+          // ensure the lock is active for the full duration of the spring
           onAnimationStart={() => setIsAnimating(true)}
           onAnimationComplete={() => setIsAnimating(false)}
           onMouseEnter={() => setIsHovered(true)}
