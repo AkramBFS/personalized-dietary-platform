@@ -19,9 +19,6 @@ export default function HomePage() {
       <FadeIn delay={0.2}>
         <FAQs />
       </FadeIn>
-      <FadeIn delay={0.3}>
-        <Stats />
-      </FadeIn>
       <FooterSection />
     </main>
   );
