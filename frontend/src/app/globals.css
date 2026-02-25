@@ -5,120 +5,120 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    /* Base surfaces */
-  --color-background: oklch(0.94 0.07 142); /* #bcf4b3 */
-  --color-foreground: oklch(0.15 0.02 150); /* dark readable text */
+  /* --- Vitality Tech Palette --- */
+  
+  /* Background: Crisp, clean, high-energy white/mint */
+  --color-background: oklch(0.99 0.005 150); 
+  --color-foreground: oklch(0.12 0.02 150);
 
-  --color-card: oklch(0.86 0.06 138); /* #a1d297 */
-  --color-card-foreground: oklch(0.15 0.02 150);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.12 0.02 150);
 
-  /* Primary actions */
-  --color-primary: oklch(0.55 0.16 158); /* #0e9859 */
-  --color-primary-foreground: oklch(0.98 0.01 160); /* near-white */
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.12 0.02 150);
 
-  /* Headers / Navbar */
-  --color-secondary: oklch(0.38 0.08 162); /* #346152 */
+  /* Primary: The "SnapCalorie" Green - Vibrant and fresh */
+  --color-primary: oklch(0.72 0.17 153); 
+  --color-primary-foreground: oklch(0.2 0.05 150); 
+
+  /* Secondary: Professional deep teal for contrast/nav */
+  --color-secondary: oklch(0.25 0.06 160); 
   --color-secondary-foreground: oklch(0.98 0.01 160);
 
-  /* Muted text */
-  --color-muted: oklch(0.9 0.04 140);
-  --color-muted-foreground: oklch(0.55 0.05 140); /* #75a266 */
+  /* Muted: Clean greys (no more muddy brown-green) */
+  --color-muted: oklch(0.96 0.01 150);
+  --color-muted-foreground: oklch(0.45 0.02 150);
 
-  /* Accent / food tags */
-  --color-accent: oklch(0.62 0.14 55); /* #c27133 */
-  --color-accent-foreground: oklch(0.98 0.01 55);
+  /* Accent: The "NutriSense" Mango - For glucose spikes/highlights */
+  --color-accent: oklch(0.74 0.18 45); 
+  --color-accent-foreground: oklch(1 0 0);
 
-  /* Success */
-  --color-success: oklch(0.55 0.16 158);
-  --color-success-foreground: oklch(0.98 0.01 160);
+  --color-destructive: oklch(0.6 0.18 25);
+  --color-destructive-foreground: oklch(0.98 0.01 25);
 
-  /* Borders / inputs */
-  --color-border: oklch(0.82 0.03 140);
-  --color-input: oklch(0.82 0.03 140);
-  --color-ring: oklch(0.55 0.16 158);
+  --color-border: oklch(0.92 0.01 150);
+  --color-input: oklch(0.92 0.01 150);
+  --color-ring: oklch(0.72 0.17 153);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  /* Chart Colors for Glucose/Calorie visualization */
+  --color-chart-1: oklch(0.72 0.17 153); /* Green */
+  --color-chart-2: oklch(0.74 0.18 45);  /* Mango */
+  --color-chart-3: oklch(0.25 0.06 160); /* Teal */
+  --color-chart-4: oklch(0.5 0.15 280);  /* Energy Purple */
+  --color-chart-5: oklch(0.85 0.15 85);  /* Lemon */
+
+  /* Radius: Rounder = more playful/modern */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: 0.99 0.005 150;
+  --foreground: 0.12 0.02 150;
+  --card: 1 0 0;
+  --card-foreground: 0.12 0.02 150;
+  --popover: 1 0 0;
+  --popover-foreground: 0.12 0.02 150;
+  --primary: 0.72 0.17 153;
+  --primary-foreground: 0.2 0.05 150;
+  --secondary: 0.25 0.06 160;
+  --secondary-foreground: 0.98 0.01 160;
+  --muted: 0.96 0.01 150;
+  --muted-foreground: 0.45 0.02 150;
+  --accent: 0.74 0.18 45;
+  --accent-foreground: 1 0 0;
+  --destructive: 0.6 0.18 25;
+  --destructive-foreground: 0.98 0.01 25;
+  --border: 0.92 0.01 150;
+  --input: 0.92 0.01 150;
+  --ring: 0.72 0.17 153;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: 0.12 0.02 150;
+  --foreground: 0.98 0.01 150;
+  --card: 0.15 0.02 150;
+  --card-foreground: 0.98 0.01 150;
+  --popover: 0.15 0.02 150;
+  --popover-foreground: 0.98 0.01 150;
+  --primary: 0.72 0.17 153;
+  --primary-foreground: 0.2 0.05 150;
+  --secondary: 0.22 0.04 160;
+  --secondary-foreground: 0.98 0.01 160;
+  --muted: 0.2 0.02 150;
+  --muted-foreground: 0.7 0.02 150;
+  --accent: 0.74 0.18 45;
+  --accent-foreground: 1 0 0;
+  --destructive: 0.5 0.18 25;
+  --destructive-foreground: 0.98 0.01 25;
+  --border: 0.25 0.02 150;
+  --input: 0.25 0.02 150;
+  --ring: 0.72 0.17 153;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
-    @apply bg-background text-foreground;
-    
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Energetic Blue-Green Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.72 0.17 153 / 0.4);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(87.027% 0.19253 154.076);
 }

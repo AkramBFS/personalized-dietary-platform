@@ -1,3 +1,9 @@
+import RegistrationFlow from "@/components/Registration-Flow";
+
 export default function LoginPage() {
-  return <div className="p-8">Login Page</div>;
+  return (
+    <div>
+      <RegistrationFlow />
+    </div>
+  );
 }

@@ -1,9 +1,24 @@
 import HeroSection from "@/components/hero-section";
+import Features from "@/components/features";
+import ContentSection from "@/components/content";
+import FAQs from "@/components/faqs";
+import FooterSection from "@/components/layout/footer";
+import FadeIn from "@/components/FadeIn";
 
 export default function HomePage() {
   return (
-    <div>
+    <main>
       <HeroSection />
-    </div>
+      <FadeIn>
+        <Features />
+      </FadeIn>
+      <FadeIn delay={0.1}>
+        <ContentSection />
+      </FadeIn>
+      <FadeIn delay={0.2}>
+        <FAQs />
+      </FadeIn>
+      <FooterSection />
+    </main>
   );
 }
