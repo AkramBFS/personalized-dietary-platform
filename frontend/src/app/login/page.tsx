@@ -1,3 +1,9 @@
+import Login from "@/components/login";
+
 export default function LoginPage() {
-  return <div className="p-8">Login Page</div>;
+  return (
+    <div>
+      <Login />
+    </div>
+  );
 }
