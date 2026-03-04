@@ -85,7 +85,7 @@ export default function StepSignUp({ formData, setFormData }: Props) {
             name="phone"
             className={inputStyles}
             type="tel"
-            placeholder="+1 (555) 000-0000"
+            placeholder="+213 000000000"
             value={formData.phone || ""}
             onChange={handleChange}
           />
