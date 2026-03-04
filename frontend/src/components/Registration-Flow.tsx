@@ -200,7 +200,7 @@ export default function RegistrationFlow() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={`relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] 
-            bg-gradient-to-br from-white/40 via-white/10 to-white/30 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
+            bg-gradient-to-br from-white/90 via-white/70 to-white/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
 border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
             flex flex-col overflow-hidden transition-colors duration-500
             ${isAnimating ? "pointer-events-none" : ""}`}
@@ -216,7 +216,7 @@ border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
             {renderStep()}
           </div>
 
-          <div className="p-6 pt-4 bg-white/30 border-t border-gray-100 mt-auto">
+          <div className="p-6 pt-4 bg-white/60 border-t border-gray-100 mt-auto">
             <div className="flex justify-between items-center">
               <button
                 onClick={prevStep}
@@ -230,8 +230,11 @@ border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
                 <button
                   onClick={nextStep}
                   disabled={!isStepValid || isAnimating}
-                  className="px-8 py-2 bg-gradient-to-r from-emerald-400 to-yellow-400 text-white rounded-lg 
-    transition-all hover:bg-gray-700 shadow-md active:scale-95 
+                  className="px-8 py-2 bg-gradient-to-r from-emerald-400 to-emerald-300 text-white font-semibold rounded-lg 
+    transition-all duration-300 
+    hover:brightness-105 hover:shadow-[0_0_20px_rgba(110,231,183,0.6)] 
+    hover:-translate-y-0.5
+    active:scale-95 
     disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
@@ -252,7 +255,7 @@ border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
               Already onboard?{" "}
               <a
                 href="/login"
-                className="bg-gradient-to-r from-emerald-400 to-yellow-400 bg-clip-text text-transparent hover:text-emerald-800 font-semibold underline underline-offset-4"
+                className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
               >
                 Sign in!
               </a>
