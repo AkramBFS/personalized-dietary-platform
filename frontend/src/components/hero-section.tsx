@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { HeroHeader } from "./header";
@@ -29,7 +28,7 @@ export default function HeroSection() {
     <>
       <HeroHeader />
       <main className="overflow-hidden">
-        <section className="bg-linear-to-b from-background to-card">
+        <section className="bg-background">
           <div className="relative py-36">
             <div className="relative z-10 mr-auto w-full max-w-5xl px-25">
               <div className="md:w-1/2">
@@ -45,7 +44,7 @@ export default function HeroSection() {
 
                   <div className="flex items-center gap-3">
                     <Button asChild size="lg" className="pr-4.5">
-                      <Link href="#link">
+                      <Link href="/register">
                         <span className="text-nowrap">Get Started</span>
                         <ChevronRight className="opacity-50" />
                       </Link>

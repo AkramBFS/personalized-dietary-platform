@@ -4,6 +4,8 @@ import ContentSection from "@/components/content";
 import FAQs from "@/components/faqs";
 import FooterSection from "@/components/layout/footer";
 import FadeIn from "@/components/FadeIn";
+import Testimonials from "@/components/testimonials";
+import CallToAction from "@/components/calltoaction";
 
 export default function HomePage() {
   return (
@@ -17,6 +19,12 @@ export default function HomePage() {
       </FadeIn>
       <FadeIn delay={0.2}>
         <FAQs />
+      </FadeIn>
+      <FadeIn delay={0.3}>
+        <Testimonials />
+      </FadeIn>
+      <FadeIn delay={0.3}>
+        <CallToAction />
       </FadeIn>
       <FooterSection />
     </main>

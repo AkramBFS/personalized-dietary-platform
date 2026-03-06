@@ -5,97 +5,98 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* --- Vitality Tech Palette --- */
+  /* --- Dieton Refined Palette (Mint & Emerald) --- */
   
-  /* Background: Crisp, clean, high-energy white/mint */
-  --color-background: oklch(0.99 0.005 150); 
-  --color-foreground: oklch(0.12 0.02 150);
+  /* Background: Soft, noticeable Mint Green */
+  --color-background: oklch(0.94 0.03 165); 
+  --color-foreground: oklch(0.25 0.04 165); /* Deep charcoal teal for readability */
 
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.12 0.02 150);
+  /* Cards: Lighter mint or pure white for contrast against background */
+  --color-card: oklch(0.98 0.01 165);
+  --color-card-foreground: oklch(0.25 0.04 165);
 
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.12 0.02 150);
+  --color-popover: oklch(0.98 0.01 165);
+  --color-popover-foreground: oklch(0.25 0.04 165);
 
-  /* Primary: The "SnapCalorie" Green - Vibrant and fresh */
-  --color-primary: oklch(0.72 0.17 153); 
-  --color-primary-foreground: oklch(0.2 0.05 150); 
+  /* Primary: Vibrant Emerald Green from the "Get Started" button */
+  --color-primary: oklch(0.75 0.18 155); 
+  --color-primary-foreground: oklch(1 0 0); /* Pure white text on green */
 
-  /* Secondary: Professional deep teal for contrast/nav */
-  --color-secondary: oklch(0.25 0.06 160); 
-  --color-secondary-foreground: oklch(0.98 0.01 160);
+  /* Secondary: Soft teal/grey for subtle elements */
+  --color-secondary: oklch(0.88 0.03 165); 
+  --color-secondary-foreground: oklch(0.25 0.04 165);
 
-  /* Muted: Clean greys (no more muddy brown-green) */
-  --color-muted: oklch(0.96 0.01 150);
-  --color-muted-foreground: oklch(0.45 0.02 150);
+  /* Muted: Clean mint-tinted greys */
+  --color-muted: oklch(0.90 0.02 165);
+  --color-muted-foreground: oklch(0.40 0.03 165);
 
-  /* Accent: The "NutriSense" Mango - For glucose spikes/highlights */
-  --color-accent: oklch(0.74 0.18 45); 
-  --color-accent-foreground: oklch(1 0 0);
+  /* Accent: Kept mango but adjusted hue to fit mint palette better */
+  --color-accent: oklch(0.78 0.16 70); 
+  --color-accent-foreground: oklch(0.2 0.05 70);
 
   --color-destructive: oklch(0.6 0.18 25);
   --color-destructive-foreground: oklch(0.98 0.01 25);
 
-  --color-border: oklch(0.92 0.01 150);
-  --color-input: oklch(0.92 0.01 150);
-  --color-ring: oklch(0.72 0.17 153);
+  --color-border: oklch(0.88 0.03 165);
+  --color-input: oklch(0.88 0.03 165);
+  --color-ring: oklch(0.75 0.18 155);
 
-  /* Chart Colors for Glucose/Calorie visualization */
-  --color-chart-1: oklch(0.72 0.17 153); /* Green */
-  --color-chart-2: oklch(0.74 0.18 45);  /* Mango */
-  --color-chart-3: oklch(0.25 0.06 160); /* Teal */
-  --color-chart-4: oklch(0.5 0.15 280);  /* Energy Purple */
-  --color-chart-5: oklch(0.85 0.15 85);  /* Lemon */
+  /* Chart Colors for a cohesive look */
+  --color-chart-1: oklch(0.75 0.18 155); /* Emerald */
+  --color-chart-2: oklch(0.78 0.16 70);  /* Mango */
+  --color-chart-3: oklch(0.40 0.10 165); /* Deep Mint */
+  --color-chart-4: oklch(0.60 0.12 220); /* Soft Sky Blue */
+  --color-chart-5: oklch(0.82 0.14 140); /* Lime */
 
-  /* Radius: Rounder = more playful/modern */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  /* Radius: Much rounder to match the tablet/button aesthetic */
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
 }
 
 :root {
-  --background: 0.99 0.005 150;
-  --foreground: 0.12 0.02 150;
-  --card: 1 0 0;
-  --card-foreground: 0.12 0.02 150;
-  --popover: 1 0 0;
-  --popover-foreground: 0.12 0.02 150;
-  --primary: 0.72 0.17 153;
-  --primary-foreground: 0.2 0.05 150;
-  --secondary: 0.25 0.06 160;
-  --secondary-foreground: 0.98 0.01 160;
-  --muted: 0.96 0.01 150;
-  --muted-foreground: 0.45 0.02 150;
-  --accent: 0.74 0.18 45;
-  --accent-foreground: 1 0 0;
+  --background: 0.94 0.03 165;
+  --foreground: 0.25 0.04 165;
+  --card: 0.98 0.01 165;
+  --card-foreground: 0.25 0.04 165;
+  --popover: 0.98 0.01 165;
+  --popover-foreground: 0.25 0.04 165;
+  --primary: 0.75 0.18 155;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.88 0.03 165;
+  --secondary-foreground: 0.25 0.04 165;
+  --muted: 0.90 0.02 165;
+  --muted-foreground: 0.40 0.03 165;
+  --accent: 0.78 0.16 70;
+  --accent-foreground: 0.2 0.05 70;
   --destructive: 0.6 0.18 25;
   --destructive-foreground: 0.98 0.01 25;
-  --border: 0.92 0.01 150;
-  --input: 0.92 0.01 150;
-  --ring: 0.72 0.17 153;
-  --radius: 0.75rem;
+  --border: 0.88 0.03 165;
+  --input: 0.88 0.03 165;
+  --ring: 0.75 0.18 155;
+  --radius: 1.5rem;
 }
 
 .dark {
-  --background: 0.12 0.02 150;
-  --foreground: 0.98 0.01 150;
-  --card: 0.15 0.02 150;
-  --card-foreground: 0.98 0.01 150;
-  --popover: 0.15 0.02 150;
-  --popover-foreground: 0.98 0.01 150;
-  --primary: 0.72 0.17 153;
-  --primary-foreground: 0.2 0.05 150;
-  --secondary: 0.22 0.04 160;
-  --secondary-foreground: 0.98 0.01 160;
-  --muted: 0.2 0.02 150;
-  --muted-foreground: 0.7 0.02 150;
-  --accent: 0.74 0.18 45;
+  --background: 0.15 0.03 165;
+  --foreground: 0.98 0.01 165;
+  --card: 0.18 0.03 165;
+  --card-foreground: 0.98 0.01 165;
+  --popover: 0.18 0.03 165;
+  --popover-foreground: 0.98 0.01 165;
+  --primary: 0.75 0.18 155;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.25 0.04 165;
+  --secondary-foreground: 0.98 0.01 165;
+  --muted: 0.22 0.02 165;
+  --muted-foreground: 0.7 0.02 165;
+  --accent: 0.78 0.16 70;
   --accent-foreground: 1 0 0;
   --destructive: 0.5 0.18 25;
   --destructive-foreground: 0.98 0.01 25;
-  --border: 0.25 0.02 150;
-  --input: 0.25 0.02 150;
-  --ring: 0.72 0.17 153;
+  --border: 0.28 0.03 165;
+  --input: 0.28 0.03 165;
+  --ring: 0.75 0.18 155;
 }
 
 @layer base {
@@ -108,17 +109,24 @@
   }
 }
 
-/* Energetic Blue-Green Scrollbar */
+
+/* Custom Scrollbar - Emerald Glow */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: oklch(0.72 0.17 153 / 0.4);
+  /* Applying your #6ee7b7 Emerald color */
+  background-color: #6ee7b7; 
   border-radius: 10px;
+  transition: background-color 0.2s ease;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: oklch(87.027% 0.19253 154.076);
+  /* Slightly deeper emerald for the hover state */
+  background-color: #4bd8a4; 
 }
