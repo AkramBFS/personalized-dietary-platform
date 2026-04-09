@@ -51,7 +51,7 @@ export default function StepActivity({ formData, setFormData }: Props) {
                 ${cardBaseClasses}
                 ${
                   isSelected
-                    ? "bg-emerald-400 border-emerald-400 scale-[1.02] shadow-emerald-200/50"
+                    ? "bg-emerald-400/90 border-emerald-300 scale-[1.02] shadow-emerald-200/50"
                     : "bg-white/40 border-white/50 hover:bg-white/60"
                 }
               `}

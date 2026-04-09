@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Logo } from "./logo";
+import { Logo } from "../layout/logo";
 import { loginSchema } from "@/lib/constants";
 
 export default function LoginPage() {
