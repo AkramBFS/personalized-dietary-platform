@@ -1,0 +1,12 @@
+[
+  {"model": "admin_panel.goal", "pk": 1, "fields": {"name": "Weight Loss"}},
+  {"model": "admin_panel.goal", "pk": 2, "fields": {"name": "Muscle Gain"}},
+  {"model": "admin_panel.goal", "pk": 3, "fields": {"name": "Maintain Weight"}},
+  {"model": "admin_panel.goal", "pk": 4, "fields": {"name": "Manage Diabetes"}},
+  {"model": "admin_panel.goal", "pk": 5, "fields": {"name": "Manage PCOS"}},
+  {"model": "admin_panel.goal", "pk": 6, "fields": {"name": "Improve Gut Health"}},
+  {"model": "admin_panel.goal", "pk": 7, "fields": {"name": "Heart Health"}},
+  {"model": "admin_panel.goal", "pk": 8, "fields": {"name": "Boost Energy"}},
+  {"model": "admin_panel.goal", "pk": 9, "fields": {"name": "Sports Performance"}},
+  {"model": "admin_panel.goal", "pk": 10, "fields": {"name": "Eating Disorder Recovery"}}
+]
