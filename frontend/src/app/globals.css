@@ -5,98 +5,88 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* --- Dieton Refined Palette (Mint & Emerald) --- */
-  
-  /* Background: Soft, noticeable Mint Green */
-  --color-background: oklch(0.94 0.03 165); 
-  --color-foreground: oklch(0.25 0.04 165); /* Deep charcoal teal for readability */
+  /* --- Brand Design System: Rise Together --- */
 
-  /* Cards: Lighter mint or pure white for contrast against background */
-  --color-card: oklch(0.98 0.01 165);
-  --color-card-foreground: oklch(0.25 0.04 165);
+  /* Background: Snow Gray or Soft Cream for that high-end editorial feel */
+  --color-background: oklch(0.98 0.01 235); 
+  --color-foreground: oklch(0.25 0.05 235); /* Midnight Cyan (#052B34) */
 
-  --color-popover: oklch(0.98 0.01 165);
-  --color-popover-foreground: oklch(0.25 0.04 165);
+  /* Cards: Using the Soft Cream (#FFF5DE) for subtle elevation */
+  --color-card: oklch(0.97 0.02 85);
+  --color-card-foreground: oklch(0.25 0.05 235);
 
-  /* Primary: Vibrant Emerald Green from the "Get Started" button */
-  --color-primary: oklch(0.75 0.18 155); 
-  --color-primary-foreground: oklch(1 0 0); /* Pure white text on green */
+  --color-popover: oklch(0.97 0.02 85);
+  --color-popover-foreground: oklch(0.25 0.05 235);
 
-  /* Secondary: Soft teal/grey for subtle elements */
-  --color-secondary: oklch(0.88 0.03 165); 
-  --color-secondary-foreground: oklch(0.25 0.04 165);
+  /* Primary: Mint Green (#50CD95) */
+  --color-primary: oklch(0.78 0.14 165); 
+  --color-primary-foreground: oklch(0.25 0.05 235); /* Dark text on mint looks better for this brand */
 
-  /* Muted: Clean mint-tinted greys */
-  --color-muted: oklch(0.90 0.02 165);
-  --color-muted-foreground: oklch(0.40 0.03 165);
+  /* Secondary: Aqua Teal (#00A3A3) */
+  --color-secondary: oklch(0.62 0.12 210); 
+  --color-secondary-foreground: oklch(0.98 0.01 235);
 
-  /* Accent: Kept mango but adjusted hue to fit mint palette better */
-  --color-accent: oklch(0.78 0.16 70); 
-  --color-accent-foreground: oklch(0.2 0.05 70);
+  /* Muted: Snow Gray (#F7F7F7) */
+  --color-muted: oklch(0.97 0 0);
+  --color-muted-foreground: oklch(0.45 0.05 235);
+
+  /* Accent: Aqua Forest (#3EAD88) */
+  --color-accent: oklch(0.68 0.12 165); 
+  --color-accent-foreground: oklch(0.98 0.01 235);
 
   --color-destructive: oklch(0.6 0.18 25);
   --color-destructive-foreground: oklch(0.98 0.01 25);
 
-  --color-border: oklch(0.88 0.03 165);
-  --color-input: oklch(0.88 0.03 165);
-  --color-ring: oklch(0.75 0.18 155);
+  --color-border: oklch(0.88 0.03 210);
+  --color-input: oklch(0.88 0.03 210);
+  --color-ring: oklch(0.78 0.14 165);
 
-  /* Chart Colors for a cohesive look */
-  --color-chart-1: oklch(0.75 0.18 155); /* Emerald */
-  --color-chart-2: oklch(0.78 0.16 70);  /* Mango */
-  --color-chart-3: oklch(0.40 0.10 165); /* Deep Mint */
-  --color-chart-4: oklch(0.60 0.12 220); /* Soft Sky Blue */
-  --color-chart-5: oklch(0.82 0.14 140); /* Lime */
+  /* Chart Colors shifted to match Cyan/Mint/Teal spectrum */
+  --color-chart-1: oklch(0.78 0.14 165); /* Mint */
+  --color-chart-2: oklch(0.25 0.05 235); /* Midnight Cyan */
+  --color-chart-3: oklch(0.62 0.12 210); /* Aqua Teal */
+  --color-chart-4: oklch(0.85 0.08 180); /* Soft Cyan */
+  --color-chart-5: oklch(0.68 0.12 165); /* Aqua Forest */
 
-  /* Radius: Much rounder to match the tablet/button aesthetic */
+  /* Radius: Sticking with the 1.5rem for that "Tablet" aesthetic in your design */
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
 }
 
 :root {
-  --background: 0.94 0.03 165;
-  --foreground: 0.25 0.04 165;
-  --card: 0.98 0.01 165;
-  --card-foreground: 0.25 0.04 165;
-  --popover: 0.98 0.01 165;
-  --popover-foreground: 0.25 0.04 165;
-  --primary: 0.75 0.18 155;
-  --primary-foreground: 1 0 0;
-  --secondary: 0.88 0.03 165;
-  --secondary-foreground: 0.25 0.04 165;
-  --muted: 0.90 0.02 165;
-  --muted-foreground: 0.40 0.03 165;
-  --accent: 0.78 0.16 70;
-  --accent-foreground: 0.2 0.05 70;
-  --destructive: 0.6 0.18 25;
-  --destructive-foreground: 0.98 0.01 25;
-  --border: 0.88 0.03 165;
-  --input: 0.88 0.03 165;
-  --ring: 0.75 0.18 155;
-  --radius: 1.5rem;
+  --background: 0.98 0.01 235;
+  --foreground: 0.25 0.05 235;
+  --card: 0.97 0.02 85;
+  --card-foreground: 0.25 0.05 235;
+  --primary: 0.78 0.14 165;
+  --primary-foreground: 0.25 0.05 235;
+  --secondary: 0.62 0.12 210;
+  --secondary-foreground: 0.98 0.01 235;
+  --muted: 0.97 0 0;
+  --muted-foreground: 0.45 0.05 235;
+  --accent: 0.68 0.12 165;
+  --accent-foreground: 0.98 0.01 235;
+  --border: 0.88 0.03 210;
+  --input: 0.88 0.03 210;
+  --ring: 0.78 0.14 165;
 }
 
 .dark {
-  --background: 0.15 0.03 165;
-  --foreground: 0.98 0.01 165;
-  --card: 0.18 0.03 165;
-  --card-foreground: 0.98 0.01 165;
-  --popover: 0.18 0.03 165;
-  --popover-foreground: 0.98 0.01 165;
-  --primary: 0.75 0.18 155;
-  --primary-foreground: 1 0 0;
-  --secondary: 0.25 0.04 165;
-  --secondary-foreground: 0.98 0.01 165;
-  --muted: 0.22 0.02 165;
-  --muted-foreground: 0.7 0.02 165;
-  --accent: 0.78 0.16 70;
-  --accent-foreground: 1 0 0;
-  --destructive: 0.5 0.18 25;
-  --destructive-foreground: 0.98 0.01 25;
-  --border: 0.28 0.03 165;
-  --input: 0.28 0.03 165;
-  --ring: 0.75 0.18 155;
+  /* Inverting to Black Teal (#001918) and Midnight Cyan */
+  --background: 0.12 0.03 190; /* Black Teal */
+  --foreground: 0.97 0.02 85; /* Soft Cream text */
+  --card: 0.15 0.04 210;
+  --card-foreground: 0.97 0.02 85;
+  --primary: 0.78 0.14 165; /* Mint pops even more in dark mode */
+  --primary-foreground: 0.12 0.03 190;
+  --secondary: 0.25 0.05 235;
+  --secondary-foreground: 0.97 0.02 85;
+  --muted: 0.18 0.03 210;
+  --muted-foreground: 0.7 0.02 210;
+  --border: 0.25 0.05 210;
+  --input: 0.25 0.05 210;
+  --ring: 0.78 0.14 165;
 }
 
 @layer base {
@@ -109,8 +99,7 @@
   }
 }
 
-
-/* Custom Scrollbar - Emerald Glow */
+/* Custom Scrollbar - The "Mint Glow" */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -120,13 +109,10 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  /* Applying your #6ee7b7 Emerald color */
-  background-color: #6ee7b7; 
+  background-color: #50CD95; /* Mint Green */
   border-radius: 10px;
-  transition: background-color 0.2s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  /* Slightly deeper emerald for the hover state */
-  background-color: #4bd8a4; 
+  background-color: #3EAD88; /* Aqua Forest */
 }
