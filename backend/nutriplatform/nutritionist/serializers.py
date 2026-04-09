@@ -41,3 +41,10 @@ class NutritionistDetailSerializer(serializers.ModelSerializer):
         return list(
             obj.nutritionistlanguage_set.values_list('language__name', flat=True)
         )
+# nutritionist/serializers.py
+from .models import Language
+
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Language
+        fields = ['id', 'name']    
