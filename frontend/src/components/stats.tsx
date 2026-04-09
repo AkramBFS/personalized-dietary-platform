@@ -1,52 +1,30 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { ArrowRight, Sparkles } from "lucide-react";
 
-export default function Stats() {
+export default function CallToAction() {
   return (
-    <section className="bg-background @container pt-24">
+    <section className="bg-background @container py-24">
       <div className="mx-auto max-w-2xl px-6">
-        <div className="space-y-4">
-          <h2 className="text-balance text-4xl font-medium">
-            Trusted by Users and Experts Worldwide
+        <Card variant="outline" className="p-8 md:p-12">
+          <div className="text-muted-foreground mb-6 text-sm font-medium">
+            Choose a plan that works for you
+          </div>
+          <h2 className="text-balance font-serif text-3xl font-medium md:text-4xl">
+            Start Your Health Journey Today
           </h2>
-          <p className="text-muted-foreground text-balance">
-            Our platform has been trusted by users and experts worldwide to
-            provide personalized meal plans and expert advice. With a commitment
-            to quality and user satisfaction, we have built a reputation for
-            delivering exceptional service and support to our users.
+          <p className="text-muted-foreground mt-4 max-w-md text-balance">
+            Get 3 months free when you sign up for an annual plan. No credit
+            card required to start.
           </p>
-        </div>
-        <div className="@xl:grid-cols-3 mt-12 grid gap-6 text-sm">
-          <div className="border-t py-6">
-            <p className="text-muted-foreground text-xl">
-              <span className="text-foreground font-medium">99.9%</span> Uptime
-              guarantee.
-            </p>
-          </div>
-
-          <div className="border-t py-6">
-            <p className="text-muted-foreground text-xl">
-              <span className="text-foreground font-medium">10M+</span> Meals
-              planned and counting.
-            </p>
-          </div>
-
-          <div className="border-t py-6">
-            <p className="text-muted-foreground text-xl">
-              <span className="text-foreground font-medium">500+</span> Expert
-              consultations.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="mask-radial-from-65% mask-radial-at-bottom mask-radial-[50%_100%] pointer-events-none relative mx-auto max-w-4xl dark:opacity-50">
-        <div className="bg-primary absolute inset-0 z-10 mix-blend-overlay" />
-        <Image
-          src="/branding/Globe.jpg"
-          alt="globe with world map"
-          className="dark:invert"
-          width={2928}
-          height={1464}
-        />
+          <Button asChild className="mt-8 gap-2">
+            <Link href="#link">
+              Get started!
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        </Card>
       </div>
     </section>
   );
