@@ -55,7 +55,7 @@ export default function StepAgeWeight({ formData, setFormData }: Props) {
                     shadow-[0_8px_32px_rgba(0,0,0,0.05)] backdrop-blur-md
                     ${
                       isSelected
-                        ? "bg-emerald-400 border-emerald-400 text-white scale-[1.02] shadow-emerald-200/50"
+                        ? "bg-emerald-400/90 border-emerald-300 text-white scale-[1.02] shadow-emerald-200/50"
                         : "bg-white/40 border-white/50 text-slate-700 hover:bg-white/60"
                     }
                   `}

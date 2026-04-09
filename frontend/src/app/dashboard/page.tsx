@@ -1,3 +1,9 @@
-export default function LoginPage() {
-  return <div className="p-8">Login Page</div>;
+import UserDashboard from "@/components/dashboard/dashboard";
+
+export default function UserDashBoard() {
+  return (
+    <div>
+      <UserDashboard />
+    </div>
+  );
 }
