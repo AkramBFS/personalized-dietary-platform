@@ -89,7 +89,7 @@ export default function StepMedicalHistory({ formData, setFormData }: Props) {
                   ${
                     isChecked
                       ? isNone
-                        ? "bg-primary border-primary/50 shadow-[0_0_25px_oklch(0.72_0.17_153_/_0.4)]"
+                        ? "bg-emerald-400 border-primary/50 shadow-[0_0_25px_oklch(0.72_0.17_153_/_0.4)]"
                         : "bg-emerald-400 border-emerald/50 shadow-[0_0_25px_oklch(0.25_0.06_160_/_0.3)]"
                       : "bg-white/40 backdrop-blur-md border-white/50 hover:bg-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   }
