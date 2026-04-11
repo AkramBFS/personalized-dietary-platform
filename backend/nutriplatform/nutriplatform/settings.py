@@ -125,3 +125,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'TOKEN_OBTAIN_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
 }
+
+
+CALORIE_NINJAS_KEY = config('CALORIE_NINJAS_KEY')

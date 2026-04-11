@@ -21,6 +21,11 @@ class Client(models.Model):
     bmr               = models.FloatField(null=True, blank=True)
     is_banned         = models.BooleanField(default=False)
     health_history    = models.TextField(null=True, blank=True)
+    # add these fields to Client model, after health_history
+    target_calories = models.FloatField(null=True, blank=True)
+    target_protein  = models.FloatField(null=True, blank=True)
+    target_carbs    = models.FloatField(null=True, blank=True)
+    target_fats     = models.FloatField(null=True, blank=True)
     goal              = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, db_column='goal_id')
     country           = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, db_column='country_id')
 
@@ -30,15 +35,13 @@ class Client(models.Model):
     def __str__(self):
         return f"Client #{self.client_id} - {self.user.username}"
     def save(self, *args, **kwargs):
-        # BMI
-        height_m = self.height / 100
-        self.bmi = round(self.weight / (height_m ** 2), 2)
+        if self.weight and self.height:
+            height_m = self.height / 100
+            self.bmi = round(self.weight / (height_m ** 2), 2)
 
-        # BMR
-        if self.gender == 'male':
-            self.bmr = round(10 * self.weight + 6.25 * self.height - 5 * self.age + 5, 2)
-        else:
-            self.bmr = round(10 * self.weight + 6.25 * self.height - 5 * self.age - 161, 2)
+            if self.age and self.gender:
+                base = 10 * self.weight + 6.25 * self.height - 5 * self.age
+                self.bmr = round(base + 5 if self.gender == 'male' else base - 161, 2)
 
         super().save(*args, **kwargs)
 
@@ -60,6 +63,20 @@ class DailyProgressMetric(models.Model):
     class Meta:
         db_table        = 'daily_progress_metrics'
         unique_together = ('client', 'log_date')
+
+    def __str__(self):
+        return f"Progress - Client #{self.client_id} - {self.log_date}"
+    def check_goal_achieved(self):
+        if all([self.target_calories, self.target_protein,
+                self.target_carbs, self.target_fats]):
+            self.is_goal_achieved = (
+                self.total_calories_consumed >= self.target_calories and
+                self.total_protein_consumed  >= self.target_protein  and
+                self.total_carbs_consumed    >= self.target_carbs    and
+                self.total_fats_consumed     >= self.target_fats
+            )
+        else:
+            self.is_goal_achieved = False
 
     def __str__(self):
         return f"Progress - Client #{self.client_id} - {self.log_date}"

@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/v1/auth/',   include('users.urls')),
     path('api/v1/lookup/', include('admin_panel.urls')),
     path('api/v1/lookup/', include('nutritionist.urls')),
+    path('api/v1/client/', include('client.urls')),
 ]
 
 # let open an image in a url 
