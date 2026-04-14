@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.permissions import  IsAuthenticated
 from users.permissions import IsClient
 from .models import Client, DailyProgressMetric, AICalorieLog
 from .serializers import (
@@ -17,6 +17,15 @@ from .apiNinja import get_nutrition_data
 
 from django.utils import timezone
 from django.db import transaction
+
+from marketplace.models import Consultation, UserPlan
+from nutritionist.models import (
+    Nutritionist,
+    NutritionistAvailability,
+    NutritionistHoliday,
+    NutritionistPatient,
+)
+from .serializers import ConsultationBookSerializer, ClientConsultationSerializer
 
 
 
@@ -190,3 +199,193 @@ class CalorieLogListView(APIView):
             "status": "success",
             "data":   serializer.data
         })
+    
+
+
+class ClientConsultationListView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        consultations = Consultation.objects.filter(
+            client=client
+        ).select_related(
+            'nutritionist__user'
+        ).order_by('-created_at')
+
+        serializer = ClientConsultationSerializer(consultations, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+
+class ConsultationBookView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    PLATFORM_COMMISSION = 0.20
+
+    def post(self, request):
+        # Get client
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        # Validate input
+        serializer = ConsultationBookSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                "status":  "error",
+                "message": "Validation failed",
+                "errors":  serializer.errors
+            }, status=400)
+
+        data = serializer.validated_data
+
+        # Get nutritionist
+        try:
+            nutritionist = Nutritionist.objects.get(
+                nutritionist_id = data['nutritionist_id'],
+                approval_status = 'approved',
+            )
+        except Nutritionist.DoesNotExist:
+            return Response({
+                "status":  "error",
+                "message": "Nutritionist not found or not approved."
+            }, status=404)
+
+        appointment_date = data['appointment_date']
+        start_time       = data['start_time']
+        end_time         = data['end_time']
+
+        # ── Check holiday ──────────────────────────────────────────────────────
+        if NutritionistHoliday.objects.filter(
+            nutritionist = nutritionist,
+            holiday_date = appointment_date,
+        ).exists():
+            return Response({
+                "status":  "error",
+                "message": "Nutritionist is on holiday on this date.",
+                "code":    "SLOT_UNAVAILABLE"
+            }, status=422)
+
+        # ── Check availability for this day ────────────────────────────────────
+        python_weekday = appointment_date.weekday()
+        our_day        = (python_weekday + 1) % 7  # convert to Sun=0 Mon=1...
+
+        availability = NutritionistAvailability.objects.filter(
+            nutritionist = nutritionist,
+            day_of_week  = our_day,
+        )
+        if not availability.exists():
+            return Response({
+                "status":  "error",
+                "message": "Nutritionist is not available on this day.",
+                "code":    "SLOT_UNAVAILABLE"
+            }, status=422)
+
+        # Check requested slot fits within availability window
+        slot_valid = any(
+            a.start_time <= start_time and a.end_time >= end_time
+            for a in availability
+        )
+        if not slot_valid:
+            return Response({
+                "status":  "error",
+                "message": "Requested time slot is outside nutritionist availability.",
+                "code":    "SLOT_UNAVAILABLE"
+            }, status=422)
+
+        # ── Check slot not already booked ──────────────────────────────────────
+        conflict = Consultation.objects.filter(
+            nutritionist     = nutritionist,
+            appointment_date = appointment_date,
+        ).exclude(status='cancelled').filter(
+            start_time__lt = end_time,
+            end_time__gt   = start_time,
+        ).exists()
+
+        if conflict:
+            return Response({
+                "status":  "error",
+                "message": "This time slot is already booked.",
+                "code":    "SLOT_UNAVAILABLE"
+            }, status=422)
+
+        # ── Handle free consultation from plan ─────────────────────────────────
+        is_free_from_plan = data.get('is_free_from_plan', False)
+        user_plan         = None
+        price_paid        = nutritionist.consultation_price or 0
+
+        if is_free_from_plan:
+            try:
+                user_plan = UserPlan.objects.get(
+                    id     = data['user_plan_id'],
+                    client = client,
+                    status = 'active',
+                )
+            except UserPlan.DoesNotExist:
+                return Response({
+                    "status":  "error",
+                    "message": "User plan not found or not active."
+                }, status=404)
+
+            # Check free consultations remaining
+            plan = user_plan.plan
+            used = user_plan.free_consultations_used
+            allowed_per_week = plan.free_consultations_per_week
+
+            if used >= allowed_per_week:
+                return Response({
+                    "status":  "error",
+                    "message": "No free consultations remaining from this plan.",
+                    "code":    "FREE_CONSULT_EXHAUSTED"
+                }, status=422)
+
+            price_paid = 0
+
+        # ── Create consultation ────────────────────────────────────────────────
+        commission = round(price_paid * (1 - self.PLATFORM_COMMISSION), 2)
+
+        with transaction.atomic():
+            consultation = Consultation.objects.create(
+                client                  = client,
+                nutritionist            = nutritionist,
+                appointment_date        = appointment_date,
+                start_time              = start_time,
+                end_time                = end_time,
+                consultation_type       = data['consultation_type'],
+                status                  = 'scheduled',
+                price_paid              = price_paid,
+                nutritionist_commission = commission,
+                is_free_from_plan       = is_free_from_plan,
+                user_plan               = user_plan,
+            )
+
+            # Update free consultations used
+            if is_free_from_plan and user_plan:
+                user_plan.free_consultations_used += 1
+                user_plan.save()
+
+            # Add to NutritionistPatient if not already there
+            NutritionistPatient.objects.get_or_create(
+                nutritionist = nutritionist,
+                client       = client,
+                defaults     = {'patient_type': 'free_consultation'}
+            )
+
+        return Response({
+            "status": "success",
+            "data": {
+                "id":                     consultation.id,
+                "status":                 consultation.status,
+                "appointment_date":       consultation.appointment_date,
+                "start_time":             str(consultation.start_time),
+                "end_time":               str(consultation.end_time),
+                "price_paid":             consultation.price_paid,
+                "nutritionist_commission": consultation.nutritionist_commission,
+                "zoom_link":              consultation.zoom_link,
+            }
+        }, status=201)
