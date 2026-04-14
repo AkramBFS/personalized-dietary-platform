@@ -9,6 +9,8 @@ urlpatterns = [
     path('api/v1/lookup/', include('admin_panel.urls')),
     path('api/v1/lookup/', include('nutritionist.urls')),
     path('api/v1/client/', include('client.urls')),
+    path('api/v1/nutritionist/', include('nutritionist.urls')),
+    path('api/v1/marketplace/', include('marketplace.urls')),
 ]
 
 # let open an image in a url 
