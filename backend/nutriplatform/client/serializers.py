@@ -1,4 +1,3 @@
-# client/serializers.py
 from rest_framework import serializers
 from .models import Client, DailyProgressMetric, AICalorieLog
 
@@ -81,4 +80,59 @@ class CalorieLogSerializer(serializers.ModelSerializer):
             'total_calories', 'total_protein',
             'total_carbs', 'total_fats',
             'status', 'logged_at',
+        ]
+
+
+# ── Consultation Booking ───────────────────────────────────────────────────────
+
+class ConsultationBookSerializer(serializers.Serializer):
+    CONSULTATION_TYPES = ['advice_only', 'plan_included', 'custom_plan_session']
+
+    nutritionist_id   = serializers.IntegerField()
+    appointment_date  = serializers.DateField()
+    start_time        = serializers.TimeField()
+    end_time          = serializers.TimeField()
+    consultation_type = serializers.ChoiceField(choices=CONSULTATION_TYPES)
+    user_plan_id      = serializers.IntegerField(required=False, allow_null=True)
+    is_free_from_plan = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, data):
+        # end_time must be after start_time
+        if data['start_time'] >= data['end_time']:
+            raise serializers.ValidationError(
+                "end_time must be after start_time."
+            )
+
+        # appointment_date must be in the future
+        if data['appointment_date'] < __import__('datetime').date.today():
+            raise serializers.ValidationError(
+                "appointment_date must be today or in the future."
+            )
+
+        # if free from plan, user_plan_id is required
+        if data.get('is_free_from_plan') and not data.get('user_plan_id'):
+            raise serializers.ValidationError(
+                "user_plan_id is required when is_free_from_plan is True."
+            )
+
+        return data
+
+
+class ClientConsultationSerializer(serializers.ModelSerializer):
+    nutritionist_username = serializers.CharField(
+        source='nutritionist.user.username', read_only=True
+    )
+    nutritionist_id = serializers.IntegerField(
+        source='nutritionist.nutritionist_id', read_only=True
+    )
+
+    class Meta:
+        from marketplace.models import Consultation
+        model  = Consultation
+        fields = [
+            'id', 'nutritionist_id', 'nutritionist_username',
+            'appointment_date', 'start_time', 'end_time',
+            'status', 'consultation_type',
+            'zoom_link', 'price_paid',
+            'is_free_from_plan', 'created_at',
         ]
