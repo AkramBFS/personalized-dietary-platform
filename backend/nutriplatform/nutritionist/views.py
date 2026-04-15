@@ -291,6 +291,16 @@ class ConsultationZoomView(APIView):
 
         consultation.zoom_link = zoom_link
         consultation.save()
+        from notifications.utils import notify
+
+        notify(
+            recipient   = consultation.client.user,
+            sender      = request.user,
+            title       = 'Zoom Link Added',
+            message     = f'Your nutritionist added a zoom link for your consultation.',
+            target_type = 'consultation',
+            target_id   = consultation.id,
+        )
 
         return Response({
             "status": "success",
@@ -503,3 +513,20 @@ class NutritionistPlanDetailView(APIView):
             "status": "success",
             "data": NutritionistPlanSerializer(plan).data
         })
+    def delete(self, request, pk):
+        nutritionist = get_nutritionist(request.user)
+        if not nutritionist:
+            return Response({"status": "error", "message": "Profile not found."}, status=404)
+
+        plan = self.get_plan(pk, nutritionist)
+        if not plan:
+            return Response({"status": "error", "message": "Plan not found."}, status=404)
+
+        # Soft delete
+        plan.status = 'deleted'
+        plan.save()
+
+        return Response({
+            "status":  "success",
+            "message": "Plan deleted successfully."
+        }, status=204)

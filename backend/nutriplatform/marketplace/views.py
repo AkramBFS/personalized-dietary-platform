@@ -173,6 +173,16 @@ class PlanPurchaseView(APIView):
                 client       = client,
                 defaults     = {'patient_type': 'from_custom_plan'}
             )
+            from notifications.utils import notify
+
+            notify(
+                recipient   = plan.creator.user,
+                sender      = request.user,
+                title       = 'New Plan Purchase',
+                message     = f'A client purchased your plan: {plan.title}.',
+                target_type = 'plan',
+                target_id   = plan.id,
+            )
 
         serializer_out = UserPlanSerializer(user_plan)
         return Response({
