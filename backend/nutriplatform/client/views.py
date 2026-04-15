@@ -12,6 +12,7 @@ from .serializers import (
     DailyProgressSerializer,
     ManualCalorieLogSerializer,
     CalorieLogSerializer,
+    UserPlanListSerializer
 )
 from .apiNinja import get_nutrition_data
 
@@ -26,6 +27,8 @@ from nutritionist.models import (
     NutritionistPatient,
 )
 from .serializers import ConsultationBookSerializer, ClientConsultationSerializer
+
+from marketplace.models import Consultation, UserPlan, Plan
 
 
 
@@ -363,6 +366,17 @@ class ConsultationBookView(APIView):
                 is_free_from_plan       = is_free_from_plan,
                 user_plan               = user_plan,
             )
+            from notifications.utils import notify
+
+            # After consultation is created inside transaction.atomic():
+            notify(
+                recipient   = nutritionist.user,
+                sender      = request.user,
+                title       = 'New Consultation Booked',
+                message     = f'A client booked a consultation on {appointment_date} at {start_time}.',
+                target_type = 'consultation',
+                target_id   = consultation.id,
+            )
 
             # Update free consultations used
             if is_free_from_plan and user_plan:
@@ -389,3 +403,146 @@ class ConsultationBookView(APIView):
                 "zoom_link":              consultation.zoom_link,
             }
         }, status=201)
+
+
+# ── User Plans ─────────────────────────────────────────────────────────────────
+
+class UserPlanListView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        user_plans = UserPlan.objects.filter(
+            client=client
+        ).select_related('plan').order_by('-purchased_at')
+
+        serializer = UserPlanListSerializer(user_plans, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+
+class UserPlanContentView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request, pk):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        try:
+            user_plan = UserPlan.objects.select_related('plan').get(
+                id=pk, client=client
+            )
+        except UserPlan.DoesNotExist:
+            return Response({"status": "error", "message": "Plan not found."}, status=404)
+
+        # Get day index from query param or use current
+        day_index = request.query_params.get('day', user_plan.current_day_index)
+        try:
+            day_index = int(day_index)
+        except ValueError:
+            return Response({"status": "error", "message": "Invalid day index."}, status=400)
+
+        # Validate day index
+        duration = user_plan.plan.duration_days
+        if day_index < 0 or day_index >= duration:
+            return Response({
+                "status":  "error",
+                "message": f"Day index must be between 0 and {duration - 1}."
+            }, status=400)
+
+        # Get content_json
+        content = user_plan.plan.content_json
+        if not content:
+            return Response({"status": "error", "message": "Plan has no content."}, status=404)
+
+        # content_json is a list of day objects
+        if isinstance(content, list):
+            # Find the day matching day_index
+            day_data = next(
+                (d for d in content if d.get('day_index') == day_index),
+                None
+            )
+            if not day_data:
+                # Fallback: use list index
+                try:
+                    day_data = content[day_index]
+                except IndexError:
+                    return Response({
+                        "status":  "error",
+                        "message": f"No content found for day {day_index}."
+                    }, status=404)
+        else:
+            return Response({"status": "error", "message": "Invalid plan content format."}, status=500)
+
+        return Response({
+            "status": "success",
+            "data": {
+                "day_index":    day_index,
+                "breakfast":    day_data.get('breakfast', {}),
+                "lunch":        day_data.get('lunch', {}),
+                "dinner":       day_data.get('dinner', {}),
+                "snacks":       day_data.get('snacks', []),
+                "instructions": day_data.get('instructions', ''),
+            }
+        })
+
+
+class UserPlanAdvanceView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def patch(self, request, pk):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        try:
+            user_plan = UserPlan.objects.select_related('plan').get(
+                id=pk, client=client, status='active'
+            )
+        except UserPlan.DoesNotExist:
+            return Response({
+                "status":  "error",
+                "message": "Active plan not found."
+            }, status=404)
+
+        duration = user_plan.plan.duration_days
+
+        # Check if already on last day
+        if user_plan.current_day_index >= duration - 1:
+            user_plan.status = 'completed'
+            user_plan.save()
+            return Response({
+                "status": "success",
+                "message": "🎉 Congratulations! You completed the plan!",
+                "data": {
+                    "current_day_index": user_plan.current_day_index,
+                    "status":            "completed",
+                    "progress_percent":  100,
+                }
+            })
+
+        # Advance to next day
+        user_plan.current_day_index += 1
+
+        # Check if now completed
+        if user_plan.current_day_index >= duration - 1:
+            user_plan.status = 'completed'
+
+        user_plan.save()
+
+        progress = round((user_plan.current_day_index / duration) * 100, 1)
+
+        return Response({
+            "status": "success",
+            "data": {
+                "current_day_index": user_plan.current_day_index,
+                "status":            user_plan.status,
+                "progress_percent":  progress,
+            }
+        })

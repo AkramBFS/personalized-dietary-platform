@@ -24,4 +24,5 @@ urlpatterns = [
     path('consultations/<int:pk>/status/',          ConsultationStatusView.as_view(),           name='nutritionist-status'),
     path('plans/',                                  NutritionistPlanListView.as_view(),         name='nutritionist-plans'),        
     path('plans/<int:pk>/',                         NutritionistPlanDetailView.as_view(),       name='nutritionist-plan-detail'), 
+    path('plans/<int:pk>/', NutritionistPlanDetailView.as_view(), name='nutritionist-plan-detail'),
 ]
