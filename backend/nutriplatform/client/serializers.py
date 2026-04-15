@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Client, DailyProgressMetric, AICalorieLog
-
+from .models import Client, DailyProgressMetric, AICalorieLog 
+from marketplace.models import  UserPlan
 
 class ClientProfileSerializer(serializers.ModelSerializer):
     username     = serializers.CharField(source='user.username', read_only=True)
@@ -136,3 +136,37 @@ class ClientConsultationSerializer(serializers.ModelSerializer):
             'zoom_link', 'price_paid',
             'is_free_from_plan', 'created_at',
         ]
+
+
+# ── User Plans ─────────────────────────────────────────────────────────────────
+
+class UserPlanListSerializer(serializers.ModelSerializer):
+    plan_id          = serializers.IntegerField(source='plan.id', read_only=True)
+    plan_title       = serializers.CharField(source='plan.title', read_only=True)
+    plan_cover       = serializers.CharField(source='plan.cover_image_url', read_only=True)
+    plan_duration    = serializers.IntegerField(source='plan.duration_days', read_only=True)
+    progress_percent = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = UserPlan
+        fields = [
+            'id', 'plan_id', 'plan_title',
+            'plan_cover', 'plan_duration',
+            'current_day_index', 'progress_percent',
+            'status', 'free_consultations_used',
+            'purchased_at',
+        ]
+
+    def get_progress_percent(self, obj):
+        if obj.plan.duration_days:
+            return round((obj.current_day_index / obj.plan.duration_days) * 100, 1)
+        return 0
+
+
+class UserPlanContentSerializer(serializers.Serializer):
+    day_index    = serializers.IntegerField()
+    breakfast    = serializers.JSONField()
+    lunch        = serializers.JSONField()
+    dinner       = serializers.JSONField()
+    snacks       = serializers.JSONField()
+    instructions = serializers.CharField(allow_blank=True)
