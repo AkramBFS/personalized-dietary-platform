@@ -10,7 +10,12 @@ from .views import (
     ConsultationZoomView,
     ConsultationStatusView,
     NutritionistPlanListView,     
-    NutritionistPlanDetailView,   
+    NutritionistPlanDetailView, 
+    NutritionistPatientListView,      
+    NutritionistPatientDetailView,   
+    NutritionistPatientNoteView,  
+    NutritionistEarningsView,    
+    NutritionistInvoiceListView,  
 )
 urlpatterns = [
     path('languages/', LanguageListView.as_view()),
@@ -24,5 +29,11 @@ urlpatterns = [
     path('consultations/<int:pk>/status/',          ConsultationStatusView.as_view(),           name='nutritionist-status'),
     path('plans/',                                  NutritionistPlanListView.as_view(),         name='nutritionist-plans'),        
     path('plans/<int:pk>/',                         NutritionistPlanDetailView.as_view(),       name='nutritionist-plan-detail'), 
-    path('plans/<int:pk>/', NutritionistPlanDetailView.as_view(), name='nutritionist-plan-detail'),
+    path('plans/<int:pk>/',                         NutritionistPlanDetailView.as_view(), name='nutritionist-plan-detail'),
+    path('patients/',                               NutritionistPatientListView.as_view(),      name='nutritionist-patients'),
+    path('patients/<int:client_id>/',               NutritionistPatientDetailView.as_view(),    name='nutritionist-patient-detail'),
+    path('patients/<int:client_id>/notes/',         NutritionistPatientNoteView.as_view(),      name='nutritionist-patient-notes'),
+    path('earnings/',                               NutritionistEarningsView.as_view(),         name='nutritionist-earnings'),
+    path('invoices/',                               NutritionistInvoiceListView.as_view(),      name='nutritionist-invoices'),
+    
 ]

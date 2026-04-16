@@ -10,6 +10,8 @@ from .views import (
     UserPlanListView,
     UserPlanContentView,
     UserPlanAdvanceView,
+    ClientInvoiceListView,   
+    InvoiceDetailView,
 )
 
 urlpatterns = [
@@ -23,5 +25,7 @@ urlpatterns = [
     path('user-plans/',                      UserPlanListView.as_view(),           name='user-plans'),
     path('user-plans/<int:pk>/content/',     UserPlanContentView.as_view(),        name='user-plan-content'),
     path('user-plans/<int:pk>/advance/',     UserPlanAdvanceView.as_view(),        name='user-plan-advance'),  
+    path('invoices/',                    ClientInvoiceListView.as_view(),      name='client-invoices'),
+    path('invoices/<int:pk>/',           InvoiceDetailView.as_view(),          name='invoice-detail'),
 
 ]
