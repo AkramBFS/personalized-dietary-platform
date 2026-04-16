@@ -39,6 +39,9 @@ build/Release
 
 # Dependency directories
 node_modules/
+**/node_modules/
+**/.next/
+*.docx
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -137,3 +140,19 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Python
+**/venv/
+**/__pycache__/
+*.pyc
+venv/
+.venv/
+backend/nutriplatform/venv/
+node_modules/
+*.exe
+
+# Large Binaries
+*.exe
+*.msi
+*.zip
+
