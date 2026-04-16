@@ -546,3 +546,58 @@ class UserPlanAdvanceView(APIView):
                 "progress_percent":  progress,
             }
         })
+
+
+# ── Invoices ───────────────────────────────────────────────────────────────────
+
+class ClientInvoiceListView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        from marketplace.models import Invoice
+        from nutritionist.serializers import InvoiceSerializer
+
+        invoices = Invoice.objects.filter(
+            client=client
+        ).select_related('nutritionist__user').order_by('-created_at')
+
+        return Response({
+            "status": "success",
+            "data":   InvoiceSerializer(invoices, many=True).data
+        })
+
+
+class InvoiceDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from marketplace.models import Invoice
+        from nutritionist.serializers import InvoiceSerializer
+
+        try:
+            invoice = Invoice.objects.select_related(
+                'client__user', 'nutritionist__user'
+            ).get(id=pk)
+        except Invoice.DoesNotExist:
+            return Response({"status": "error", "message": "Invoice not found."}, status=404)
+
+        # Only owner client, owner nutritionist, or admin can view
+        user = request.user
+        is_owner = (
+            (hasattr(invoice.client, 'user')       and invoice.client.user       == user) or
+            (hasattr(invoice.nutritionist, 'user') and invoice.nutritionist.user == user) or
+            user.role == 'high_admin'
+        )
+
+        if not is_owner:
+            return Response({"status": "error", "message": "Access denied."}, status=403)
+
+        return Response({
+            "status": "success",
+            "data":   InvoiceSerializer(invoice).data
+        })
