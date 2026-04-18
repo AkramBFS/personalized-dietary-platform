@@ -20,10 +20,12 @@ from .serializers import (
     AvailabilityInputSerializer,
     HolidaySerializer,
     ConsultationSerializer,
+    NutritionistPatient,
+    PatientNote,
 )
 from marketplace.models import Consultation
 
-from marketplace.models import Plan
+from marketplace.models import Plan , Invoice
 from .serializers import NutritionistPlanSerializer, CreatePlanSerializer
 from client.models import Client
 
@@ -530,3 +532,126 @@ class NutritionistPlanDetailView(APIView):
             "status":  "success",
             "message": "Plan deleted successfully."
         }, status=204)
+    
+
+# ── Patient Management ─────────────────────────────────────────────────────────
+
+class NutritionistPatientListView(APIView):
+    permission_classes = [IsAuthenticated, IsNutritionist]
+
+    def get(self, request):
+        nutritionist = get_nutritionist(request.user)
+        if not nutritionist:
+            return Response({"status": "error", "message": "Profile not found."}, status=404)
+
+        patients = NutritionistPatient.objects.filter(
+            nutritionist=nutritionist
+        ).select_related('client__user').order_by('-first_consultation_date')
+
+        from .serializers import NutritionistPatientListSerializer
+        serializer = NutritionistPatientListSerializer(patients, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+
+class NutritionistPatientDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsNutritionist]
+
+    def get(self, request, client_id):
+        nutritionist = get_nutritionist(request.user)
+        if not nutritionist:
+            return Response({"status": "error", "message": "Profile not found."}, status=404)
+
+        try:
+            patient = NutritionistPatient.objects.select_related(
+                'client__user', 'client__goal'
+            ).get(nutritionist=nutritionist, client__client_id=client_id)
+        except NutritionistPatient.DoesNotExist:
+            return Response({"status": "error", "message": "Patient not found."}, status=404)
+
+        from .serializers import NutritionistPatientDetailSerializer
+        serializer = NutritionistPatientDetailSerializer(patient)
+        return Response({"status": "success", "data": serializer.data})
+
+
+class NutritionistPatientNoteView(APIView):
+    permission_classes = [IsAuthenticated, IsNutritionist]
+
+    def post(self, request, client_id):
+        nutritionist = get_nutritionist(request.user)
+        if not nutritionist:
+            return Response({"status": "error", "message": "Profile not found."}, status=404)
+
+        # Verify patient belongs to this nutritionist
+        try:
+            patient = NutritionistPatient.objects.get(
+                nutritionist         = nutritionist,
+                client__client_id    = client_id,
+            )
+        except NutritionistPatient.DoesNotExist:
+            return Response({"status": "error", "message": "Patient not found."}, status=404)
+
+        note_content = request.data.get('note_content')
+        if not note_content:
+            return Response({
+                "status":  "error",
+                "message": "note_content is required."
+            }, status=400)
+
+        note = PatientNote.objects.create(
+            nutritionist = nutritionist,
+            client       = patient.client,
+            note_content = note_content,
+        )
+
+        from .serializers import PatientNoteSerializer
+        return Response({
+            "status": "success",
+            "data":   PatientNoteSerializer(note).data
+        }, status=201)
+
+
+# ── Earnings ───────────────────────────────────────────────────────────────────
+
+class NutritionistEarningsView(APIView):
+    permission_classes = [IsAuthenticated, IsNutritionist]
+
+    def get(self, request):
+        nutritionist = get_nutritionist(request.user)
+        if not nutritionist:
+            return Response({"status": "error", "message": "Profile not found."}, status=404)
+
+        invoices = Invoice.objects.filter(
+            nutritionist=nutritionist
+        ).order_by('-created_at')
+
+        # Aggregate totals
+        total_gross      = sum(i.total_paid    or 0 for i in invoices)
+        total_net        = sum(i.net_earnings  or 0 for i in invoices)
+        total_commission = round(total_gross - total_net, 2)
+
+        from .serializers import InvoiceSerializer
+        return Response({
+            "status": "success",
+            "data": {
+                "total_gross":      round(total_gross, 2),
+                "total_commission": total_commission,
+                "total_net":        round(total_net, 2),
+                "transactions":     InvoiceSerializer(invoices, many=True).data,
+            }
+        })
+
+
+class NutritionistInvoiceListView(APIView):
+    permission_classes = [IsAuthenticated, IsNutritionist]
+
+    def get(self, request):
+        nutritionist = get_nutritionist(request.user)
+        if not nutritionist:
+            return Response({"status": "error", "message": "Profile not found."}, status=404)
+
+        invoices = Invoice.objects.filter(
+            nutritionist=nutritionist
+        ).select_related('client__user').order_by('-created_at')
+
+        from .serializers import InvoiceSerializer
+        return Response({"status": "success", "data": InvoiceSerializer(invoices, many=True).data})
