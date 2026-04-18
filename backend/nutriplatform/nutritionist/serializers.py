@@ -4,6 +4,8 @@ from .models import (
     Nutritionist, Language,
     NutritionistAvailability,
     NutritionistHoliday,
+    NutritionistPatient,
+    PatientNote,
 )
 
 
@@ -183,3 +185,74 @@ class CreatePlanSerializer(serializers.Serializer):
                 "target_client_id is required for private-custom plans."
             )
         return data
+    
+    # ── Patient Management ─────────────────────────────────────────────────────────
+
+class PatientNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = PatientNote
+        fields = ['id', 'note_content', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class NutritionistPatientListSerializer(serializers.ModelSerializer):
+    client_id       = serializers.IntegerField(source='client.client_id', read_only=True)
+    username        = serializers.CharField(source='client.user.username', read_only=True)
+    profile_photo   = serializers.CharField(source='client.profile_photo_url', read_only=True)
+
+    class Meta:
+        model  = NutritionistPatient
+        fields = [
+            'id', 'client_id', 'username',
+            'profile_photo', 'patient_type',
+            'first_consultation_date',
+        ]
+
+
+class NutritionistPatientDetailSerializer(serializers.ModelSerializer):
+    client_id      = serializers.IntegerField(source='client.client_id', read_only=True)
+    username       = serializers.CharField(source='client.user.username', read_only=True)
+    age            = serializers.IntegerField(source='client.age', read_only=True)
+    weight         = serializers.FloatField(source='client.weight', read_only=True)
+    height         = serializers.FloatField(source='client.height', read_only=True)
+    bmi            = serializers.FloatField(source='client.bmi', read_only=True)
+    bmr            = serializers.FloatField(source='client.bmr', read_only=True)
+    health_history = serializers.CharField(source='client.health_history', read_only=True)
+    goal_name      = serializers.CharField(source='client.goal.name', read_only=True)
+    notes          = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = NutritionistPatient
+        fields = [
+            'id', 'client_id', 'username',
+            'age', 'weight', 'height',
+            'bmi', 'bmr', 'health_history',
+            'goal_name', 'patient_type',
+            'first_consultation_date', 'notes',
+        ]
+
+    def get_notes(self, obj):
+        notes = PatientNote.objects.filter(
+            nutritionist = obj.nutritionist,
+            client       = obj.client,
+        ).order_by('-created_at')
+        return PatientNoteSerializer(notes, many=True).data
+
+
+# ── Earnings ───────────────────────────────────────────────────────────────────
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    client_username      = serializers.CharField(source='client.user.username', read_only=True)
+    nutritionist_username = serializers.CharField(source='nutritionist.user.username', read_only=True)
+
+    class Meta:
+        from marketplace.models import Invoice
+        model  = Invoice
+        fields = [
+            'id', 'transaction_number',
+            'total_paid', 'commission_rate',
+            'net_earnings', 'item_type',
+            'created_at',
+            'client_username',
+            'nutritionist_username',
+        ]
