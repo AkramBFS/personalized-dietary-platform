@@ -1,0 +1,23 @@
+[
+  {"model": "admin_panel.country", "pk": 1, "fields": {"name": "Algeria"}},
+  {"model": "admin_panel.country", "pk": 2, "fields": {"name": "Morocco"}},
+  {"model": "admin_panel.country", "pk": 3, "fields": {"name": "Tunisia"}},
+  {"model": "admin_panel.country", "pk": 4, "fields": {"name": "Egypt"}},
+  {"model": "admin_panel.country", "pk": 5, "fields": {"name": "Saudi Arabia"}},
+  {"model": "admin_panel.country", "pk": 6, "fields": {"name": "United Arab Emirates"}},
+  {"model": "admin_panel.country", "pk": 7, "fields": {"name": "France"}},
+  {"model": "admin_panel.country", "pk": 8, "fields": {"name": "United States"}},
+  {"model": "admin_panel.country", "pk": 9, "fields": {"name": "United Kingdom"}},
+  {"model": "admin_panel.country", "pk": 10, "fields": {"name": "Germany"}},
+  {"model": "admin_panel.country", "pk": 11, "fields": {"name": "Canada"}},
+  {"model": "admin_panel.country", "pk": 12, "fields": {"name": "Australia"}},
+  {"model": "admin_panel.country", "pk": 13, "fields": {"name": "Jordan"}},
+  {"model": "admin_panel.country", "pk": 14, "fields": {"name": "Lebanon"}},
+  {"model": "admin_panel.country", "pk": 15, "fields": {"name": "Kuwait"}},
+  {"model": "admin_panel.country", "pk": 16, "fields": {"name": "Qatar"}},
+  {"model": "admin_panel.country", "pk": 17, "fields": {"name": "Libya"}},
+  {"model": "admin_panel.country", "pk": 18, "fields": {"name": "Sudan"}},
+  {"model": "admin_panel.country", "pk": 19, "fields": {"name": "Turkey"}},
+  {"model": "admin_panel.country", "pk": 20, "fields": {"name": "Spain"}}
+]
+
