@@ -12,7 +12,11 @@ from .serializers import (
     DailyProgressSerializer,
     ManualCalorieLogSerializer,
     CalorieLogSerializer,
-    UserPlanListSerializer
+    UserPlanListSerializer,
+    ServiceReviewSerializer,
+    PlanRatingSerializer,
+    CreateFeedbackSerializer,
+
 )
 from .apiNinja import get_nutrition_data
 
@@ -29,7 +33,11 @@ from nutritionist.models import (
 from .serializers import ConsultationBookSerializer, ClientConsultationSerializer
 
 from marketplace.models import Consultation, UserPlan, Plan
-
+from marketplace.models import ServiceReview, PlanRating
+from community.models import FeedbackToAdmin
+from .ai_processor import process_ai_image
+from users.permissions import IsPremiumClient
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class ClientProfileView(APIView):
@@ -601,3 +609,410 @@ class InvoiceDetailView(APIView):
             "status": "success",
             "data":   InvoiceSerializer(invoice).data
         })
+    
+    
+
+# ── Service Reviews ────────────────────────────────────────────────────────────
+
+class ServiceReviewView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def post(self, request):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        serializer = ServiceReviewSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                "status": "error",
+                "errors": serializer.errors
+            }, status=400)
+
+        data      = serializer.validated_data
+        item_type = data['item_type']
+        item_id   = data['item_id']
+
+        # Validate the item exists and belongs to this client
+        if item_type == 'consultation':
+            from marketplace.models import Consultation
+            if not Consultation.objects.filter(
+                id=item_id, client=client, status='finished'
+            ).exists():
+                return Response({
+                    "status":  "error",
+                    "message": "Consultation not found or not finished yet."
+                }, status=404)
+
+        elif item_type == 'plan':
+            if not UserPlan.objects.filter(
+                plan_id=item_id, client=client
+            ).exists():
+                return Response({
+                    "status":  "error",
+                    "message": "You must own this plan to review it."
+                }, status=403)
+
+        review = ServiceReview.objects.create(
+            client    = client,
+            item_type = item_type,
+            item_id   = item_id,
+            rating    = data['rating'],
+            comment   = data.get('comment', ''),
+        )
+
+        return Response({
+            "status": "success",
+            "data": {
+                "id":        review.id,
+                "item_type": review.item_type,
+                "item_id":   review.item_id,
+                "rating":    review.rating,
+                "comment":   review.comment,
+            }
+        }, status=201)
+
+
+# ── Plan Rating ────────────────────────────────────────────────────────────────
+
+class PlanRatingView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def post(self, request, pk):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        # Plan must exist and be approved
+        try:
+            plan = Plan.objects.get(id=pk, status='approved')
+        except Plan.DoesNotExist:
+            return Response({"status": "error", "message": "Plan not found."}, status=404)
+
+        # Client must own the plan
+        if not UserPlan.objects.filter(
+            client=client, plan=plan
+        ).exists():
+            return Response({
+                "status":  "error",
+                "message": "You must own this plan to rate it."
+            }, status=403)
+
+        # Check duplicate rating
+        if PlanRating.objects.filter(plan=plan, client=client).exists():
+            return Response({
+                "status":  "error",
+                "message": "You have already rated this plan.",
+                "code":    "DUPLICATE_RATING"
+            }, status=409)
+
+        serializer = PlanRatingSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                "status": "error",
+                "errors": serializer.errors
+            }, status=400)
+
+        # Create rating
+        PlanRating.objects.create(
+            plan   = plan,
+            client = client,
+            rating = serializer.validated_data['rating'],
+        )
+
+        # Recalculate plan average rating
+        all_ratings = PlanRating.objects.filter(plan=plan)
+        avg = sum(r.rating for r in all_ratings) / all_ratings.count()
+        plan.rating_avg = round(avg, 2)
+        plan.save()
+
+        return Response({
+            "status": "success",
+            "data": {
+                "plan_id":    plan.id,
+                "rating_avg": plan.rating_avg,
+            }
+        }, status=201)
+
+
+# ── Feedback to Admin ──────────────────────────────────────────────────────────
+
+class ClientFeedbackCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def post(self, request):
+        serializer = CreateFeedbackSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                "status": "error",
+                "errors": serializer.errors
+            }, status=400)
+
+        feedback = FeedbackToAdmin.objects.create(
+            user    = request.user,
+            subject = serializer.validated_data['subject'],
+            message = serializer.validated_data['message'],
+            status  = 'open',
+        )
+
+        from .serializers import FeedbackSerializer
+        return Response({
+            "status": "success",
+            "data":   FeedbackSerializer(feedback).data
+        }, status=201)
+
+
+class ClientFeedbackListView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        from .serializers import FeedbackSerializer
+        feedbacks = FeedbackToAdmin.objects.filter(
+            user=request.user
+        ).order_by('-created_at')
+
+        return Response({
+            "status": "success",
+            "data":   FeedbackSerializer(feedbacks, many=True).data
+        })
+    
+
+# ── AI Calorie Tracker ─────────────────────────────────────────────────────────
+
+class AICalorieSubmitView(APIView):
+    permission_classes = [IsAuthenticated, IsPremiumClient]
+    parser_classes     = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        image     = request.FILES.get('image')
+        meal_type = request.data.get('meal_type')
+
+        if not image:
+            return Response({"status": "error", "message": "image file is required."}, status=400)
+
+        if meal_type not in ['breakfast', 'lunch', 'dinner', 'snack']:
+            return Response({
+                "status":  "error",
+                "message": "meal_type must be: breakfast, lunch, dinner, or snack."
+            }, status=400)
+
+        if image.size > 10 * 1024 * 1024:
+            return Response({"status": "error", "message": "Image must be under 10 MB."}, status=400)
+
+        # Save original image
+        from django.core.files.storage import default_storage
+        image_path = default_storage.save(
+            f'ai_logs/original/{client.client_id}/{image.name}',
+            image
+        )
+
+        # Create log with processing status
+        log = AICalorieLog.objects.create(
+            client     = client,
+            meal_type  = meal_type,
+            entry_type = 'ai_vision',
+            image_url  = image_path,
+            status     = 'processing',
+        )
+
+        # ── Call FastAPI AI service ────────────────────────────────────────────
+        try:
+            from .ai_processor import (
+                process_ai_image,
+                save_segmented_image,
+                aggregate_nutrition_from_ai,
+            )
+
+            # Reopen saved image for sending
+            image.seek(0)
+            ai_result = process_ai_image(image)
+
+            # Save segmented image returned by FastAPI
+            segmented_path = save_segmented_image(
+                client_id = client.client_id,
+                log_id    = log.id,
+                base64_str = ai_result['segmented_image_base64'],
+            )
+
+            # Aggregate nutrition from AI service response
+            nutrition = aggregate_nutrition_from_ai(ai_result['nutrition_items'])
+
+            # Update log with AI results
+            log.ai_raw_prediction   = ai_result['ai_raw_prediction']
+            log.segmented_image_url = segmented_path
+            log.status              = 'pending_user_review'
+            log.save()
+
+        except Exception as e:
+            log.status = 'failed'
+            log.save()
+            return Response({
+                "status":  "error",
+                "message": str(e),
+                "log_id":  log.id,
+                "code":    "AI_SERVICE_UNAVAILABLE"
+            }, status=503)
+
+        # Build frontend-friendly predictions list
+        predictions = ai_result['ai_raw_prediction'].get('predictions', [])
+
+        return Response({
+            "status": "success",
+            "data": {
+                "log_id":   log.id,
+                "status":   log.status,
+                "meal_type": log.meal_type,
+                "segmented_image_url": segmented_path,
+                "predictions": predictions,   # frontend shows these for user to confirm
+                "nutrition_preview": {        # estimated totals before user confirms
+                    "total_calories": nutrition['total_calories'],
+                    "total_protein":  nutrition['total_protein'],
+                    "total_carbs":    nutrition['total_carbs'],
+                    "total_fats":     nutrition['total_fats'],
+                }
+            }
+        }, status=202)
+
+class AICalorieStatusView(APIView):
+    permission_classes = [IsAuthenticated, IsPremiumClient]
+
+    def get(self, request, log_id):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        try:
+            log = AICalorieLog.objects.get(id=log_id, client=client)
+        except AICalorieLog.DoesNotExist:
+            return Response({"status": "error", "message": "Log not found."}, status=404)
+
+        # ── Safe JSON handling ─────────────────────────────────────────────────
+        import json
+
+        def safe_json(value):
+            if value is None:
+                return None
+            if isinstance(value, (dict, list)):
+                return value        # already parsed — return as is
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except (json.JSONDecodeError, TypeError):
+                    return value
+            return value
+
+        return Response({
+            "status": "success",
+            "data": {
+                "log_id":              log.id,
+                "status":              log.status,
+                "meal_type":           log.meal_type,
+                "ai_raw_prediction":   safe_json(log.ai_raw_prediction),
+                "segmented_image_url": log.segmented_image_url,
+                "logged_at":           log.logged_at,
+            }
+        })
+
+class AICalorieConfirmView(APIView):
+    permission_classes = [IsAuthenticated, IsPremiumClient]
+
+    def patch(self, request, log_id):
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        try:
+            log = AICalorieLog.objects.get(
+                id     = log_id,
+                client = client,
+                status = 'pending_user_review'
+            )
+        except AICalorieLog.DoesNotExist:
+            return Response({
+                "status":  "error",
+                "message": "Log not found or not ready for confirmation."
+            }, status=404)
+
+        user_final_log = request.data.get('user_final_log')
+        meal_type      = request.data.get('meal_type', log.meal_type)
+
+        if not user_final_log or not isinstance(user_final_log, list):
+            return Response({
+                "status":  "error",
+                "message": "user_final_log must be a list of {label, mass_grams}."
+            }, status=400)
+
+        # Recalculate nutrition with user-corrected masses
+        # using CalorieNinjas (same as manual tracker for consistency)
+        try:
+            from .apininjas import get_nutrition_data
+            ingredients = [
+                {
+                    "name":       item.get('label', ''),
+                    "mass_grams": item.get('mass_grams', 100)
+                }
+                for item in user_final_log
+            ]
+            nutrition = get_nutrition_data(ingredients)
+
+        except Exception as e:
+            return Response({
+                "status":  "error",
+                "message": f"Could not calculate nutrition: {str(e)}"
+            }, status=503)
+
+        with transaction.atomic():
+            log.user_final_log       = user_final_log
+            log.meal_type            = meal_type
+            log.total_calories       = nutrition['total_calories']
+            log.total_protein        = nutrition['total_protein']
+            log.total_carbs          = nutrition['total_carbs']
+            log.total_fats           = nutrition['total_fats']
+            log.is_validated_by_user = True
+            log.status               = 'saved'
+            log.save()
+
+            # Update today's DailyProgressMetric
+            today       = timezone.now().date()
+            progress, _ = DailyProgressMetric.objects.get_or_create(
+                client=client, log_date=today
+            )
+            progress.total_calories_consumed = round(
+                progress.total_calories_consumed + nutrition['total_calories'], 2
+            )
+            progress.total_protein_consumed = round(
+                progress.total_protein_consumed + nutrition['total_protein'], 2
+            )
+            progress.total_carbs_consumed = round(
+                progress.total_carbs_consumed + nutrition['total_carbs'], 2
+            )
+            progress.total_fats_consumed = round(
+                progress.total_fats_consumed + nutrition['total_fats'], 2
+            )
+            progress.check_goal_achieved()
+            progress.save()
+
+        return Response({
+            "status": "success",
+            "data": {
+                "log_id":         log.id,
+                "status":         log.status,
+                "total_calories": log.total_calories,
+                "total_protein":  log.total_protein,
+                "total_carbs":    log.total_carbs,
+                "total_fats":     log.total_fats,
+                "daily_progress": DailyProgressSerializer(progress).data,
+            }
+        })
+    
+
+    

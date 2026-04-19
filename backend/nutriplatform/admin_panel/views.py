@@ -521,11 +521,12 @@ class SubscriptionPurchaseView(APIView):
             }, status=409)
 
         # Calculate end date
+        
         start_date = timezone.now()
         if plan_type == 'monthly':
-            end_date = start_date + datetime.timedelta(days=30)
-        else:  # yearly
-            end_date = start_date + datetime.timedelta(days=365)
+            end_date = timezone.now() + datetime.timedelta(days=30)
+        else:
+            end_date = timezone.now() + datetime.timedelta(days=365)
 
         # Expire any existing active subscriptions
         PremiumSubscription.objects.filter(
@@ -555,10 +556,112 @@ class SubscriptionPurchaseView(APIView):
 # In admin_panel/views.py — ADD this import at the top:
 from nutritionist.models import Language
 
-# ADD this view:
+
 class LanguageListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
         data = list(Language.objects.values('id', 'name').order_by('name'))
         return Response({"status": "success", "data": data})
+    
+
+
+# ── Admin Inquiries ────────────────────────────────────────────────────────────
+
+class AdminInquiryListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        from community.models import FeedbackToAdmin
+
+        inquiries = FeedbackToAdmin.objects.select_related(
+            'user'
+        ).order_by('-created_at')
+
+        status_filter = request.query_params.get('status')
+        if status_filter in ['open', 'resolved']:
+            inquiries = inquiries.filter(status=status_filter)
+
+        data = [
+            {
+                "id":             i.id,
+                "user_id":        i.user.id,
+                "username":       i.user.username,
+                "subject":        i.subject,
+                "message":        i.message,
+                "admin_response": i.admin_response,
+                "status":         i.status,
+                "created_at":     i.created_at,
+            }
+            for i in inquiries
+        ]
+
+        return Response({"status": "success", "data": data})
+
+
+class AdminInquiryDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request, pk):
+        from community.models import FeedbackToAdmin
+
+        try:
+            inquiry = FeedbackToAdmin.objects.select_related('user').get(id=pk)
+        except FeedbackToAdmin.DoesNotExist:
+            return Response({"status": "error", "message": "Inquiry not found."}, status=404)
+
+        return Response({
+            "status": "success",
+            "data": {
+                "id":             inquiry.id,
+                "username":       inquiry.user.username,
+                "subject":        inquiry.subject,
+                "message":        inquiry.message,
+                "admin_response": inquiry.admin_response,
+                "status":         inquiry.status,
+                "created_at":     inquiry.created_at,
+            }
+        })
+
+
+class AdminInquiryRespondView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def patch(self, request, pk):
+        from community.models import FeedbackToAdmin
+        from notifications.utils import notify
+
+        try:
+            inquiry = FeedbackToAdmin.objects.select_related('user').get(id=pk)
+        except FeedbackToAdmin.DoesNotExist:
+            return Response({"status": "error", "message": "Inquiry not found."}, status=404)
+
+        admin_response = request.data.get('admin_response')
+        if not admin_response:
+            return Response({
+                "status":  "error",
+                "message": "admin_response is required."
+            }, status=400)
+
+        inquiry.admin_response = admin_response
+        inquiry.status         = request.data.get('status', 'resolved')
+        inquiry.save()
+
+        # Notify the client
+        notify(
+            recipient   = inquiry.user,
+            sender      = request.user,
+            title       = 'Support Ticket Resolved',
+            message     = f'Your inquiry "{inquiry.subject}" has been responded to.',
+            target_type = 'inquiry',
+            target_id   = inquiry.id,
+        )
+
+        return Response({
+            "status": "success",
+            "data": {
+                "id":             inquiry.id,
+                "admin_response": inquiry.admin_response,
+                "status":         inquiry.status,
+            }
+        })
