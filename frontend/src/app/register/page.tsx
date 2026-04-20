@@ -1,4 +1,4 @@
-import RegistrationFlow from "@/components/Registration-Flow";
+import RegistrationFlow from "@/components/auth/Registration-Flow";
 
 export default function LoginPage() {
   return (

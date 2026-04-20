@@ -69,3 +69,47 @@ export const loginSchema = z.object({
     .min(8, "Password must be at least 8 characters"),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const nutritionistRegistrationSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be at most 30 characters"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+  country_id: z.coerce
+    .number()
+    .int("Country ID must be an integer")
+    .positive("Country ID is required"),
+  specialization_id: z.coerce
+    .number()
+    .int("Specialization ID must be an integer")
+    .positive("Specialization ID is required"),
+  years_experience: z.coerce
+    .number()
+    .int("Years of experience must be an integer")
+    .min(0, "Years of experience cannot be negative"),
+  consultation_price: z.coerce
+    .number()
+    .min(0, "Consultation price cannot be negative"),
+  bio: z.string().optional(),
+  certification_ref: z
+    .string()
+    .min(1, "Certification reference is required"),
+  cert_image: z.custom<File>(
+    (value) => value instanceof File && value.size > 0,
+    "Certification image is required"
+  ),
+  language_ids: z
+    .array(z.coerce.number().int().positive("Language ID must be positive"))
+    .min(1, "Please add at least one language ID"),
+});
+
+export type NutritionistRegistrationInput = z.infer<
+  typeof nutritionistRegistrationSchema
+>;

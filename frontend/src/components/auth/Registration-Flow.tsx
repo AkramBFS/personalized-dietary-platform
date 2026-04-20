@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import dynamic from "next/dynamic";
-import { submitRegistration } from "@/app/actions/submitRegistration";
 import { stepSchemas } from "@/lib/constants";
 import ProgressBar from "../ui/ProgressBar";
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 const BACKGROUNDS = [
   "/branding/bg-1.jpg",
@@ -38,6 +40,14 @@ export default function RegistrationFlow() {
   const [isPending, startTransition] = useTransition();
   const [isHovered, setIsHovered] = useState(false);
 
+  const [countries, setCountries] = useState<{ id: number; name: string }[]>(
+    [],
+  );
+  const [goals, setGoals] = useState<{ id: number; name: string }[]>([]);
+  const [loadingLookup, setLoadingLookup] = useState(true);
+
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     country: "",
     language: "",
@@ -51,10 +61,12 @@ export default function RegistrationFlow() {
     gender: "",
     bmi: 24.2,
     bmr: 1600,
-    medicalConditions: [],
+    medicalConditions: [] as string[],
+    medicalConditionsCustom: "",
     firstName: "",
     lastName: "",
     email: "",
+    phone: "",
     password: "",
     agreedToTerms: false,
   });
@@ -92,6 +104,35 @@ export default function RegistrationFlow() {
   const bgImage = BACKGROUNDS[currentStep - 1] || BACKGROUNDS[0];
 
   useEffect(() => {
+    const fetchLookupData = async () => {
+      try {
+        const [countriesRes, goalsRes] = await Promise.all([
+          api.get("/lookup/countries/"),
+          api.get("/lookup/goals/"),
+        ]);
+        setCountries(countriesRes.data);
+        setGoals(goalsRes.data);
+      } catch (error) {
+        console.error("Failed to fetch lookup data", error);
+        // Fallback to hardcoded
+        setCountries([
+          { id: 1, name: "United States" },
+          { id: 2, name: "Canada" },
+          { id: 3, name: "Algeria" },
+        ]);
+        setGoals([
+          { id: 1, name: "Weight Loss" },
+          { id: 2, name: "Muscle Gain" },
+          { id: 3, name: "Maintenance" },
+        ]);
+      } finally {
+        setLoadingLookup(false);
+      }
+    };
+    fetchLookupData();
+  }, []);
+
+  useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
@@ -118,14 +159,52 @@ export default function RegistrationFlow() {
   };
 
   const handleSubmit = () => {
-    if (isAnimating || isPending) return;
+    if (isAnimating || isPending || loadingLookup) return;
     setIsAnimating(true);
     startTransition(async () => {
       try {
-        await submitRegistration(formData);
-        alert("Registration Successful!");
-      } catch (err) {
-        alert("Error submitting form");
+        // Map form data to API payload
+        const countryId = countries.find(
+          (c) => c.name === formData.country,
+        )?.id;
+        const goalId = goals.find((g) => g.name === formData.goal)?.id;
+
+        if (!countryId || !goalId) {
+          throw new Error("Invalid country or goal selection");
+        }
+
+        const healthHistory = formData.medicalConditions
+          .filter((cond) => cond !== "None")
+          .concat(
+            formData.medicalConditionsCustom
+              ? [formData.medicalConditionsCustom]
+              : [],
+          )
+          .join(", ");
+
+        const payload = {
+          username: formData.email, // Use email as username
+          email: formData.email,
+          password: formData.password,
+          age: formData.age,
+          weight: formData.weight,
+          height: formData.height,
+          gender: formData.gender,
+          country_id: countryId,
+          goal_id: goalId,
+          health_history: healthHistory || undefined,
+        };
+
+        await api.post("/auth/register/client/", payload);
+        alert("Registration Successful! Please log in.");
+        router.push("/login");
+      } catch (err: any) {
+        console.error("Registration failed", err);
+        if (err.response?.data?.message) {
+          alert(err.response.data.message);
+        } else {
+          alert("Error submitting form");
+        }
       } finally {
         setIsAnimating(false);
       }
@@ -136,9 +215,9 @@ export default function RegistrationFlow() {
     const props = { formData, setFormData };
     switch (currentStep) {
       case 1:
-        return <StepCountry {...props} />;
+        return <StepCountry {...props} countries={countries} />;
       case 2:
-        return <StepGoal {...props} />;
+        return <StepGoal {...props} goals={goals} />;
       case 3:
         return <StepActivity {...props} />;
       case 4:
@@ -200,8 +279,8 @@ export default function RegistrationFlow() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={`relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] 
-            bg-gradient-to-br from-white/90 via-white/70 to-white/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
-border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
+            bg-gradient-to-br from-white/90 via-white/70 to-white/90 dark:from-emerald-950/90 dark:via-emerald-950/70 dark:to-emerald-950/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
+            border border-white/30 dark:border-white/10 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
             flex flex-col overflow-hidden transition-colors duration-500
             ${isAnimating ? "pointer-events-none" : ""}`}
         >
@@ -216,12 +295,12 @@ border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
             {renderStep()}
           </div>
 
-          <div className="p-6 pt-4 bg-white/60 border-t border-gray-100 mt-auto">
+          <div className="p-6 pt-4 bg-white/60 dark:bg-black/20 border-t border-gray-100 dark:border-white/10 mt-auto">
             <div className="flex justify-between items-center">
               <button
                 onClick={prevStep}
                 disabled={currentStep === 1 || isAnimating}
-                className="px-6 py-2 text-gray-500 hover:text-gray-800 disabled:opacity-30 transition-colors"
+                className="px-6 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white disabled:opacity-30 transition-colors"
               >
                 Back
               </button>
@@ -251,14 +330,24 @@ border border-white/30 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
               )}
             </div>
 
-            <div className="mt-6 text-center text-sm text-gray-600">
+            <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
               Already onboard?{" "}
-              <a
+              <Link
                 href="/login"
                 className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
               >
                 Sign in!
-              </a>
+              </Link>
+            </div>
+
+            <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+              Are you a certified nutritionist?{" "}
+              <Link
+                href="/register/nutritionist"
+                className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
+              >
+                Get on board!
+              </Link>
             </div>
           </div>
         </motion.div>

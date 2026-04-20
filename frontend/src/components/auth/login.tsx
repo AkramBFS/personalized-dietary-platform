@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Logo } from "../layout/logo";
 import { loginSchema } from "@/lib/constants";
+import api from "@/lib/api";
+import { setAccessToken, setRefreshToken } from "@/lib/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +18,10 @@ export default function LoginPage() {
     password?: string;
   }>({});
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  const router = useRouter();
+
   const animationSpeed = 0.8;
 
   // ✅ single source of truth (Zod)
@@ -23,7 +30,7 @@ export default function LoginPage() {
     password,
   }).success;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const result = loginSchema.safeParse({
@@ -41,7 +48,42 @@ export default function LoginPage() {
     }
 
     setErrors({});
-    console.log("Login attempt with:", result.data);
+    setIsLoading(true);
+
+    try {
+      const response = await api.post("/auth/login/", {
+        username: result.data.email, // API expects username, using email
+        password: result.data.password,
+      });
+
+      const { tokens, user } = response.data;
+
+      // Store tokens
+      setAccessToken(tokens.access);
+      setRefreshToken(tokens.refresh);
+
+      // Redirect based on role
+      if (user.role === "client") {
+        router.push("/client");
+      } else if (user.role === "nutritionist") {
+        router.push("/nutritionist");
+      } else if (user.role === "high_admin") {
+        router.push("/admin");
+      } else {
+        alert("Unknown user role");
+      }
+    } catch (error: any) {
+      console.error("Login failed", error);
+      if (error.response?.status === 401) {
+        setErrors({ email: "Invalid credentials" });
+      } else if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Login failed. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const containerVariants: Variants = {
@@ -98,7 +140,7 @@ export default function LoginPage() {
 
       <div className="min-h-screen w-full flex items-center justify-center p-4">
         <motion.div
-          className="relative w-full max-w-4xl h-[600px] bg-white rounded-3xl overflow-hidden shadow-lg flex"
+          className="relative w-full max-w-4xl h-[600px] bg-white dark:bg-[#1a2027] rounded-3xl overflow-hidden shadow-lg flex border dark:border-white/10"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -131,21 +173,23 @@ export default function LoginPage() {
                   repeatType: "reverse",
                 }}
               >
-                <Logo />
+                <Logo forceDark />
               </motion.div>
             </div>
 
             <motion.div className="mb-8" variants={itemVariants}>
-              <h2 className="text-4xl text-gray-700 font-medium mb-2">
+              <h2 className="text-4xl text-gray-700 dark:text-white font-medium mb-2">
                 Dieton account
               </h2>
-              <p className="text-xl text-gray-600">Sign in to continue</p>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Sign in to continue
+              </p>
             </motion.div>
 
             <form onSubmit={handleLogin} className="space-y-6">
               {/* Email */}
               <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
                 </label>
                 <input
@@ -153,11 +197,11 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="example@email.com"
-                  className={`w-full px-4 py-3 rounded-lg border bg-gray-50 focus:outline-none focus:ring-2 transition
+                  className={`w-full px-4 py-3 rounded-lg border bg-gray-50 dark:bg-gray-800/50 dark:text-white focus:outline-none focus:ring-2 transition
                     ${
                       errors.email
                         ? "border-red-400 focus:ring-red-400"
-                        : "border-gray-200 focus:ring-emerald-400"
+                        : "border-gray-200 dark:border-gray-700 focus:ring-emerald-400"
                     }`}
                 />
                 {errors.email && (
@@ -167,7 +211,7 @@ export default function LoginPage() {
 
               {/* Password */}
               <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Password
                 </label>
                 <input
@@ -175,11 +219,11 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-3 rounded-lg border bg-gray-50 focus:outline-none focus:ring-2 transition
+                  className={`w-full px-4 py-3 rounded-lg border bg-gray-50 dark:bg-gray-800/50 dark:text-white focus:outline-none focus:ring-2 transition
                     ${
                       errors.password
                         ? "border-red-400 focus:ring-red-400"
-                        : "border-gray-200 focus:ring-emerald-400"
+                        : "border-gray-200 dark:border-gray-700 focus:ring-emerald-400"
                     }`}
                 />
                 {errors.password && (
@@ -190,21 +234,21 @@ export default function LoginPage() {
               {/* Submit */}
               <motion.button
                 type="submit"
-                disabled={!isFormValid}
+                disabled={!isFormValid || isLoading}
                 variants={buttonHoverVariants}
                 initial="rest"
-                whileHover={isFormValid ? "hover" : undefined}
-                whileTap={isFormValid ? "tap" : undefined}
+                whileHover={isFormValid && !isLoading ? "hover" : undefined}
+                whileTap={isFormValid && !isLoading ? "tap" : undefined}
                 className={`w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-base font-medium text-white
                   bg-gradient-to-r from-emerald-400 to-emerald-300
                   transition-opacity
                   ${
-                    isFormValid
+                    isFormValid && !isLoading
                       ? "opacity-100 cursor-pointer"
                       : "opacity-50 cursor-not-allowed"
                   }`}
               >
-                Sign in
+                {isLoading ? "Signing in..." : "Sign in"}
               </motion.button>
             </form>
           </motion.div>
