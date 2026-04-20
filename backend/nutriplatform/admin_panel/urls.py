@@ -32,6 +32,9 @@ from .views import (
     AdminBlogDeleteView,
     SubscriptionStatusView,
     SubscriptionPurchaseView,
+    AdminInquiryListView,
+    AdminInquiryDetailView,
+    AdminInquiryRespondView,
 )
 urlpatterns = [
     path('countries/',       CountryListView.as_view(),       name='countries'),
@@ -70,7 +73,13 @@ urlpatterns = [
     # ── Subscriptions ──────────────────────────────────────────────────────────
     path('client/subscriptions/',          SubscriptionStatusView.as_view(),   name='subscription-status'),
     path('client/subscriptions/purchase/', SubscriptionPurchaseView.as_view(), name='subscription-purchase'),
+
+    
+    path('admin/inquiries/',                     AdminInquiryListView.as_view(),    name='admin-inquiries'),
+    path('admin/inquiries/<int:pk>/',            AdminInquiryDetailView.as_view(),  name='admin-inquiry-detail'),
+    path('admin/inquiries/<int:pk>/respond/',    AdminInquiryRespondView.as_view(), name='admin-inquiry-respond'),
 ]
+
 
 
 
