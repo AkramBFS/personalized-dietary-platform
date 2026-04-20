@@ -20,6 +20,7 @@ DJANGO_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',  
     'django_extensions',
+    'drf_spectacular',
 ]
 
 THIRD_PARTY_APPS = [
@@ -143,6 +144,12 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 
     
+    'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+
+    
 }
 
 # ─── SimpleJWT ───────────────────────────────────────────────────────────────
@@ -161,3 +168,10 @@ CALORIE_NINJAS_KEY = config('CALORIE_NINJAS_KEY')
 USE_TZ = True   
 
 AI_SERVICE_URL = config('AI_SERVICE_URL', default='http://127.0.0.1:8001')
+
+SPECTACULAR_SETTINGS = {
+    'TITLE':       'NutriPlatform API',
+    'DESCRIPTION': 'REST API for NutriPlatform — Django REST Framework + PostgreSQL',
+    'VERSION':     '1.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
