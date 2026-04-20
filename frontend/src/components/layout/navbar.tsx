@@ -103,13 +103,13 @@ export default function Navbar() {
                       </MenuButton>
                       <MenuItems
                         transition
-                        className="absolute left-0 z-10 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
+                        className="absolute left-0 z-10 mt-2 w-48 origin-top-left rounded-md bg-white dark:bg-[#1a2027] py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
                       >
                         {item.children.map((child) => (
                           <MenuItem key={child.href}>
                             <Link
                               href={child.href}
-                              className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
                             >
                               {child.name}
                             </Link>
@@ -159,12 +159,12 @@ export default function Navbar() {
               </MenuButton>
               <MenuItems
                 transition
-                className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
+                className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-[#1a2027] py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
               >
                 <MenuItem>
                   <Link
                     href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
                   >
                     Your Profile
                   </Link>
@@ -172,7 +172,7 @@ export default function Navbar() {
                 <MenuItem>
                   <Link
                     href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
                   >
                     Settings
                   </Link>
@@ -180,7 +180,7 @@ export default function Navbar() {
                 <MenuItem>
                   <Link
                     href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
                   >
                     Sign out
                   </Link>
