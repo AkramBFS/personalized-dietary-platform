@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef } from "react";
 
-const GOALS = [
+const GOALS_FALLBACK = [
   "Weight Loss",
   "Muscle Gain",
   "Improve Fitness",
@@ -14,9 +14,11 @@ const GOALS = [
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
+  goals?: { id: number; name: string }[];
 }
 
-export default function StepGoal({ formData, setFormData }: Props) {
+export default function StepGoal({ formData, setFormData, goals }: Props) {
+  const goalsList = goals ? goals.map((g) => g.name) : GOALS_FALLBACK;
   const isOtherSelected = formData.goal === "Other";
   const otherInputRef = useRef<HTMLDivElement | null>(null);
 
@@ -51,17 +53,17 @@ export default function StepGoal({ formData, setFormData }: Props) {
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
           What is your primary goal?
         </h2>
-        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
           Select the option that best describes your objective.
         </p>
       </div>
 
       <div className="w-full max-w-md space-y-4">
         <div className="grid grid-cols-1 gap-4">
-          {GOALS.map((g) => {
+          {goalsList.map((g) => {
             const isSelected = formData.goal === g;
             return (
               <button
@@ -73,7 +75,7 @@ export default function StepGoal({ formData, setFormData }: Props) {
                   ${
                     isSelected
                       ? "bg-emerald-400 text-white border-emerald-400 scale-[1.02] shadow-emerald-200/50"
-                      : "bg-white/40 border-white/50 text-slate-800 hover:bg-white/60"
+                      : "bg-white/40 dark:bg-emerald-900/20 border-white/50 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-emerald-900/30"
                   }
                 `}
               >
@@ -107,9 +109,9 @@ export default function StepGoal({ formData, setFormData }: Props) {
                   placeholder="e.g. Training for a marathon..."
                   className="
                     w-full py-4 px-6 rounded-2xl
-                    bg-white/60 backdrop-blur-md 
-                    border border-white/50 
-                    text-slate-800 font-medium
+                    bg-white/60 dark:bg-emerald-900/40 backdrop-blur-md 
+                    border border-white/50 dark:border-white/10
+                    text-slate-800 dark:text-white font-medium
                     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
                     focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400
                     outline-none transition-all

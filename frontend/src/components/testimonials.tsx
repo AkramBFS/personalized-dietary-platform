@@ -6,10 +6,10 @@ export default function Testimonials() {
     <section className="py-16 md:py-32">
       <div className="mx-auto max-w-6xl space-y-8 px-6 md:space-y-16">
         <div className="relative z-10 mx-auto max-w-xl space-y-6 text-center md:space-y-12">
-          <h2 className="text-4xl font-medium lg:text-5xl">
+          <h2 className="text-4xl font-medium lg:text-5xl dark:text-white">
             Real experiences from people improving their health{" "}
           </h2>
-          <p>
+          <p className="dark:text-gray-300">
             Our platform helps users track their nutrition, follow personalized
             diet plans, and build healthier habits with the support of
             professional nutritionists and AI-powered tools.
@@ -19,13 +19,13 @@ export default function Testimonials() {
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-rows-2">
           <Card className="bg-background grid grid-rows-[auto_1fr] gap-8 sm:col-span-2 sm:p-6 lg:row-span-2">
             <CardHeader>
-              <h3 className="text-2xl font-medium">
+              <h3 className="text-2xl font-medium dark:text-white">
                 What our users say about us:
               </h3>
             </CardHeader>
             <CardContent>
               <blockquote className="grid h-full grid-rows-[1fr_auto] gap-6">
-                <p className="text-xl font-medium">
+                <p className="text-xl font-medium dark:text-gray-200">
                   The personalized nutrition plan completely changed how I
                   approach food. Instead of following restrictive diets, I now
                   have a plan that actually fits my lifestyle and daily routine.
@@ -48,7 +48,9 @@ export default function Testimonials() {
                   </Avatar>
 
                   <div>
-                    <cite className="text-sm font-medium">Michael Jackson</cite>
+                    <cite className="text-sm font-medium dark:text-gray-100">
+                      Michael Jackson
+                    </cite>
                     <span className="text-muted-foreground block text-sm">
                       Marketing heehee Manager
                     </span>
@@ -60,7 +62,7 @@ export default function Testimonials() {
           <Card className="bg-background md:col-span-2">
             <CardContent className="h-full pt-6">
               <blockquote className="grid h-full grid-rows-[1fr_auto] gap-6">
-                <p className="text-xl font-medium">
+                <p className="text-xl font-medium dark:text-gray-200">
                   The AI calorie tracking makes it so easy to understand what
                   I’m eating every day. Combined with the nutritionist guidance,
                   it really helped me build healthier habits.
@@ -78,7 +80,9 @@ export default function Testimonials() {
                     <AvatarFallback>SD</AvatarFallback>
                   </Avatar>
                   <div>
-                    <cite className="text-sm font-medium">Snoop dog</cite>
+                    <cite className="text-sm font-medium dark:text-gray-100">
+                      Snoop dog
+                    </cite>
                     <span className="text-muted-foreground block text-sm">
                       Pharmacist and Entrepreneur
                     </span>
@@ -90,7 +94,7 @@ export default function Testimonials() {
           <Card className="bg-background">
             <CardContent className="h-full pt-6">
               <blockquote className="grid h-full grid-rows-[1fr_auto] gap-6">
-                <p>
+                <p className="dark:text-gray-300">
                   After struggling with dieting for years, having a personalized
                   plan and regular follow-up made a huge difference. I finally
                   feel in control of my nutrition.
@@ -108,7 +112,9 @@ export default function Testimonials() {
                     <AvatarFallback>CB</AvatarFallback>
                   </Avatar>
                   <div>
-                    <cite className="text-sm font-medium">Chris Bumsted</cite>
+                    <cite className="text-sm font-medium dark:text-gray-100">
+                      Chris Bumsted
+                    </cite>
                     <span className="text-muted-foreground block text-sm">
                       Fitness Enthusiast
                     </span>
@@ -120,7 +126,7 @@ export default function Testimonials() {
           <Card className="bg-background card variant-mixed">
             <CardContent className="h-full pt-6">
               <blockquote className="grid h-full grid-rows-[1fr_auto] gap-6">
-                <p>
+                <p className="dark:text-gray-300">
                   The meal recognition feature is surprisingly helpful. Just
                   uploading a photo gives me a quick estimate of calories and
                   helps me stay consistent with my goals.
@@ -138,7 +144,9 @@ export default function Testimonials() {
                     <AvatarFallback>SH</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium">Souki Hocine</p>
+                    <p className="text-sm font-medium dark:text-gray-100">
+                      Souki Hocine
+                    </p>
                     <span className="text-muted-foreground block text-sm">
                       Student delegue
                     </span>

@@ -4,9 +4,20 @@ import React, { useState, useRef, useEffect } from "react";
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
+  countries?: { id: number; name: string }[];
 }
 
-const COUNTRIES = [
+const LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Arabic",
+  "Mandarin",
+  "Hindi",
+];
+
+const COUNTRIES_FALLBACK = [
   "United States",
   "Canada",
   "United Kingdom",
@@ -18,17 +29,15 @@ const COUNTRIES = [
   "UAE",
   "Algeria",
 ];
-const LANGUAGES = [
-  "English",
-  "Spanish",
-  "French",
-  "German",
-  "Arabic",
-  "Mandarin",
-  "Hindi",
-];
 
-export default function StepCountrySelect({ formData, setFormData }: Props) {
+export default function StepCountrySelect({
+  formData,
+  setFormData,
+  countries,
+}: Props) {
+  const countriesList = countries
+    ? countries.map((c) => c.name)
+    : COUNTRIES_FALLBACK;
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -52,18 +61,18 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
 
   const selectClasses = `
     w-full flex items-center justify-between
-    bg-white/40 backdrop-blur-md 
-    border border-white/50 
-    text-slate-800 font-medium
+    bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md 
+    border border-white/50 dark:border-white/10
+    text-slate-800 dark:text-slate-200 font-medium
     py-4 px-6 rounded-2xl 
     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
-    hover:bg-white/60 transition-all duration-300
+    hover:bg-white/60 dark:hover:bg-emerald-900/30 transition-all duration-300
     cursor-pointer group
   `;
 
   const dropdownMenuClasses = `
     absolute z-20 w-full mt-2 
-    bg-white/90 backdrop-blur-xl border border-white/40 
+    bg-white/90 dark:bg-[#1a2027] backdrop-blur-xl border border-white/40 dark:border-white/10
     shadow-2xl rounded-2xl overflow-hidden py-2
     animate-in fade-in slide-in-from-top-2 duration-200
   `;
@@ -74,10 +83,10 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
       ref={containerRef}
     >
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
           Regional Settings
         </h2>
-        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
           Please provide your location and language preference.
         </p>
       </div>
@@ -85,7 +94,7 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
       <div className="w-full max-w-md space-y-8">
         {/* Country Selection */}
         <div className="space-y-3 relative">
-          <label className="text-sm font-bold text-slate-700 ml-1">
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
             Current Location
           </label>
           <button
@@ -95,11 +104,15 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
             }
             className={selectClasses}
           >
-            <span className={!formData.country ? "text-slate-400" : ""}>
+            <span
+              className={
+                !formData.country ? "text-slate-400 dark:text-slate-500" : ""
+              }
+            >
               {formData.country || "Select country"}
             </span>
             <svg
-              className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${openDropdown === "country" ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-slate-400 dark:text-slate-500 transition-transform duration-300 ${openDropdown === "country" ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -114,11 +127,11 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
           </button>
           {openDropdown === "country" && (
             <ul className={dropdownMenuClasses}>
-              {COUNTRIES.map((country) => (
+              {countriesList.map((country) => (
                 <li
                   key={country}
                   onClick={() => handleSelect("country", country)}
-                  className="px-6 py-3 hover:bg-emerald-400 hover:text-white cursor-pointer transition-colors text-slate-700 text-sm font-medium"
+                  className="px-6 py-3 hover:bg-emerald-400 hover:text-white cursor-pointer transition-colors text-slate-700 dark:text-slate-200 text-sm font-medium"
                 >
                   {country}
                 </li>
@@ -129,7 +142,7 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
 
         {/* Language Selection */}
         <div className="space-y-3 relative">
-          <label className="text-sm font-bold text-slate-700 ml-1">
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
             Preferred Language
           </label>
           <button
@@ -139,11 +152,15 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
             }
             className={selectClasses}
           >
-            <span className={!formData.language ? "text-slate-400" : ""}>
+            <span
+              className={
+                !formData.language ? "text-slate-400 dark:text-slate-500" : ""
+              }
+            >
               {formData.language || "Select preferred language"}
             </span>
             <svg
-              className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${openDropdown === "language" ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-slate-400 dark:text-slate-500 transition-transform duration-300 ${openDropdown === "language" ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -162,7 +179,7 @@ export default function StepCountrySelect({ formData, setFormData }: Props) {
                 <li
                   key={language}
                   onClick={() => handleSelect("language", language)}
-                  className="px-6 py-3 hover:bg-emerald-400 hover:text-white cursor-pointer transition-colors text-slate-700 text-sm font-medium"
+                  className="px-6 py-3 hover:bg-emerald-400 hover:text-white cursor-pointer transition-colors text-slate-700 dark:text-slate-200 text-sm font-medium"
                 >
                   {language}
                 </li>

@@ -14,22 +14,22 @@ export default function StepAgeWeight({ formData, setFormData }: Props) {
   ];
 
   const inputClasses = `
-    w-full p-4 pr-12 bg-white/40 backdrop-blur-md 
-    border border-white/50 rounded-2xl 
+    w-full p-4 pr-12 bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md 
+    border border-white/50 dark:border-white/10 rounded-2xl 
     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
-    text-slate-800 text-lg font-medium outline-none 
+    text-slate-800 dark:text-slate-100 text-lg font-medium outline-none 
     focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400
-    transition-all placeholder:text-slate-400
+    transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500
   `;
 
   return (
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
           Tell us about yourself
         </h2>
-        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
           We use this to calculate your metabolic rate and metrics.
         </p>
       </div>
@@ -37,7 +37,7 @@ export default function StepAgeWeight({ formData, setFormData }: Props) {
       <div className="w-full max-w-md space-y-8">
         {/* Gender Selection */}
         <div className="space-y-3">
-          <label className="text-sm font-bold text-slate-700 ml-1">
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
             Gender
           </label>
           <div className="grid grid-cols-2 gap-4">
@@ -56,7 +56,7 @@ export default function StepAgeWeight({ formData, setFormData }: Props) {
                     ${
                       isSelected
                         ? "bg-emerald-400/90 border-emerald-300 text-white scale-[1.02] shadow-emerald-200/50"
-                        : "bg-white/40 border-white/50 text-slate-700 hover:bg-white/60"
+                        : "bg-white/40 dark:bg-emerald-900/20 border-white/50 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-emerald-900/30"
                     }
                   `}
                 >
@@ -70,7 +70,9 @@ export default function StepAgeWeight({ formData, setFormData }: Props) {
         <div className="grid grid-cols-2 gap-4">
           {/* Age Input */}
           <div className="space-y-3">
-            <label className="text-sm font-bold text-slate-700 ml-1">Age</label>
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+              Age
+            </label>
             <div className="relative">
               <input
                 type="number"
@@ -92,7 +94,7 @@ export default function StepAgeWeight({ formData, setFormData }: Props) {
 
           {/* Weight Input */}
           <div className="space-y-3">
-            <label className="text-sm font-bold text-slate-700 ml-1">
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
               Weight
             </label>
             <div className="relative">

@@ -8,22 +8,24 @@
   /* --- Brand Design System: Rise Together --- */
 
   /* Background: Snow Gray or Soft Cream for that high-end editorial feel */
-  --color-background: oklch(0.98 0.01 235); 
-  --color-foreground: oklch(0.25 0.05 235); /* Midnight Cyan (#052B34) */
+  --color-background: oklch(0.98 0.01 235);
+  --color-foreground: oklch(0.25 0.05 235);
+  /* Midnight Cyan (#052B34) */
 
   /* Cards: Using the Soft Cream (#FFF5DE) for subtle elevation */
-  --color-card: oklch(0.97 0.02 85);
+  --color-card: oklch(1 0.01 235);
   --color-card-foreground: oklch(0.25 0.05 235);
 
-  --color-popover: oklch(0.97 0.02 85);
+  --color-popover: oklch(1 0.01 235);
   --color-popover-foreground: oklch(0.25 0.05 235);
 
   /* Primary: Mint Green (#50CD95) */
-  --color-primary: oklch(0.78 0.14 165); 
-  --color-primary-foreground: oklch(0.25 0.05 235); /* Dark text on mint looks better for this brand */
+  --color-primary: oklch(0.78 0.14 165);
+  --color-primary-foreground: oklch(0.25 0.05 235);
+  /* Dark text on mint looks better for this brand */
 
   /* Secondary: Aqua Teal (#00A3A3) */
-  --color-secondary: oklch(0.62 0.12 210); 
+  --color-secondary: oklch(0.62 0.12 210);
   --color-secondary-foreground: oklch(0.98 0.01 235);
 
   /* Muted: Snow Gray (#F7F7F7) */
@@ -31,7 +33,7 @@
   --color-muted-foreground: oklch(0.45 0.05 235);
 
   /* Accent: Aqua Forest (#3EAD88) */
-  --color-accent: oklch(0.68 0.12 165); 
+  --color-accent: oklch(0.68 0.12 165);
   --color-accent-foreground: oklch(0.98 0.01 235);
 
   --color-destructive: oklch(0.6 0.18 25);
@@ -42,11 +44,16 @@
   --color-ring: oklch(0.78 0.14 165);
 
   /* Chart Colors shifted to match Cyan/Mint/Teal spectrum */
-  --color-chart-1: oklch(0.78 0.14 165); /* Mint */
-  --color-chart-2: oklch(0.25 0.05 235); /* Midnight Cyan */
-  --color-chart-3: oklch(0.62 0.12 210); /* Aqua Teal */
-  --color-chart-4: oklch(0.85 0.08 180); /* Soft Cyan */
-  --color-chart-5: oklch(0.68 0.12 165); /* Aqua Forest */
+  --color-chart-1: oklch(0.78 0.14 165);
+  /* Mint */
+  --color-chart-2: oklch(0.25 0.05 235);
+  /* Midnight Cyan */
+  --color-chart-3: oklch(0.62 0.12 210);
+  /* Aqua Teal */
+  --color-chart-4: oklch(0.85 0.08 180);
+  /* Soft Cyan */
+  --color-chart-5: oklch(0.68 0.12 165);
+  /* Aqua Forest */
 
   /* Radius: Sticking with the 1.5rem for that "Tablet" aesthetic in your design */
   --radius-sm: 0.75rem;
@@ -74,11 +81,14 @@
 
 .dark {
   /* Inverting to Black Teal (#001918) and Midnight Cyan */
-  --background: 0.12 0.03 190; /* Black Teal */
-  --foreground: 0.97 0.02 85; /* Soft Cream text */
+  --background: 0.12 0.03 190;
+  /* Black Teal */
+  --foreground: 0.97 0.02 85;
+  /* Soft Cream text */
   --card: 0.15 0.04 210;
   --card-foreground: 0.97 0.02 85;
-  --primary: 0.78 0.14 165; /* Mint pops even more in dark mode */
+  --primary: 0.78 0.14 165;
+  /* Mint pops even more in dark mode */
   --primary-foreground: 0.12 0.03 190;
   --secondary: 0.25 0.05 235;
   --secondary-foreground: 0.97 0.02 85;
@@ -93,9 +103,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-space-grotesk), system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 }
 
@@ -109,10 +122,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #50CD95; /* Mint Green */
+  background-color: #50CD95;
+  /* Mint Green */
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #3EAD88; /* Aqua Forest */
+  background-color: #3EAD88;
+  /* Aqua Forest */
 }
