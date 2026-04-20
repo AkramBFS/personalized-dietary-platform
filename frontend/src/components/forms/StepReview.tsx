@@ -10,6 +10,7 @@ interface Props {
 export default function StepReview({ formData, setFormData }: Props) {
   const summary = [
     { label: "Location", value: formData.country },
+    { label: "Language", value: formData.language },
     { label: "Primary Goal", value: formData.goal },
     { label: "Activity Level", value: formData.activityLevel },
     { label: "Diet Preference", value: formData.diet },
@@ -27,6 +28,10 @@ export default function StepReview({ formData, setFormData }: Props) {
       value: typeof formData.bmi === "number" ? formData.bmi.toFixed(1) : null,
     },
     {
+      label: "BMR",
+      value: typeof formData.bmr === "number" ? `${formData.bmr} kcal` : null,
+    },
+    {
       label: "Medical",
       value:
         formData.medicalConditions?.length > 0
@@ -40,16 +45,17 @@ export default function StepReview({ formData, setFormData }: Props) {
         : null,
     },
     { label: "Email", value: formData.email },
+    { label: "Phone", value: formData.phone },
   ];
 
   return (
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
           Check your details
         </h2>
-        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
           Almost there! Please review your information before finalizing your
           plan.
         </p>
@@ -57,16 +63,16 @@ export default function StepReview({ formData, setFormData }: Props) {
 
       <div className="w-full max-w-md space-y-6">
         {/* Review Card */}
-        <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.05)] space-y-4">
+        <div className="bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.05)] space-y-4">
           {summary.map((item) => (
             <div
               key={item.label}
-              className="flex justify-between items-center border-b border-slate-200/50 pb-3 last:border-b-0 last:pb-0"
+              className="flex justify-between items-center border-b border-slate-200/50 dark:border-white/10 pb-3 last:border-b-0 last:pb-0"
             >
-              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+              <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
                 {item.label}
               </span>
-              <span className="text-slate-800 font-bold text-right text-sm">
+              <span className="text-slate-800 dark:text-white font-bold text-right text-sm">
                 {item.value || "Not set"}
               </span>
             </div>
@@ -74,7 +80,7 @@ export default function StepReview({ formData, setFormData }: Props) {
         </div>
 
         {/* Custom Themed Checkbox */}
-        <label className="group relative flex items-start gap-4 p-5 bg-white/40 backdrop-blur-md border border-white/50 rounded-2xl cursor-pointer hover:bg-white/60 transition-all shadow-sm">
+        <label className="group relative flex items-start gap-4 p-5 bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-2xl cursor-pointer hover:bg-white/60 dark:hover:bg-emerald-900/30 transition-all shadow-sm">
           <div className="flex items-center h-6">
             <input
               type="checkbox"
@@ -94,7 +100,7 @@ export default function StepReview({ formData, setFormData }: Props) {
               ${
                 formData.agreedToTerms
                   ? "bg-primary border-primary shadow-[0_0_15px_oklch(0.72_0.17_153_/_0.3)]"
-                  : "bg-white/50 border-slate-300 group-hover:border-slate-400"
+                  : "bg-white/50 dark:bg-black/20 border-slate-300 dark:border-white/20 group-hover:border-slate-400 dark:group-hover:border-white/40"
               }
             `}
             >
@@ -115,10 +121,10 @@ export default function StepReview({ formData, setFormData }: Props) {
               )}
             </div>
           </div>
-          <span className="text-sm font-semibold text-slate-600 leading-snug">
+          <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-snug">
             I confirm that the medical information provided is accurate and I
             agree to the{" "}
-            <span className="text-slate-800 underline decoration-primary/40">
+            <span className="text-slate-800 dark:text-white underline decoration-primary/40">
               Terms of Service
             </span>
             .

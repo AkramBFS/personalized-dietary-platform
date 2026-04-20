@@ -1,16 +1,40 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-export const Logo = ({ className }: { className?: string }) => {
+export const Logo = ({
+  className,
+  forceLight,
+  forceDark,
+}: {
+  className?: string;
+  forceLight?: boolean;
+  forceDark?: boolean;
+}) => {
   return (
-    <Image
-      src="/branding/logo.svg"
-      alt="App Logo"
-      width={120}
-      height={32}
-      priority
-      className={cn("h-5 w-auto", className)}
-    />
+    <div className={cn("relative flex items-center", className)}>
+      <Image
+        src="/branding/logo2.svg"
+        alt="App Logo"
+        width={120}
+        height={32}
+        priority
+        className={cn(
+          "h-5 w-auto",
+          forceLight ? "block" : forceDark ? "hidden" : "block dark:hidden",
+        )}
+      />
+      <Image
+        src="/branding/logo.svg"
+        alt="App Logo Dark"
+        width={120}
+        height={32}
+        priority
+        className={cn(
+          "h-5 w-auto",
+          forceDark ? "block" : forceLight ? "hidden" : "hidden dark:block",
+        )}
+      />
+    </div>
   );
 };
 

@@ -95,7 +95,7 @@ export const HeroHeader = () => {
               {/* LOGO */}
               <div className="flex lg:flex-1">
                 <Link href="/" className="flex items-center space-x-3">
-                  <Logo />
+                  <Logo forceDark />
                 </Link>
               </div>
 

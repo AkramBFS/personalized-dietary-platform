@@ -1,9 +1,5 @@
 import UserDashboard from "@/components/dashboard/dashboard";
 
-export default function UserDashBoard() {
-  return (
-    <div>
-      <UserDashboard />
-    </div>
-  );
+export default function Page() {
+  return <UserDashboard />;
 }
