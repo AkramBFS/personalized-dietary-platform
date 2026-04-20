@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python
+**/venv/
+**/__pycache__/
+*.pyc
+
+# Large Binaries
+*.exe
+*.msi
+*.zip
+
+# Next.js & Node
+**/.next/
+**/node_modules/

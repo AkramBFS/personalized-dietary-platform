@@ -12,17 +12,17 @@ export default function StepHeight({ formData, setFormData }: Props) {
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
           How tall are you?
         </h2>
-        <p className="text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
           Slide to set your height.
         </p>
       </div>
 
       <div className="w-full max-w-md flex flex-col items-center space-y-12">
         {/* Large Glass Display */}
-        <div className="relative bg-white/80 backdrop-blur-md px-10 py-6 rounded-3xl border border-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+        <div className="relative bg-white/80 dark:bg-emerald-900/40 backdrop-blur-md px-10 py-6 rounded-3xl border border-white/90 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
           <div className="text-6xl font-black text-emerald-400 tabular-nums tracking-tighter">
             {formData.height}
             <span className="text-xl font-bold text-emerald-400 ml-2 uppercase">
@@ -30,7 +30,7 @@ export default function StepHeight({ formData, setFormData }: Props) {
             </span>
           </div>
           {/* Decorative Arrow/Indicator */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/80 border-r border-b border-white/90 rotate-45 backdrop-blur-md"></div>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/80 dark:bg-emerald-950 border-r border-b border-white/90 dark:border-white/10 rotate-45 backdrop-blur-md"></div>
         </div>
 
         <div className="w-full space-y-6">
@@ -58,7 +58,7 @@ export default function StepHeight({ formData, setFormData }: Props) {
             />
 
             {/* Ruler Markings */}
-            <div className="flex justify-between w-full px-1 mt-6 text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+            <div className="flex justify-between w-full px-1 mt-6 text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
               <span className="flex flex-col items-center gap-1">
                 <span className="h-2 w-px bg-emerald-300"></span>
                 120 cm

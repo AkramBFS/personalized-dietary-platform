@@ -3,7 +3,7 @@
 export default function CallToAction() {
   return (
     <div className="w-full">
-      <div className="group relative mb-20 w-11/12 md:w-4/5 mx-auto flex flex-col items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-r from-teal-600 via-emerald-500 to-emerald-400 p-10 text-center md:p-16 shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.15)]">
+      <div className="group relative mb-20 w-11/12 md:w-4/5 mx-auto flex flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#052B34] p-10 text-center md:p-16 shadow-[0_8px_32px_rgba(0,0,0,0.35)] transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
         {/* background decorative circle svg */}
         <div className="pointer-events-none absolute -right-20 -top-10 size-64 transition-all duration-700 ease-in-out origin-top-right group-hover:-translate-x-6 group-hover:-translate-y-2 group-hover:scale-110 group-hover:-rotate-12 opacity-20">
           <svg
@@ -19,13 +19,13 @@ export default function CallToAction() {
           </svg>
         </div>
 
-        <h2 className="relative z-10 mb-6 text-3xl font-bold text-white md:text-5xl tracking-tight">
-          Ready to start your journey?
+        <h2 className="relative z-10 mb-6 text-3xl font-semibold text-white md:text-4xl tracking-tight font-display">
+          Seasonal programs tailored to how you really live.
         </h2>
 
-        <p className="relative z-10 mb-8 max-w-2xl text-lg text-white/90 md:text-xl">
-          Join thousands of others achieving their health goals with Dieton's
-          AI-powered dietitian.
+        <p className="relative z-10 mb-8 max-w-2xl text-base text-emerald-50/90 md:text-lg">
+          Rotate through focused plans for Ramadan, summer, and off-season
+          maintenance so nutrition always aligns with your calendar.
         </p>
 
         <div className="relative z-10 flex flex-col gap-4 sm:flex-row">

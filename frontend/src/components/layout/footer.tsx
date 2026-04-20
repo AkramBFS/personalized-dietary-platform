@@ -1,5 +1,4 @@
 "use client";
-import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 
 const footerLinks = {
@@ -141,7 +140,7 @@ export default function FooterSection() {
         </div>
 
         {/* --- Bottom Bar --- */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 dark:border-gray-800 md:flex-row">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-teal-800 dark:border-gray-800 pt-8 md:flex-row">
           <p className="text-sm text-teal-50 dark:text-gray-400">
             © {new Date().getFullYear()} Dieton. All rights reserved.
           </p>

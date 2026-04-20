@@ -165,6 +165,7 @@ SIMPLE_JWT = {
 
 CALORIE_NINJAS_KEY = config('CALORIE_NINJAS_KEY')
 
+
 USE_TZ = True   
 
 AI_SERVICE_URL = config('AI_SERVICE_URL', default='http://127.0.0.1:8001')
@@ -175,3 +176,4 @@ SPECTACULAR_SETTINGS = {
     'VERSION':     '1.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
