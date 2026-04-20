@@ -522,6 +522,7 @@ class SubscriptionPurchaseView(APIView):
 
         # Calculate end date
         
+        from django.utils import timezone
         start_date = timezone.now()
         if plan_type == 'monthly':
             end_date = timezone.now() + datetime.timedelta(days=30)
