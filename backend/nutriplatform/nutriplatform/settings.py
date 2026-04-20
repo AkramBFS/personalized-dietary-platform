@@ -18,6 +18,9 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',  
+    'django_extensions',
+    'drf_spectacular',
 ]
 
 THIRD_PARTY_APPS = [
@@ -46,6 +49,7 @@ AUTH_USER_MODEL = 'users.User'
 
 # ─── Middleware ───────────────────────────────────────────────────────────────
 MIDDLEWARE = [
+     'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,6 +58,19 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+# ── CORS ───────────────────────────────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',      # React dev server
+    'http://localhost:5173',      # Vite dev server
+    'https://nutriplatform.com',  # Production frontend
+]
+CORS_ALLOW_CREDENTIALS = True
+
+# ── Security Headers ───────────────────────────────────────────────────────────
+SECURE_BROWSER_XSS_FILTER   = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS             = 'DENY'
+
 
 ROOT_URLCONF = 'nutriplatform.urls'
 
@@ -112,12 +129,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ─── Django REST Framework ───────────────────────────────────────────────────
 REST_FRAMEWORK = {
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    # Custom exception handler
+    'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+
+    #  Global pagination
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+
+    
+    'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+
+    
 }
 
 # ─── SimpleJWT ───────────────────────────────────────────────────────────────
@@ -132,3 +164,16 @@ SIMPLE_JWT = {
 
 
 CALORIE_NINJAS_KEY = config('CALORIE_NINJAS_KEY')
+
+
+USE_TZ = True   
+
+AI_SERVICE_URL = config('AI_SERVICE_URL', default='http://127.0.0.1:8001')
+
+SPECTACULAR_SETTINGS = {
+    'TITLE':       'NutriPlatform API',
+    'DESCRIPTION': 'REST API for NutriPlatform — Django REST Framework + PostgreSQL',
+    'VERSION':     '1.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+

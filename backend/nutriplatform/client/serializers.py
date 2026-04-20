@@ -170,3 +170,40 @@ class UserPlanContentSerializer(serializers.Serializer):
     dinner       = serializers.JSONField()
     snacks       = serializers.JSONField()
     instructions = serializers.CharField(allow_blank=True)
+
+
+
+# ── Service Reviews ────────────────────────────────────────────────────────────
+
+class ServiceReviewSerializer(serializers.Serializer):
+    ITEM_TYPES = ['plan', 'consultation']
+
+    item_type = serializers.ChoiceField(choices=ITEM_TYPES)
+    item_id   = serializers.IntegerField()
+    rating    = serializers.IntegerField(min_value=1, max_value=5)
+    comment   = serializers.CharField(required=False, allow_blank=True)
+
+
+# ── Plan Rating ────────────────────────────────────────────────────────────────
+
+class PlanRatingSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+
+
+# ── Feedback ───────────────────────────────────────────────────────────────────
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        from community.models import FeedbackToAdmin
+        model  = FeedbackToAdmin
+        fields = [
+            'id', 'subject', 'message',
+            'admin_response', 'status',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'admin_response', 'status', 'created_at']
+
+
+class CreateFeedbackSerializer(serializers.Serializer):
+    subject = serializers.CharField(max_length=255)
+    message = serializers.CharField()
