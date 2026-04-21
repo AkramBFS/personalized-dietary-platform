@@ -1,8 +1,7 @@
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from .models import Country, Goal, Specialization
-from nutritionist.models import Language
-from .serializers import CountrySerializer , GoalSerializer , SpecializationSerializer, LanguageSerializer
+from .serializers import CountrySerializer , GoalSerializer , SpecializationSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -36,7 +35,6 @@ class CountryListView(ListAPIView):
     permission_classes = [AllowAny]
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
-    pagination_class = None
     
 
 
@@ -44,14 +42,12 @@ class GoalListView(ListAPIView):
     queryset = Goal.objects.all()
     serializer_class = GoalSerializer
     permission_classes = [AllowAny]
-    pagination_class = None
 
 
 class SpecializationListView(ListAPIView):
     queryset = Specialization.objects.all()
     serializer_class = SpecializationSerializer
     permission_classes = [AllowAny]
-    pagination_class = None
 
 
 
@@ -562,11 +558,12 @@ class SubscriptionPurchaseView(APIView):
 from nutritionist.models import Language
 
 
-class LanguageListView(ListAPIView):
+class LanguageListView(APIView):
     permission_classes = [AllowAny]
-    queryset = Language.objects.all()
-    serializer_class = LanguageSerializer
-    pagination_class = None
+
+    def get(self, request):
+        data = list(Language.objects.values('id', 'name').order_by('name'))
+        return Response({"status": "success", "data": data})
     
 
 
