@@ -8,6 +8,20 @@ class Client(models.Model):
         ('male',   'Male'),
         ('female', 'Female'),
     ]
+    ACTIVITY_LEVEL_CHOICES = [
+        ('sedentary',   'Sedentary'),
+        ('moderate',    'Moderate'),
+        ('very_active', 'Very Active'),
+    ]
+
+    DIET_CHOICES = [
+        ('none',        'None'),
+        ('omnivore',    'Omnivore'),
+        ('vegetarian',  'Vegetarian'),
+        ('vegan',       'Vegan'),
+        ('keto',        'Keto'),
+        ('paleo',       'Paleo'),
+    ]
 
     client_id         = models.AutoField(primary_key=True)
     user              = models.OneToOneField(User, on_delete=models.CASCADE, db_column='user_id')
@@ -26,6 +40,8 @@ class Client(models.Model):
     target_protein  = models.FloatField(null=True, blank=True)
     target_carbs    = models.FloatField(null=True, blank=True)
     target_fats     = models.FloatField(null=True, blank=True)
+    activity_level    = models.CharField(max_length=20, choices=ACTIVITY_LEVEL_CHOICES, null=True, blank=True)
+    diet              = models.CharField(max_length=20, choices=DIET_CHOICES, null=True, blank=True)
     goal              = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, db_column='goal_id')
     country           = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, db_column='country_id')
 
