@@ -1,12 +1,18 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition } from "react";
+import { FormEvent, useMemo, useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { submitNutritionistRegistration } from "@/app/actions/submitNutritionistRegistration";
 import { nutritionistRegistrationSchema } from "@/lib/constants";
 import { Logo } from "../layout/logo";
+import {
+  bootstrapLookups,
+  getCountries,
+  getSpecializations,
+  LookupItem,
+} from "@/lib/lookups";
 
 type FormState = {
   username: string;
@@ -42,7 +48,27 @@ export default function NutritionistRegistrationForm() {
   const [serverError, setServerError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [countries, setCountries] = useState<LookupItem[]>([]);
+  const [specializations, setSpecializations] = useState<LookupItem[]>([]);
+  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
   const { setTheme, resolvedTheme } = useTheme();
+
+  // Bootstrap lookup data on component mount
+  useEffect(() => {
+    const loadLookups = async () => {
+      try {
+        await bootstrapLookups();
+        setCountries(getCountries());
+        setSpecializations(getSpecializations());
+      } catch (err) {
+        console.error("Failed to load lookup data:", err);
+      } finally {
+        setIsLoadingLookups(false);
+      }
+    };
+
+    loadLookups();
+  }, []);
 
   const languageIds = useMemo(
     () =>
@@ -52,7 +78,7 @@ export default function NutritionistRegistrationForm() {
         .filter(Boolean)
         .map((id) => Number(id))
         .filter((id) => Number.isInteger(id) && id > 0),
-    [formData.language_ids]
+    [formData.language_ids],
   );
 
   const validate = () => {
@@ -101,7 +127,7 @@ export default function NutritionistRegistrationForm() {
         setServerError(
           error instanceof Error
             ? error.message
-            : "Something went wrong while submitting your registration."
+            : "Something went wrong while submitting your registration.",
         );
       }
     });
@@ -109,7 +135,9 @@ export default function NutritionistRegistrationForm() {
 
   const FieldError = ({ name }: { name: string }) =>
     errors[name] ? (
-      <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors[name]}</p>
+      <p className="mt-1 text-sm text-red-500 dark:text-red-400">
+        {errors[name]}
+      </p>
     ) : null;
 
   return (
@@ -154,7 +182,10 @@ export default function NutritionistRegistrationForm() {
             remain pending approval before access is granted.
           </p>
 
-          <form onSubmit={onSubmit} className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+          <form
+            onSubmit={onSubmit}
+            className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2"
+          >
             <label className="block">
               <span className="text-sm font-medium">Username</span>
               <input
@@ -195,24 +226,31 @@ export default function NutritionistRegistrationForm() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">Country ID</span>
-              <input
-                type="number"
-                min={1}
+              <span className="text-sm font-medium">Country</span>
+              <select
                 value={formData.country_id}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, country_id: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    country_id: e.target.value,
+                  }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
-              />
+                disabled={isLoadingLookups}
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
+              >
+                <option value="">Select a country</option>
+                {countries.map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
               <FieldError name="country_id" />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">Specialization ID</span>
-              <input
-                type="number"
-                min={1}
+              <span className="text-sm font-medium">Specialization</span>
+              <select
                 value={formData.specialization_id}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -220,8 +258,16 @@ export default function NutritionistRegistrationForm() {
                     specialization_id: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
-              />
+                disabled={isLoadingLookups}
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
+              >
+                <option value="">Select a specialization</option>
+                {specializations.map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.name}
+                  </option>
+                ))}
+              </select>
               <FieldError name="specialization_id" />
             </label>
 
@@ -243,7 +289,9 @@ export default function NutritionistRegistrationForm() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">Consultation price (USD)</span>
+              <span className="text-sm font-medium">
+                Consultation price (USD)
+              </span>
               <input
                 type="number"
                 min={0}
@@ -261,7 +309,9 @@ export default function NutritionistRegistrationForm() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">Certification reference</span>
+              <span className="text-sm font-medium">
+                Certification reference
+              </span>
               <input
                 type="text"
                 value={formData.certification_ref}
@@ -296,7 +346,9 @@ export default function NutritionistRegistrationForm() {
             </label>
 
             <label className="block md:col-span-2">
-              <span className="text-sm font-medium">Certification document image</span>
+              <span className="text-sm font-medium">
+                Certification document image
+              </span>
               <input
                 type="file"
                 accept="image/*"
@@ -312,7 +364,9 @@ export default function NutritionistRegistrationForm() {
             </label>
 
             <label className="block md:col-span-2">
-              <span className="text-sm font-medium">Professional bio (optional)</span>
+              <span className="text-sm font-medium">
+                Professional bio (optional)
+              </span>
               <textarea
                 rows={4}
                 value={formData.bio}
@@ -354,8 +408,8 @@ export default function NutritionistRegistrationForm() {
           <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-[#1a2027]">
             <h2 className="text-xl font-semibold">Registration submitted</h2>
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-              Your account is under review. Please expect a response email within
-              1-7 working days.
+              Your account is under review. Please expect a response email
+              within 1-7 working days.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button

@@ -44,6 +44,9 @@ export default function RegistrationFlow() {
     [],
   );
   const [goals, setGoals] = useState<{ id: number; name: string }[]>([]);
+  const [languages, setLanguages] = useState<{ id: number; name: string }[]>(
+    [],
+  );
   const [loadingLookup, setLoadingLookup] = useState(true);
 
   const router = useRouter();
@@ -106,12 +109,14 @@ export default function RegistrationFlow() {
   useEffect(() => {
     const fetchLookupData = async () => {
       try {
-        const [countriesRes, goalsRes] = await Promise.all([
+        const [countriesRes, goalsRes, languagesRes] = await Promise.all([
           api.get("/lookup/countries/"),
           api.get("/lookup/goals/"),
+          api.get("/lookup/languages/"),
         ]);
         setCountries(countriesRes.data);
         setGoals(goalsRes.data);
+        setLanguages(languagesRes.data);
       } catch (error) {
         console.error("Failed to fetch lookup data", error);
         // Fallback to hardcoded
@@ -124,6 +129,11 @@ export default function RegistrationFlow() {
           { id: 1, name: "Weight Loss" },
           { id: 2, name: "Muscle Gain" },
           { id: 3, name: "Maintenance" },
+        ]);
+        setLanguages([
+          { id: 1, name: "English" },
+          { id: 2, name: "Arabic" },
+          { id: 3, name: "French" },
         ]);
       } finally {
         setLoadingLookup(false);
@@ -215,7 +225,9 @@ export default function RegistrationFlow() {
     const props = { formData, setFormData };
     switch (currentStep) {
       case 1:
-        return <StepCountry {...props} countries={countries} />;
+        return (
+          <StepCountry {...props} countries={countries} languages={languages} />
+        );
       case 2:
         return <StepGoal {...props} goals={goals} />;
       case 3:

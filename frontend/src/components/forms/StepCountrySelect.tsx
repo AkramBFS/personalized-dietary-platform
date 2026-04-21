@@ -5,39 +5,26 @@ interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   countries?: { id: number; name: string }[];
+  languages?: { id: number; name: string }[];
 }
 
-const LANGUAGES = [
-  "English",
-  "Spanish",
-  "French",
-  "German",
-  "Arabic",
-  "Mandarin",
-  "Hindi",
-];
-
-const COUNTRIES_FALLBACK = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Germany",
-  "France",
-  "Australia",
-  "Qatar",
-  "Saudi Arabia",
-  "UAE",
-  "Algeria",
-];
+const COUNTRIES_FALLBACK = ["United States"];
 
 export default function StepCountrySelect({
   formData,
   setFormData,
   countries,
+  languages,
 }: Props) {
-  const countriesList = countries
-    ? countries.map((c) => c.name)
-    : COUNTRIES_FALLBACK;
+  const countriesList =
+    Array.isArray(countries) && countries.length > 0
+      ? countries.map((c) => c.name)
+      : COUNTRIES_FALLBACK;
+
+  const languagesList =
+    Array.isArray(languages) && languages.length > 0
+      ? languages.map((l) => l.name)
+      : ["English"]; // Fallback
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -175,7 +162,7 @@ export default function StepCountrySelect({
           </button>
           {openDropdown === "language" && (
             <ul className={dropdownMenuClasses}>
-              {LANGUAGES.map((language) => (
+              {languagesList.map((language) => (
                 <li
                   key={language}
                   onClick={() => handleSelect("language", language)}
