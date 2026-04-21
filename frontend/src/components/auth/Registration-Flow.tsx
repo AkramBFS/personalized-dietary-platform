@@ -192,20 +192,25 @@ export default function RegistrationFlow() {
           )
           .join(", ");
 
-        const payload = {
-          username: formData.email, // Use email as username
-          email: formData.email,
-          password: formData.password,
-          age: formData.age,
-          weight: formData.weight,
-          height: formData.height,
-          gender: formData.gender,
-          country_id: countryId,
-          goal_id: goalId,
-          health_history: healthHistory || undefined,
-        };
+        const payload = new FormData();
+        payload.append("username", formData.email); // Use email as username
+        payload.append("email", formData.email);
+        payload.append("password", formData.password);
+        payload.append("age", formData.age.toString());
+        payload.append("weight", formData.weight.toString());
+        payload.append("height", formData.height.toString());
+        payload.append("gender", formData.gender);
+        payload.append("country_id", countryId.toString());
+        payload.append("goal_id", goalId.toString());
+        if (healthHistory) {
+          payload.append("health_history", healthHistory);
+        }
 
-        await api.post("/auth/register/client/", payload);
+        await api.post("/auth/register/client/", payload, {
+          headers: {
+            "Content-Type": undefined,
+          },
+        });
         alert("Registration Successful! Please log in.");
         router.push("/login");
       } catch (err: any) {
