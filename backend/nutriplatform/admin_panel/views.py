@@ -49,6 +49,32 @@ class SpecializationListView(ListAPIView):
     serializer_class = SpecializationSerializer
     permission_classes = [AllowAny]
 
+class ActivityLevelListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        data = [
+            {"value": "sedentary",   "label": "Sedentary",   "description": "Little to no exercise"},
+            {"value": "moderate",    "label": "Moderate",    "description": "3-4 days a week"},
+            {"value": "very_active", "label": "Very Active", "description": "Daily intense training"},
+        ]
+        return Response({"status": "success", "data": data})
+
+
+class DietListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        data = [
+            {"value": "none",       "label": "None"},
+            {"value": "omnivore",   "label": "Omnivore"},
+            {"value": "vegetarian", "label": "Vegetarian"},
+            {"value": "vegan",      "label": "Vegan"},
+            {"value": "keto",       "label": "Keto"},
+            {"value": "paleo",      "label": "Paleo"},
+        ]
+        return Response({"status": "success", "data": data})
+
 
 
 
