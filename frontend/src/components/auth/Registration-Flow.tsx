@@ -44,6 +44,9 @@ export default function RegistrationFlow() {
     [],
   );
   const [goals, setGoals] = useState<{ id: number; name: string }[]>([]);
+  const [languages, setLanguages] = useState<{ id: number; name: string }[]>(
+    [],
+  );
   const [loadingLookup, setLoadingLookup] = useState(true);
 
   const router = useRouter();
@@ -106,12 +109,14 @@ export default function RegistrationFlow() {
   useEffect(() => {
     const fetchLookupData = async () => {
       try {
-        const [countriesRes, goalsRes] = await Promise.all([
+        const [countriesRes, goalsRes, languagesRes] = await Promise.all([
           api.get("/lookup/countries/"),
           api.get("/lookup/goals/"),
+          api.get("/lookup/languages/"),
         ]);
         setCountries(countriesRes.data);
         setGoals(goalsRes.data);
+        setLanguages(languagesRes.data);
       } catch (error) {
         console.error("Failed to fetch lookup data", error);
         // Fallback to hardcoded
@@ -124,6 +129,11 @@ export default function RegistrationFlow() {
           { id: 1, name: "Weight Loss" },
           { id: 2, name: "Muscle Gain" },
           { id: 3, name: "Maintenance" },
+        ]);
+        setLanguages([
+          { id: 1, name: "English" },
+          { id: 2, name: "Arabic" },
+          { id: 3, name: "French" },
         ]);
       } finally {
         setLoadingLookup(false);
@@ -182,20 +192,25 @@ export default function RegistrationFlow() {
           )
           .join(", ");
 
-        const payload = {
-          username: formData.email, // Use email as username
-          email: formData.email,
-          password: formData.password,
-          age: formData.age,
-          weight: formData.weight,
-          height: formData.height,
-          gender: formData.gender,
-          country_id: countryId,
-          goal_id: goalId,
-          health_history: healthHistory || undefined,
-        };
+        const payload = new FormData();
+        payload.append("username", formData.email); // Use email as username
+        payload.append("email", formData.email);
+        payload.append("password", formData.password);
+        payload.append("age", formData.age.toString());
+        payload.append("weight", formData.weight.toString());
+        payload.append("height", formData.height.toString());
+        payload.append("gender", formData.gender);
+        payload.append("country_id", countryId.toString());
+        payload.append("goal_id", goalId.toString());
+        if (healthHistory) {
+          payload.append("health_history", healthHistory);
+        }
 
-        await api.post("/auth/register/client/", payload);
+        await api.post("/auth/register/client/", payload, {
+          headers: {
+            "Content-Type": undefined,
+          },
+        });
         alert("Registration Successful! Please log in.");
         router.push("/login");
       } catch (err: any) {
@@ -215,7 +230,9 @@ export default function RegistrationFlow() {
     const props = { formData, setFormData };
     switch (currentStep) {
       case 1:
-        return <StepCountry {...props} countries={countries} />;
+        return (
+          <StepCountry {...props} countries={countries} languages={languages} />
+        );
       case 2:
         return <StepGoal {...props} goals={goals} />;
       case 3:

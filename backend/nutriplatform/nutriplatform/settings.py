@@ -60,9 +60,8 @@ MIDDLEWARE = [
 ]
 # ── CORS ───────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',      # React dev server
-    'http://localhost:5173',      # Vite dev server
-    'https://nutriplatform.com',  # Production frontend
+    'http://localhost:3000',      # Nextjs dev server
+    'http://localhost:8001',     # AI service
 ]
 CORS_ALLOW_CREDENTIALS = True
 
