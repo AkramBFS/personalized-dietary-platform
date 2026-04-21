@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Syne, Space_Grotesk } from "next/font/google";
+import { bootstrapLookups } from "@/lib/lookups";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -20,6 +21,11 @@ export const metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+
+// Bootstrap lookup data on server startup
+bootstrapLookups().catch((err) =>
+  console.error("Failed to bootstrap lookups:", err),
+);
 
 export default function RootLayout({
   children,
