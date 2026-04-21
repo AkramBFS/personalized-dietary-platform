@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework import status
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
 
 from .serializers import (
     RegisterClientSerializer,
@@ -92,7 +94,7 @@ class RegisterNutritionistView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     parser_classes     = [JSONParser, FormParser]
-
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
