@@ -2,7 +2,7 @@ import axios from "axios";
 import { getCookie, withAuthHeader } from "./auth";
 
 const api = axios.create({
-  baseURL: "https://api.nutriplatform.com/api/v1/",
+  baseURL: "http://127.0.0.1:8000/api/v1/",
   headers: {
     "Content-Type": "application/json",
   },
@@ -16,28 +16,28 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // Check if the error is a 401 and we haven't already retried this request
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         const refreshToken = getCookie("refresh_token");
         if (!refreshToken) {
           throw new Error("No refresh token available");
         }
-        
+
         // Call the refresh endpoint directly to avoid looping
-        const response = await axios.post("https://api.nutriplatform.com/api/v1/auth/token/refresh/", {
+        const response = await axios.post("http://127.0.0.1:8000/api/v1/auth/token/refresh/", {
           refresh: refreshToken
         });
-        
+
         const newAccessToken = response.data.access;
         // Optionally update the client-side cookie if it's not httpOnly
         if (typeof document !== "undefined") {
           document.cookie = `access_token=${newAccessToken}; path=/; max-age=3600`;
         }
-        
+
         // Retry the original request with the new token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
@@ -49,7 +49,7 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
