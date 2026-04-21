@@ -1,7 +1,6 @@
 # admin_panel/serializers.py
 from rest_framework import serializers
 from .models import Country, Goal, Specialization
-from nutritionist.models import Language
 from rest_framework import serializers
 from users.models import User
 from nutritionist.models import Nutritionist
@@ -22,11 +21,6 @@ class GoalSerializer(serializers.ModelSerializer):
 class SpecializationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specialization
-        fields = ['id', 'name']
-
-class LanguageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Language
         fields = ['id', 'name']
 
 
