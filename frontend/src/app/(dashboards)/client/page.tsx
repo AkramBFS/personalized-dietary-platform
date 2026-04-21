@@ -61,7 +61,11 @@ export default function ClientDashboardPage() {
 
         // 2. Active Plan
         if (plansRes?.data) {
-          const plans = plansRes.data.results || plansRes.data;
+          const plans = Array.isArray(plansRes.data.results)
+            ? plansRes.data.results
+            : Array.isArray(plansRes.data)
+              ? plansRes.data
+              : [];
           const current = plans.find((p: any) => p.status === "active");
           if (current) setActivePlan(current);
         }

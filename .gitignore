@@ -1,6 +1,11 @@
 # Python
 __pycache__/
 *.pyc
+venv/
+.venv/
+backend/nutriplatform/venv/
+node_modules/
+*.exe
 
 # Virtual env
 venv/

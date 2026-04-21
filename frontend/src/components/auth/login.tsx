@@ -52,11 +52,13 @@ export default function LoginPage() {
 
     try {
       const response = await api.post("/auth/login/", {
-        username: result.data.email, // API expects username, using email
+        email: result.data.email,
         password: result.data.password,
       });
 
-      const { tokens, user } = response.data;
+      const { data } = response.data;
+
+      const { tokens, user } = data;
 
       // Store tokens
       setAccessToken(tokens.access);
