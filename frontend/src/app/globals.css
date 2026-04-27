@@ -79,17 +79,31 @@
   --ring: 0.78 0.14 165;
 }
 
-.dark {
-  /* Inverting to Black Teal (#001918) and Midnight Cyan */
-  --background: 0.12 0.03 190;
-  /* Black Teal */
-  --foreground: 0.97 0.02 85;
-  /* Soft Cream text */
-  --card: 0.15 0.04 210;
-  --card-foreground: 0.97 0.02 85;
+.light {
+  --background: 0.98 0.01 235;
+  --foreground: 0.25 0.05 235;
+  --card: 0.97 0.02 85;
+  --card-foreground: 0.25 0.05 235;
   --primary: 0.78 0.14 165;
-  /* Mint pops even more in dark mode */
-  --primary-foreground: 0.12 0.03 190;
+  --primary-foreground: 0.25 0.05 235;
+  --secondary: 0.62 0.12 210;
+  --secondary-foreground: 0.98 0.01 235;
+  --muted: 0.97 0 0;
+  --muted-foreground: 0.45 0.05 235;
+  --accent: 0.68 0.12 165;
+  --accent-foreground: 0.98 0.01 235;
+  --border: 0.25 0.05 200; 
+  --input: 0.88 0.03 210;
+  --ring: 0.78 0.14 165;
+}
+ 
+.dark {
+  --background: 0.12 0.03 200;
+  --foreground: 0.98 0.01 235;
+  --card: 0.15 0.04 200;
+  --card-foreground: 0.98 0.01 235;
+  --primary: 0.78 0.14 165;
+  --primary-foreground: 0.12 0.03 200;
   --secondary: 0.25 0.05 235;
   --secondary-foreground: 0.97 0.02 85;
   --muted: 0.18 0.03 210;
@@ -130,4 +144,7 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #3EAD88;
   /* Aqua Forest */
+}
+html {
+scroll-behavior: smooth;
 }

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Logo } from "./logo";
 
 const footerLinks = {
   solutions: [
@@ -24,31 +25,16 @@ const footerLinks = {
 
 export default function FooterSection() {
   return (
-    <footer className="bg-teal-950 dark:bg-[#0B1F16] pt-20 pb-10">
+    <footer className="bg-gradient-to-br from-[#052023] via-[#01181D] to-[#052025] dark:bg-foreground pt-20 pb-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* --- Main Footer Content --- */}
         <div className="grid grid-cols-1 gap-12 mb-16 md:grid-cols-2 lg:grid-cols-6 lg:gap-8">
           {/* Brand Info */}
           <div className="lg:col-span-2">
             <div className="mb-6 flex items-center gap-2">
-              <div className="rounded-lg bg-emerald-500 p-2 text-teal-50">
-                <svg
-                  className="size-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-                  />
-                </svg>
-              </div>
-              <span className="text-2xl font-bold tracking-tight text-teal-50 dark:text-white">
-                Dieton
-              </span>
+              <Link href="/" className="flex items-center space-x-3">
+                <Logo forceDark />
+              </Link>
             </div>
             <p className="max-w-sm text-teal-50 dark:text-gray-400">
               Your AI-powered personal dietitian and calorie counter. We make
@@ -131,7 +117,7 @@ export default function FooterSection() {
               />
               <button
                 type="submit"
-                className="w-full rounded-lg bg-emerald-500 py-2.5 font-medium text-white transition-colors hover:bg-emerald-600"
+                className="w-full rounded-lg bg-primary py-2.5 font-medium text-white transition-colors hover:bg-emerald-500"
               >
                 Subscribe
               </button>
@@ -142,7 +128,7 @@ export default function FooterSection() {
         {/* --- Bottom Bar --- */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-teal-800 dark:border-gray-800 pt-8 md:flex-row">
           <p className="text-sm text-teal-50 dark:text-gray-400">
-            © {new Date().getFullYear()} Dieton. All rights reserved.
+            © {new Date().getFullYear()} SVMB. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link

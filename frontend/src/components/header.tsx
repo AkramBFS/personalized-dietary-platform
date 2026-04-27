@@ -33,25 +33,25 @@ const services = [
   {
     name: "AI Calorie Estimation",
     description: "Get instant nutritional insights from your food photos.",
-    href: "/services/ai-calorie",
+    href: "/services#ai-calorie-estimation",
     icon: CalculatorIcon,
   },
   {
     name: "Online Consultation",
     description: "Connect with certified nutritionists from anywhere.",
-    href: "/services/consultation",
+    href: "/services#online-consultation",
     icon: UserGroupIcon,
   },
   {
     name: "Personalized Plans",
-    description: "Custom meal and workout plans tailored to your goals.",
-    href: "/services/plans",
+    description: "Custom meal and nutrition plans tailored to your goals.",
+    href: "/services#personalized-plans",
     icon: SparklesIcon,
   },
   {
     name: "Seasonal Programs",
-    description: "Specialized guides for Ramadan and Summer fitness.",
-    href: "/services/seasonal",
+    description: "Specialized guides for Ramadan and Summer.",
+    href: "/services#seasonal-programs",
     icon: CalendarIcon,
   },
 ];
@@ -132,7 +132,7 @@ export const HeroHeader = () => {
 
                   <PopoverPanel
                     transition
-                    className="absolute -left-8 top-full z-10 mt-3 w-screen max-w-md rounded-3xl bg-popover/80 backdrop-blur-md border border-border-subtle shadow-2xl transition"
+                    className="absolute -left-8 top-full z-10 mt-3 w-screen max-w-md rounded-3xl bg-popover/90 backdrop-blur-md border border-border-subtle shadow-2xl transition"
                   >
                     <div className="p-3">
                       {services.map((item) => (
@@ -169,19 +169,33 @@ export const HeroHeader = () => {
               </PopoverGroup>
 
               {/* RIGHT SIDE ACTIONS */}
-              <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center gap-x-4">
+              <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
                 {!isScrolled ? (
                   <>
-                    <Button className="text-background bg-foreground/0" asChild>
-                      <Link href="/login">Login</Link>
+                    <Button
+                      key="login-btn"
+                      variant="ghost"
+                      className="animate-in fade-in zoom-in duration-300"
+                      asChild
+                    >
+                      <Link
+                        href="/login"
+                        className="text-primary hover: text-foreground "
+                      >
+                        Login
+                      </Link>
                     </Button>
-                    <Button asChild>
+                    <Button
+                      key="signup-btn"
+                      className="animate-in fade-in zoom-in duration-300"
+                    >
                       <Link href="/register">Sign Up</Link>
                     </Button>
                   </>
                 ) : (
                   <Button
-                    className="transition-transform duration-300 scale-105"
+                    key="get-started-btn"
+                    className="animate-in fade-in zoom-in duration-300 animate-delay-100"
                     asChild
                   >
                     <Link href="/register">Get Started</Link>
