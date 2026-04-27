@@ -286,7 +286,7 @@ export default function FAQPage() {
               <div className="flex flex-col gap-8">
                 <div className="text-xs text-[#3DDC97]/60 uppercase tracking-widest font-semibold flex items-center gap-2">
                   <span className="font-mono text-[#3DDC97]">
-                    0{catIndex + 1} //
+                    0{catIndex + 1} •
                   </span>
                   {category.title}
                 </div>
