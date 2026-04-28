@@ -342,7 +342,10 @@ export function AIDetection() {
 
           {/* 3. The Floating Data Card */}
           {activeFood && (
-            <div className="absolute z-30 bottom-10 right-10 w-96 min-h-[380px] rounded-[32px] bg-gradient-to-br from-[#01373D] via-emerald-300/65 to-sky-500/70 border border-white/10 p-7 text-white shadow-[0_35px_80px_rgba(14,165,233,0.22)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-700 ease-in-out pointer-events-none">
+            <div
+              className="cnx
+            absolute z-30 bottom-10 right-10 w-96 min-h-[380px] rounded-[32px] bg-gradient-to-br from-[#01373D] via-emerald-300/65 to-sky-500/70 border border-white/10 p-7 text-white shadow-[0_35px_80px_rgba(14,165,233,0.22)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-700 ease-in-out pointer-events-none"
+            >
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-2xl font-bold tracking-tight font-syne">

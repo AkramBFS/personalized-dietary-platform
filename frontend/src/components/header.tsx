@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { Sun, Moon } from "lucide-react";
 import {
   Popover,
   PopoverButton,
@@ -65,6 +67,10 @@ const mainNav = [
 export const HeroHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,6 +80,9 @@ export const HeroHeader = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
+
   return (
     <header>
       {/* OUTER NAV (CENTERING CONTAINER) */}
@@ -82,11 +91,11 @@ export const HeroHeader = () => {
         <div
           className={cn(
             "pointer-events-auto transition-all duration-500 ease-in-out",
-            "bg-foreground/0 backdrop-blur-md ",
+            "backdrop-blur-md",
             "flex items-center",
             isScrolled
-              ? "w-full lg:w-[50vw] rounded-none lg:rounded-full px-6 py-2 shadow-xl bg-white/10"
-              : "w-full rounded-none px-6 py-3 ",
+              ? "w-full lg:w-[75vw] rounded-none lg:rounded-full px-6 py-2 shadow-xl bg-white/80 dark:bg-white/10 border border-border/30 dark:border-transparent"
+              : "w-full rounded-none px-6 py-3 border border-transparent bg-transparent",
           )}
         >
           {/* CONTENT WRAPPER */}
@@ -95,7 +104,7 @@ export const HeroHeader = () => {
               {/* LOGO */}
               <div className="flex lg:flex-1">
                 <Link href="/" className="flex items-center space-x-3">
-                  <Logo forceDark />
+                  <Logo />
                 </Link>
               </div>
 
@@ -106,8 +115,8 @@ export const HeroHeader = () => {
                   onClick={() => setMobileMenuOpen(true)}
                   className=" -m-2.5 inline-flex items-center justify-center
     rounded-md p-2.5
-    text-white
-    hover:text-emerald-300
+    text-foreground dark:text-white
+    hover:text-emerald-500 dark:hover:text-emerald-300
     focus:outline-none"
                 >
                   <Bars3Icon className="size-7" />
@@ -121,7 +130,7 @@ export const HeroHeader = () => {
                     className="
     flex items-center gap-x-1
     text-sm font-medium uppercase tracking-[0.025em]
-    text-white hover:text-emerald-300
+    text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
     transition-colors
     outline-none focus:outline-none focus:ring-0
   "
@@ -161,7 +170,7 @@ export const HeroHeader = () => {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="text-sm font-medium uppercase tracking-[0.025em] text-white hover:text-emerald-300"
+                    className="text-sm font-medium uppercase tracking-[0.025em] text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300"
                   >
                     {item.name}
                   </Link>
@@ -170,6 +179,25 @@ export const HeroHeader = () => {
 
               {/* RIGHT SIDE ACTIONS */}
               <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+                {/* THEME TOGGLE */}
+                <button
+                  id="theme-toggle"
+                  type="button"
+                  onClick={toggleTheme}
+                  aria-label="Toggle theme"
+                  className="relative inline-flex items-center justify-center rounded-full p-2
+                    text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
+                    hover:bg-black/5 dark:hover:bg-white/10
+                    transition-colors duration-200
+                    focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                >
+                  {mounted && (
+                    isDark
+                      ? <Sun className="size-5" />
+                      : <Moon className="size-5" />
+                  )}
+                </button>
+
                 {!isScrolled ? (
                   <>
                     <Button
@@ -180,7 +208,7 @@ export const HeroHeader = () => {
                     >
                       <Link
                         href="/login"
-                        className="text-primary hover: text-foreground "
+                        className="text-primary dark:text-white hover:text-emerald-400 dark:hover:text-emerald-300"
                       >
                         Login
                       </Link>
@@ -217,9 +245,26 @@ export const HeroHeader = () => {
         <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full bg-background p-6 sm:max-w-sm">
           <div className="flex items-center justify-between">
             <Logo />
-            <button onClick={() => setMobileMenuOpen(false)}>
-              <XMarkIcon className="size-7" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="inline-flex items-center justify-center rounded-full p-2
+                  text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
+                  hover:bg-black/5 dark:hover:bg-white/10
+                  transition-colors duration-200"
+              >
+                {mounted && (
+                  isDark
+                    ? <Sun className="size-5" />
+                    : <Moon className="size-5" />
+                )}
+              </button>
+              <button onClick={() => setMobileMenuOpen(false)}>
+                <XMarkIcon className="size-7" />
+              </button>
+            </div>
           </div>
         </DialogPanel>
       </Dialog>
