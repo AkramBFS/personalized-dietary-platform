@@ -4,22 +4,21 @@ import { Logo } from "./logo";
 
 const footerLinks = {
   solutions: [
-    { title: "Personal Dietitian", href: "#" },
-    { title: "Calorie Tracker", href: "#" },
-    { title: "Meal Plans", href: "#" },
-    { title: "API Access", href: "#" },
+    { title: "Ai calorie tracker", href: "/services/#ai-calorie-estimation" },
+    { title: "Online Consultation", href: "/services/#online-consultation" },
+    { title: "Personalized Plans", href: "/services/#personalized-plans" },
+    { title: "Seasonal Programs", href: "/services/#seasonal-programs" },
   ],
   resources: [
-    { title: "Blog", href: "#" },
-    { title: "Nutrition Guides", href: "#" },
-    { title: "Community", href: "#" },
-    { title: "Help Center", href: "#" },
+    { title: "Blog", href: "/blog" },
+    { title: "Community", href: "/community" },
+    { title: "Support", href: "/support" },
   ],
   company: [
-    { title: "About Us", href: "#" },
-    { title: "Careers", href: "#" },
-    { title: "Privacy Policy", href: "#" },
-    { title: "Terms of Service", href: "#" },
+    { title: "About Us", href: "/about" },
+    { title: "FAQ", href: "/faq" },
+    { title: "Privacy Policy", href: "/privacypolicy" },
+    { title: "Terms of Service", href: "/tos" },
   ],
 };
 
