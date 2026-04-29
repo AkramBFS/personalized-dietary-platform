@@ -37,6 +37,16 @@ class RegisterClientSerializer(serializers.Serializer):
     goal_id        = serializers.IntegerField()
     health_history = serializers.CharField(required=False, allow_blank=True)
     profile_photo  = serializers.ImageField(required=False)
+    activity_level = serializers.ChoiceField(
+        choices=['sedentary', 'moderate', 'very_active'],
+        required=False,
+        allow_null=True
+    )
+    diet = serializers.ChoiceField(
+        choices=['none', 'omnivore', 'vegetarian', 'vegan', 'keto', 'paleo'],
+        required=False,
+        allow_null=True
+    )
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
@@ -82,6 +92,7 @@ class RegisterClientSerializer(serializers.Serializer):
                 profile_photo
             )
             photo_url = path
+        
 
         # Create Client profile
         client = Client.objects.create(
@@ -94,6 +105,8 @@ class RegisterClientSerializer(serializers.Serializer):
             goal_id           = validated_data['goal_id'],
             health_history    = validated_data.get('health_history', ''),
             profile_photo_url = photo_url,
+            activity_level    = validated_data.get('activity_level', None), 
+            diet              = validated_data.get('diet', None),           
             # BMI and BMR are auto-calculated in Client.save()
         )
 

@@ -35,7 +35,10 @@ from .views import (
     AdminInquiryListView,
     AdminInquiryDetailView,
     AdminInquiryRespondView,
+    ActivityLevelListView,
+    DietListView,
 )
+
 urlpatterns = [
     path('countries/',       CountryListView.as_view(),       name='countries'),
     path('goals/',           GoalListView.as_view(),          name='goals'),
@@ -78,6 +81,9 @@ urlpatterns = [
     path('admin/inquiries/',                     AdminInquiryListView.as_view(),    name='admin-inquiries'),
     path('admin/inquiries/<int:pk>/',            AdminInquiryDetailView.as_view(),  name='admin-inquiry-detail'),
     path('admin/inquiries/<int:pk>/respond/',    AdminInquiryRespondView.as_view(), name='admin-inquiry-respond'),
+
+    path('activity-levels/', ActivityLevelListView.as_view(), name='activity-levels'),
+    path('diets/',           DietListView.as_view(),          name='diets'),
 ]
 
 
