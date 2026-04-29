@@ -6,16 +6,6 @@ import { ChevronRight, MessageCircle } from "lucide-react";
 export default function HeroSection() {
   return (
     <main>
-      <div className="absolute inset-0 -z-10 h-[100vh]">
-        <Image
-          src="/branding/hero-bg.jpg"
-          alt="Healthy lifestyle background"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
-      </div>
       <section className="relative h-screen flex items-center">
         <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl">
