@@ -1,5 +1,5 @@
 import PaymentSection from "@/components/payment";
-import { HeroHeader } from "@/components/header";
+import { HeroHeader } from "@/components/layout/navbar";
 import FooterSection from "@/components/layout/footer";
 
 export default function PaymentPage() {

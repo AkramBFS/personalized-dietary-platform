@@ -7,7 +7,7 @@ import FadeIn from "@/components/animations/FadeIn";
 import Testimonials from "@/components/testimonials";
 import CallToAction from "@/components/calltoaction";
 import { AIDetection } from "@/components/ai/aidetection";
-import { HeroHeader } from "@/components/header";
+import { HeroHeader } from "@/components/layout/navbar";
 export default function HomePage() {
   return (
     <main className="selection:bg-[#3DDC97]/30 selection:text-[#3DDC97]">

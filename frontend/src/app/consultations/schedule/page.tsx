@@ -1,7 +1,7 @@
 "use client";
 
 import ScheduleConsultation from "@/components/scheduleconsultation";
-import { HeroHeader } from "@/components/header";
+import { HeroHeader } from "@/components/layout/navbar";
 import FooterSection from "@/components/layout/footer";
 
 export default function ConsultationPage() {
