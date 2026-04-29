@@ -209,6 +209,7 @@ function AppearanceTab() {
   const themes = [
     { id: "light", label: "Light", icon: Sun, description: "Classic bright interface" },
     { id: "dark", label: "Dark", icon: Moon, description: "Easy on the eyes" },
+    { id: "special", label: "Special", icon: Palette, description: "Premium branded experience" },
     { id: "system", label: "System", icon: Monitor, description: "Match your device settings" },
   ];
 
@@ -231,8 +232,16 @@ function AppearanceTab() {
                 onClick={() => setTheme(item.id)}
                 className={`group relative p-6 rounded-xl border-2 text-left transition-all duration-200 ${
                   isActive
-                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 shadow-sm"
-                    : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-white dark:bg-[#12161b]"
+                    ? "border-emerald-500 shadow-md scale-[1.02]"
+                    : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
+                } ${
+                  item.id === "light"
+                    ? "bg-white text-gray-900"
+                    : item.id === "dark"
+                    ? "bg-[#12161b] text-white"
+                    : item.id === "special"
+                    ? "bg-[#01181D] text-[#3DDC97] border-[#0D3239]"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                 }`}
               >
                 {isActive ? (
@@ -242,15 +251,24 @@ function AppearanceTab() {
                 ) : null}
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${
-                    isActive
-                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+                    item.id === "light"
+                      ? "bg-gray-100 text-gray-600"
+                      : item.id === "dark"
+                      ? "bg-gray-800 text-gray-400"
+                      : item.id === "special"
+                      ? "bg-[#0D3239] text-[#3DDC97]"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-500"
                   }`}
                 >
                   <IconComp className="w-6 h-6" />
                 </div>
-                <p className={`font-semibold text-sm mb-1 ${isActive ? "text-emerald-700 dark:text-emerald-400" : "text-gray-900 dark:text-white"}`}>{item.label}</p>
-                <p className="text-xs text-muted-foreground dark:text-gray-500">{item.description}</p>
+                <p className="font-semibold text-sm mb-1">{item.label}</p>
+                <p className={`text-xs ${
+                  item.id === "light" ? "text-gray-500" : 
+                  item.id === "dark" ? "text-gray-400" :
+                  item.id === "special" ? "text-emerald-400/70" :
+                  "text-muted-foreground"
+                }`}>{item.description}</p>
               </button>
             );
           })}

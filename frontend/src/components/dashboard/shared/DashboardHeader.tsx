@@ -31,10 +31,10 @@ export function DashboardHeader({ role }: { role: RoleType }) {
   }, [role]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-gray-200 dark:border-[#2a3038] bg-white dark:bg-[#12161b] px-4 md:px-6 shadow-sm">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-background px-4 md:px-6 shadow-sm">
       <div className="flex items-center gap-4">
         {/* Mobile/Toggle Trigger */}
-        <SidebarTrigger className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white" />
+        <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
 
         {/* Logo Section - Top Left of the Header */}
         <div className="flex items-center">

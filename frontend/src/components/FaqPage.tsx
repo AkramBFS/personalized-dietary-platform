@@ -224,7 +224,7 @@ export default function FAQPage() {
   };
 
   return (
-    <main className="pt-24 md:pt-48 pb-32 px-8 md:px-24 max-w-7xl mx-auto selection:bg-[#3DDC97]/30 min-h-screen text-[#cce8e7]">
+    <main className="pt-24 md:pt-48 pb-32 px-8 md:px-24 max-w-7xl mx-auto selection:bg-[#3DDC97]/30 min-h-screen text-card-foreground">
       {/* Header Section */}
       <header className="max-w-4xl mb-32">
         <motion.div
@@ -301,13 +301,13 @@ export default function FAQPage() {
                     return (
                       <div
                         key={itemIndex}
-                        className="group border border-[#414848] bg-[#15464E] hover:border-[#3DDC97] transition-colors rounded-xl overflow-hidden"
+                        className="group border border-[#414848] bg-accent hover:border-[#3DDC97] transition-colors rounded-xl overflow-hidden"
                       >
                         <button
                           onClick={() => toggleItem(category.id, itemIndex)}
                           className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none"
                         >
-                          <span className="text-xl font-medium text-[#cce8e7] pr-8 group-hover:text-[#3DDC97] transition-colors">
+                          <span className="text-xl font-medium text-card-foreground pr-8 group-hover:text-[#3DDC97] transition-colors">
                             {item.q}
                           </span>
                           <Plus

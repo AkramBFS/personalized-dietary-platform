@@ -57,7 +57,7 @@ export default function SubscriptionPlans() {
   return (
     <div className="pt-32 pb-24 relative overflow-hidden font-body antialiased bg-gradient-to-br from-[#052023] via-[#01181D] to-[#052025]">
       {/* Background decorative "S" aura */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#61dda3]/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-brand/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
       {/* Hero Section */}
       <motion.section
@@ -72,11 +72,11 @@ export default function SubscriptionPlans() {
             Plans
           </span>
         </h1>
-        <p className="text-xl md:text-2xl text-white/70 font-light mb-6 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-xl md:text-2xl text-muted-foreground font-light mb-6 max-w-2xl mx-auto leading-relaxed">
           Choose how much intelligence and guidance you want in your nutrition
           journey.
         </p>
-        <p className="text-sm uppercase tracking-widest text-[#61dda3] font-medium">
+        <p className="text-sm uppercase tracking-widest text-brand font-medium">
           Start free, upgrade when you're ready — no pressure, no lock-in.
         </p>
       </motion.section>
@@ -98,15 +98,15 @@ export default function SubscriptionPlans() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div
             whileHover={{ y: -8 }}
-            className="bg-[#0D3239] p-8 rounded-3xl border border-[#15464E] flex flex-col items-center text-center shadow-lg "
+            className="bg-card p-8 rounded-3xl border border-border flex flex-col items-center text-center shadow-lg "
           >
-            <div className="w-16 h-16 rounded-full bg-[#15464E] flex items-center justify-center text-[#61dda3] mb-6 shadow-[0_0_20px_rgba(97,221,163,0.2)]">
+            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-brand mb-6 shadow-brand">
               <Zap className="w-8 h-8" />
             </div>
             <h3 className="font-[Syne] text-xl font-bold mb-3 text-white">
               AI Estimation
             </h3>
-            <p className="text-sm text-white/70 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Instantly estimate calories and macros from photos with our
               advanced AI model.
             </p>
@@ -114,16 +114,16 @@ export default function SubscriptionPlans() {
 
           <motion.div
             whileHover={{ y: -8 }}
-            className="bg-[#0D3239] p-8 rounded-3xl border border-[#15464E] flex flex-col items-center text-center shadow-lg relative overflow-hidden md:scale-105 z-10 "
+            className="bg-card p-8 rounded-3xl border border-border flex flex-col items-center text-center shadow-lg relative overflow-hidden md:scale-105 z-10 "
           >
             <div className="absolute inset-0 bg-gradient-to-b from-[#61dda3]/10 to-transparent pointer-events-none"></div>
-            <div className="w-16 h-16 rounded-full bg-[#15464E] flex items-center justify-center text-[#61dda3] mb-6 shadow-[0_0_20px_rgba(97,221,163,0.3)] relative z-10">
+            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-brand mb-6 shadow-brand relative z-10">
               <Sparkles className="w-8 h-8" />
             </div>
             <h3 className="font-[Syne] text-xl font-bold mb-3 text-white relative z-10">
               Smart Assistant
             </h3>
-            <p className="text-sm text-white/70 leading-relaxed relative z-10">
+            <p className="text-sm text-muted-foreground leading-relaxed relative z-10">
               Your personal AI nutritionist, available 24/7 for guidance and
               meal planning.
             </p>
@@ -131,15 +131,15 @@ export default function SubscriptionPlans() {
 
           <motion.div
             whileHover={{ y: -8 }}
-            className="bg-[#0D3239] p-8 rounded-3xl border border-[#15464E] flex flex-col items-center text-center shadow-lg "
+            className="bg-card p-8 rounded-3xl border border-border flex flex-col items-center text-center shadow-lg "
           >
-            <div className="w-16 h-16 rounded-full bg-[#15464E] flex items-center justify-center text-[#61dda3] mb-6 shadow-[0_0_20px_rgba(97,221,163,0.2)]">
+            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-brand mb-6 shadow-brand">
               <Activity className="w-8 h-8" />
             </div>
             <h3 className="font-[Syne] text-xl font-bold mb-3 text-white">
               Deep Analytics
             </h3>
-            <p className="text-sm text-white/70 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Uncover trends in your nutrition with detailed, easy-to-read
               charts and reports.
             </p>
@@ -159,10 +159,10 @@ export default function SubscriptionPlans() {
               x: { duration: 0.6, delay: 0.2 },
             }}
             whileHover={{ y: -8 }}
-            className="bg-[#051b20] rounded-[2rem] p-10 border border-[#15464E]/60 hover:border-[#15464E] transition-colors duration-300 shadow-xl"
+            className="bg-muted rounded-[2rem] p-10 border border-border/60 hover:border-border transition-colors duration-300 shadow-xl"
           >
             <div className="mb-8">
-              <span className="px-4 py-1.5 rounded-full bg-[#15464E] text-white/90 text-xs font-bold uppercase tracking-wider mb-6 inline-block">
+              <span className="px-4 py-1.5 rounded-full bg-accent text-white/90 text-xs font-bold uppercase tracking-wider mb-6 inline-block">
                 Starter
               </span>
               <h3 className="font-[Syne] text-3xl font-bold text-white mb-2">
@@ -173,7 +173,7 @@ export default function SubscriptionPlans() {
               </p>
             </div>
 
-            <div className="mb-10 pb-10 border-b border-[#15464E]">
+            <div className="mb-10 pb-10 border-b border-border">
               <div className="text-4xl font-[Syne] font-bold text-white">
                 Free
               </div>
@@ -182,17 +182,17 @@ export default function SubscriptionPlans() {
 
             <ul className="space-y-6 mb-10">
               <li className="flex items-start gap-4">
-                <CheckCircle className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <CheckCircle className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white/80">Manual tracking</span>
               </li>
               <li className="flex items-start gap-4">
-                <CheckCircle className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <CheckCircle className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white/80">
                   Educational content
                 </span>
               </li>
               <li className="flex items-start gap-4">
-                <CheckCircle className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <CheckCircle className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white/80">Limited community</span>
               </li>
             </ul>
@@ -200,7 +200,7 @@ export default function SubscriptionPlans() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 rounded-xl border border-[#15464E] text-white font-medium hover:bg-[#15464E] transition-colors"
+              className="w-full py-4 rounded-xl border border-border text-white font-medium hover:bg-accent transition-colors"
             >
               Start Free
             </motion.button>
@@ -215,52 +215,52 @@ export default function SubscriptionPlans() {
               x: { duration: 0.6, delay: 0.2 },
             }}
             whileHover={{ y: -8 }}
-            className="bg-[#0D3239] rounded-[2rem] p-10 relative overflow-hidden shadow-[0_30px_60px_rgba(5,43,52,0.4)] md:scale-105 z-10 border border-[#61dda3]/30"
+            className="bg-card rounded-[2rem] p-10 relative overflow-hidden shadow-[0_30px_60px_rgba(5,43,52,0.4)] md:scale-105 z-10 border border-brand/30"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#61dda3]/10 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand/10 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
             <div className="mb-8 relative z-10">
-              <span className="px-4 py-1.5 rounded-full bg-[#61dda3]/20 text-[#61dda3] text-xs font-bold uppercase tracking-wider mb-6 inline-block">
+              <span className="px-4 py-1.5 rounded-full bg-brand/20 text-brand text-xs font-bold uppercase tracking-wider mb-6 inline-block">
                 Recommended
               </span>
               <h3 className="font-[Syne] text-3xl font-bold text-white mb-2">
                 Pro Plan
               </h3>
-              <p className="text-white/70 text-sm">
+              <p className="text-muted-foreground text-sm">
                 For autonomy, precision, and intelligent support
               </p>
             </div>
 
-            <div className="mb-10 pb-10 border-b border-[#15464E] relative z-10">
+            <div className="mb-10 pb-10 border-b border-border relative z-10">
               <div className="text-4xl font-[Syne] font-bold text-white">
                 $19
               </div>
-              <div className="text-sm text-white/70 mt-1">
+              <div className="text-sm text-muted-foreground mt-1">
                 Monthly subscription
               </div>
             </div>
 
             <ul className="space-y-6 mb-10 relative z-10">
               <li className="flex items-start gap-4">
-                <Zap className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <Zap className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white">
                   AI image calorie estimation
                 </span>
               </li>
               <li className="flex items-start gap-4">
-                <Sparkles className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <Sparkles className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white">
                   AI nutrition assistant
                 </span>
               </li>
               <li className="flex items-start gap-4">
-                <LineChart className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <LineChart className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white">
                   Advanced insights & analytics
                 </span>
               </li>
               <li className="flex items-start gap-4">
-                <MessageSquare className="text-[#61dda3] w-6 h-6 shrink-0" />
+                <MessageSquare className="text-brand w-6 h-6 shrink-0" />
                 <span className="text-sm text-white">
                   Full community access
                 </span>
@@ -286,8 +286,8 @@ export default function SubscriptionPlans() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl mx-auto px-6 mb-16 relative z-10"
       >
-        <div className="bg-[#0D3239] rounded-[2rem] p-10 md:p-12 shadow-xl border border-[#15464E]/50">
-          <h2 className="font-[Syne] text-3xl font-bold mb-8 text-center text-[#61dda3]">
+        <div className="bg-card rounded-[2rem] p-10 md:p-12 shadow-xl border border-border/50">
+          <h2 className="font-[Syne] text-3xl font-bold mb-8 text-center text-brand">
             Frequently Asked Questions
           </h2>
           <Accordion type="single" collapsible className="w-full space-y-4">
@@ -295,7 +295,7 @@ export default function SubscriptionPlans() {
               <AccordionItem
                 key={item.id}
                 value={item.id}
-                className="bg-[#15464E] rounded-xl overflow-hidden border-none px-6 transition-colors hover:bg-[#15464E]/80"
+                className="bg-accent rounded-xl overflow-hidden border-none px-6 transition-colors hover:bg-accent/80"
               >
                 <AccordionTrigger className="hover:no-underline py-6">
                   <span className="font-bold text-white text-left text-[15px]">
@@ -303,7 +303,7 @@ export default function SubscriptionPlans() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-6">
-                  <p className="text-white/70 text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     {item.answer}
                   </p>
                 </AccordionContent>

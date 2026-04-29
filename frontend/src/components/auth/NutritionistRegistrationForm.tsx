@@ -157,16 +157,20 @@ export default function NutritionistRegistrationForm() {
             onClick={() =>
               setTheme(resolvedTheme === "dark" ? "light" : "dark")
             }
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-[#1a2027] dark:text-gray-100 dark:hover:bg-[#222a33]"
+            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition shadow-sm ${
+              resolvedTheme === "dark"
+                ? "bg-white text-gray-900 border-gray-200 hover:bg-gray-100"
+                : "bg-[#1a2027] text-white border-gray-700 hover:bg-[#222a33]"
+            }`}
           >
             {resolvedTheme === "dark" ? (
               <>
-                <Sun className="h-4 w-4" />
+                <Sun className="h-4 w-4 text-orange-500" />
                 Light mode
               </>
             ) : (
               <>
-                <Moon className="h-4 w-4" />
+                <Moon className="h-4 w-4 text-blue-400" />
                 Dark mode
               </>
             )}

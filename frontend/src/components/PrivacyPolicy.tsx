@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
   };
 
   return (
-    <main className="pt-24 md:pt-48 pb-32 px-8 md:px-24 max-w-7xl mx-auto selection:bg-[#3DDC97]/30 min-h-screen text-[#cce8e7]">
+    <main className="pt-24 md:pt-48 pb-32 px-8 md:px-24 max-w-7xl mx-auto selection:bg-[#3DDC97]/30 min-h-screen text-card-foreground">
       {/* Header Section */}
       <header className="max-w-4xl mb-32">
         <div className="text-[#3DDC97] uppercase tracking-[0.3em] text-sm mb-6 font-semibold">
@@ -77,7 +77,7 @@ export default function PrivacyPolicy() {
         <div className="mt-12 flex items-center gap-4 text-xs font-semibold uppercase tracking-widest text-[#c0c8c8]/60">
           <span>Official Release</span>
           <span className="w-8 h-px bg-[#414848]"></span>
-          <span className="text-[#cce8e7]">April 2026</span>
+          <span className="text-card-foreground">April 2026</span>
         </div>
       </header>
 
@@ -139,7 +139,7 @@ export default function PrivacyPolicy() {
               <h2 className="text-3xl font-bold">Taxonomy</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                <div className="group p-6 bg-[#15464E] rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
+                <div className="group p-6 bg-accent rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
                   <h3 className="text-[#3DDC97] text-sm uppercase tracking-wider mb-3 font-semibold">
                     Personal Data
                   </h3>
@@ -149,7 +149,7 @@ export default function PrivacyPolicy() {
                     access, communication, and personalized follow-up.
                   </p>
                 </div>
-                <div className="group p-6 bg-[#15464E] rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
+                <div className="group p-6 bg-accent rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
                   <h3 className="text-[#3DDC97] text-sm uppercase tracking-wider mb-3 font-semibold">
                     Health & Lifestyle Data
                   </h3>
@@ -160,7 +160,7 @@ export default function PrivacyPolicy() {
                     nutrition guidance.
                   </p>
                 </div>
-                <div className="group p-6 bg-[#15464E] rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
+                <div className="group p-6 bg-accent rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
                   <h3 className="text-[#3DDC97] text-sm uppercase tracking-wider mb-3 font-semibold">
                     AI & Food Images
                   </h3>
@@ -171,7 +171,7 @@ export default function PrivacyPolicy() {
                     lifecycle.
                   </p>
                 </div>
-                <div className="group p-6 bg-[#15464E] rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
+                <div className="group p-6 bg-accent rounded-xl border border-[#414848] transition-colors hover:bg-[#1c5a64]">
                   <h3 className="text-[#3DDC97] text-sm uppercase tracking-wider mb-3 font-semibold">
                     Technical Metadata
                   </h3>
@@ -249,7 +249,7 @@ export default function PrivacyPolicy() {
 
           {/* 04 Neural Governance — AI Disclaimer */}
           <section className="scroll-mt-48" id="governance">
-            <div className="relative p-12 bg-[#15464E] rounded-xl overflow-hidden group border border-[#414848] shadow-lg">
+            <div className="relative p-12 bg-accent rounded-xl overflow-hidden group border border-[#414848] shadow-lg">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
                 <Cpu className="text-[#3DDC97]" size={160} />
               </div>
@@ -272,7 +272,7 @@ export default function PrivacyPolicy() {
                     Calorie estimations are inherently approximate and may vary
                     based on image quality, portion size, and food preparation.
                   </p>
-                  <div className="p-6 bg-[#3DDC97]/10 border-l-2 border-[#3DDC97] rounded-r-lg text-[#cce8e7] font-medium">
+                  <div className="p-6 bg-[#3DDC97]/10 border-l-2 border-[#3DDC97] rounded-r-lg text-card-foreground font-medium">
                     Personal health data and meal images are never used to train
                     public or third-party AI models. All processing remains
                     confined to this platform’s controlled environment.
@@ -295,11 +295,11 @@ export default function PrivacyPolicy() {
                 the platform or comply with legal obligations.
               </p>
 
-              <div className="bg-[#15464E] p-8 rounded-xl border border-[#414848] space-y-6 text-[#c0c8c8]">
+              <div className="bg-accent p-8 rounded-xl border border-[#414848] space-y-6 text-[#c0c8c8]">
                 <div className="flex gap-4">
                   <LayoutGrid className="text-[#3DDC97] shrink-0" size={24} />
                   <div>
-                    <strong className="text-[#cce8e7] block mb-1">
+                    <strong className="text-card-foreground block mb-1">
                       Service Providers
                     </strong>
                     <p className="text-sm">
@@ -312,7 +312,7 @@ export default function PrivacyPolicy() {
                 <div className="flex gap-4">
                   <ShieldCheck className="text-[#3DDC97] shrink-0" size={24} />
                   <div>
-                    <strong className="text-[#cce8e7] block mb-1">
+                    <strong className="text-card-foreground block mb-1">
                       Legal Compliance
                     </strong>
                     <p className="text-sm">
@@ -324,7 +324,7 @@ export default function PrivacyPolicy() {
                 <div className="flex gap-4">
                   <Database className="text-[#3DDC97] shrink-0" size={24} />
                   <div>
-                    <strong className="text-[#cce8e7] block mb-1">
+                    <strong className="text-card-foreground block mb-1">
                       Security
                     </strong>
                     <p className="text-sm">
@@ -350,36 +350,36 @@ export default function PrivacyPolicy() {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                <div className="flex flex-col items-center justify-center p-8 bg-[#15464E] rounded-xl text-center border border-[#414848] hover:bg-[#1c5a64] transition-colors cursor-pointer group">
+                <div className="flex flex-col items-center justify-center p-8 bg-accent rounded-xl text-center border border-[#414848] hover:bg-[#1c5a64] transition-colors cursor-pointer group">
                   <Eye
                     className="text-[#3DDC97] mb-4 group-hover:scale-110 transition-transform"
                     size={32}
                   />
-                  <span className="text-sm uppercase tracking-wider font-semibold text-[#cce8e7]">
+                  <span className="text-sm uppercase tracking-wider font-semibold text-card-foreground">
                     Access
                   </span>
                   <p className="text-[10px] text-[#c0c8c8]/60 mt-2">
                     Request copies of health data
                   </p>
                 </div>
-                <div className="flex flex-col items-center justify-center p-8 bg-[#15464E] rounded-xl text-center border border-[#414848] hover:bg-[#1c5a64] transition-colors cursor-pointer group">
+                <div className="flex flex-col items-center justify-center p-8 bg-accent rounded-xl text-center border border-[#414848] hover:bg-[#1c5a64] transition-colors cursor-pointer group">
                   <FileEdit
                     className="text-[#3DDC97] mb-4 group-hover:scale-110 transition-transform"
                     size={32}
                   />
-                  <span className="text-sm uppercase tracking-wider font-semibold text-[#cce8e7]">
+                  <span className="text-sm uppercase tracking-wider font-semibold text-card-foreground">
                     Correction
                   </span>
                   <p className="text-[10px] text-[#c0c8c8]/60 mt-2">
                     Update inaccurate info
                   </p>
                 </div>
-                <div className="flex flex-col items-center justify-center p-8 bg-[#15464E] rounded-xl text-center border border-[#414848] hover:bg-[#1c5a64] transition-colors cursor-pointer group">
+                <div className="flex flex-col items-center justify-center p-8 bg-accent rounded-xl text-center border border-[#414848] hover:bg-[#1c5a64] transition-colors cursor-pointer group">
                   <Trash2
                     className="text-[#3DDC97] mb-4 group-hover:scale-110 transition-transform"
                     size={32}
                   />
-                  <span className="text-sm uppercase tracking-wider font-semibold text-[#cce8e7]">
+                  <span className="text-sm uppercase tracking-wider font-semibold text-card-foreground">
                     Deletion
                   </span>
                   <p className="text-[10px] text-[#c0c8c8]/60 mt-2">
@@ -411,7 +411,7 @@ export default function PrivacyPolicy() {
 
           {/* 07 Contact — Contact Inquiries */}
           <section className="scroll-mt-48" id="contact">
-            <div className="bg-[#15464E] p-12 rounded-xl border border-[#3DDC97]/20 shadow-2xl">
+            <div className="bg-accent p-12 rounded-xl border border-[#3DDC97]/20 shadow-2xl">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
                 <div className="space-y-4">
                   <h2 className="text-3xl font-bold">Contact Inquiries</h2>
