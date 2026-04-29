@@ -40,87 +40,87 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
     <DropdownMenu onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center gap-3 p-1 pl-2 pr-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          className="flex items-center gap-3 p-1 pl-2 pr-3 rounded-full hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="User Profile Menu"
           aria-expanded={isOpen}
         >
           <Avatar className="h-8 w-8">
             <AvatarImage src={user.avatarUrl} alt={user.username} />
-            <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 font-semibold text-sm">
+            <AvatarFallback className="bg-primary/15 text-primary font-semibold text-sm">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium hidden sm:inline-block dark:text-gray-200">
+          <span className="text-sm font-medium hidden sm:inline-block text-foreground">
             {user.username}
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-56 dark:bg-[#1a2027] border-gray-200 dark:border-gray-800 shadow-xl"
+        className="w-56 bg-card border-border shadow-xl"
       >
         <DropdownMenuLabel className="font-normal py-3">
           <div className="flex flex-col space-y-1 text-sm">
-            <p className="font-semibold text-gray-900 dark:text-white leading-none">
+            <p className="font-semibold text-foreground leading-none">
               {user.username}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+        <DropdownMenuSeparator className="bg-border" />
         {role !== "high_admin" ? (
           <DropdownMenuItem
             asChild
-            className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-gray-800/50 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-2.5 group"
+            className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
           >
             <Link
               href={`/${role === "high_admin" ? "admin" : role}/profile`}
               className="flex items-center w-full"
             >
-              <User className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
+              <User className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem
           asChild
-          className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-gray-800/50 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-2.5 group"
+          className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
         >
           <Link
             href={`/${role === "high_admin" ? "admin" : role}/settings`}
             className="flex items-center w-full"
           >
-            <Settings className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
+            <Settings className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+        <DropdownMenuSeparator className="bg-border" />
 
         {/* Theme Toggle */}
         <DropdownMenuItem
-          className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-gray-800/50 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-2.5 group"
+          className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
         >
           {mounted && resolvedTheme === "dark" ? (
             <>
-              <Sun className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
+              <Sun className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <span>Light Mode</span>
             </>
           ) : (
             <>
-              <Moon className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
+              <Moon className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <span>Dark Mode</span>
             </>
           )}
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+        <DropdownMenuSeparator className="bg-border" />
         <DropdownMenuItem
           asChild
-          className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 focus:bg-red-50 dark:hover:bg-red-950/30 dark:focus:bg-red-950/30 py-2.5"
+          className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 py-2.5"
         >
           <Link href="/login" className="flex items-center w-full">
             <LogOut className="mr-2 h-4 w-4" />

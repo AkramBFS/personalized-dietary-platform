@@ -169,16 +169,16 @@ export default function ConsultationsAndPlansPage() {
             <Input
               type="search"
               placeholder="Search patients..."
-              className="pl-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+              className="pl-8 bg-background border-border"
             />
           </div>
         </div>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <Card className="border-border shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 dark:bg-slate-800/20">
+            <TableRow className="bg-muted/50">
               <TableHead className="w-[300px]">Patient Identity</TableHead>
               <TableHead>Health Goals</TableHead>
               <TableHead>Consultation Date</TableHead>
@@ -188,18 +188,18 @@ export default function ConsultationsAndPlansPage() {
           </TableHeader>
           <TableBody>
             {patients.map((patient) => (
-              <TableRow key={patient.client_id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <TableRow key={patient.client_id} className="group hover:bg-muted/50 transition-colors">
                 <TableCell className="font-medium">
                   <div 
-                    className="flex items-center space-x-3 cursor-pointer p-1 -m-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="flex items-center space-x-3 cursor-pointer p-1 -m-1 rounded-md hover:bg-accent"
                     onClick={() => enterProfile(patient)}
                   >
-                    <Avatar className="h-10 w-10 border border-slate-200 dark:border-slate-700">
+                    <Avatar className="h-10 w-10 border border-border">
                       <AvatarImage src={patient.avatarUrl} alt={patient.name} />
                       <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{patient.name}</span>
+                      <span className="text-sm font-bold text-primary">{patient.name}</span>
                       <span className="text-xs text-muted-foreground font-mono mt-0.5">ID: {patient.client_id}</span>
                     </div>
                   </div>
@@ -208,18 +208,18 @@ export default function ConsultationsAndPlansPage() {
                   <span className="text-sm truncate max-w-[200px] block" title={patient.goals}>{patient.goals}</span>
                 </TableCell>
                 <TableCell className="text-sm">
-                  <div className="flex items-center text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center text-muted-foreground">
                     <Clock className="mr-2 h-3.5 w-3.5" />
                     {patient.consultationDate}
                   </div>
                 </TableCell>
                 <TableCell>
                   {patient.status === "completed" ? (
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                       Completed
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20">
                       Pending Plan
                     </Badge>
                   )}
@@ -228,7 +228,7 @@ export default function ConsultationsAndPlansPage() {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
                     onClick={() => enterProfile(patient)}
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -254,19 +254,19 @@ export default function ConsultationsAndPlansPage() {
           <Badge variant="outline" className="px-3 py-1 font-mono text-xs">Client Record: {selectedPatient.client_id}</Badge>
         </div>
 
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-emerald-500 to-teal-400 dark:from-emerald-900/60 dark:to-teal-800/60 relative">
+        <Card className="border-border shadow-sm overflow-hidden">
+          <div className="h-32 bg-gradient-to-r from-primary to-primary/70 relative">
              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           </div>
           <CardContent className="px-8 pb-8 relative">
             <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16 mb-8">
-              <Avatar className="h-32 w-32 border-4 border-white dark:border-[#171c23] shadow-md bg-slate-100">
+              <Avatar className="h-32 w-32 border-4 border-card shadow-md bg-muted">
                 <AvatarImage src={selectedPatient.avatarUrl} alt={selectedPatient.name} />
-                <AvatarFallback className="text-4xl text-emerald-700">{selectedPatient.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-4xl text-primary">{selectedPatient.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 pb-2">
-                <h2 className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">{selectedPatient.name}</h2>
-                <p className="text-slate-500 font-medium">Last Consultation: {selectedPatient.consultationDate}</p>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground">{selectedPatient.name}</h2>
+                <p className="text-muted-foreground font-medium">Last Consultation: {selectedPatient.consultationDate}</p>
               </div>
               <div className="pb-2">
                 <div className="flex flex-wrap gap-2">
@@ -280,7 +280,7 @@ export default function ConsultationsAndPlansPage() {
                   </Button>
                   <Button
                     onClick={() => setViewState("designer")}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md rounded-full px-6"
+                    className="shadow-md rounded-full px-6"
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     {selectedPatient.status === "completed" ? "Review Designed Plan" : "Draft Custom Plan"}
@@ -294,21 +294,21 @@ export default function ConsultationsAndPlansPage() {
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Biometrics Matrix</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="text-xs text-slate-500 mb-1 font-semibold">Age</p>
-                      <p className="text-2xl font-bold">{selectedPatient.age}</p>
+                    <div className="p-4 bg-muted/50 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground mb-1 font-semibold">Age</p>
+                      <p className="text-2xl font-bold text-foreground">{selectedPatient.age}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="text-xs text-slate-500 mb-1 font-semibold">BMI</p>
-                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">{selectedPatient.bmi}</p>
+                    <div className="p-4 bg-muted/50 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground mb-1 font-semibold">BMI</p>
+                      <p className="text-2xl font-bold text-primary">{selectedPatient.bmi}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="text-xs text-slate-500 mb-1 font-semibold">Weight</p>
-                      <p className="text-2xl font-bold">{selectedPatient.weight} <span className="text-sm text-slate-400 font-normal">kg</span></p>
+                    <div className="p-4 bg-muted/50 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground mb-1 font-semibold">Weight</p>
+                      <p className="text-2xl font-bold text-foreground">{selectedPatient.weight} <span className="text-sm text-muted-foreground font-normal">kg</span></p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="text-xs text-slate-500 mb-1 font-semibold">Height</p>
-                      <p className="text-2xl font-bold">{selectedPatient.height} <span className="text-sm text-slate-400 font-normal">cm</span></p>
+                    <div className="p-4 bg-muted/50 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground mb-1 font-semibold">Height</p>
+                      <p className="text-2xl font-bold text-foreground">{selectedPatient.height} <span className="text-sm text-muted-foreground font-normal">cm</span></p>
                     </div>
                   </div>
                 </div>
@@ -318,17 +318,17 @@ export default function ConsultationsAndPlansPage() {
                  <div>
                     <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Clinical Profile</h3>
                     <div className="space-y-4">
-                      <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10">
-                        <div className="flex bg-emerald-100 dark:bg-emerald-900/50 w-8 h-8 rounded-full items-center justify-center mb-3">
-                          <Activity className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                      <div className="p-4 rounded-xl border border-primary/20 bg-primary/10">
+                        <div className="flex bg-primary/20 w-8 h-8 rounded-full items-center justify-center mb-3">
+                          <Activity className="w-4 h-4 text-primary" />
                         </div>
-                        <h4 className="font-semibold text-emerald-900 dark:text-emerald-300 mb-1">Primary Goals</h4>
-                        <p className="text-sm text-emerald-700 dark:text-emerald-500/80 leading-relaxed">{selectedPatient.goals}</p>
+                        <h4 className="font-semibold text-foreground mb-1">Primary Goals</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{selectedPatient.goals}</p>
                       </div>
                       
-                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                        <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Medical History & Allergies</h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm">
+                      <div className="p-4 rounded-xl border border-border bg-background">
+                        <h4 className="font-semibold text-foreground mb-2">Medical History & Allergies</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
                           {selectedPatient.healthHistory}
                         </p>
                       </div>
@@ -355,17 +355,17 @@ export default function ConsultationsAndPlansPage() {
           </Badge>
         </div>
 
-        <Card className="border-emerald-200 dark:border-emerald-900 shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+        <Card className="border-primary/30 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/70"></div>
           <form onSubmit={handleCreatePlan}>
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-6 mb-6">
+            <CardHeader className="border-b border-border pb-6 mb-6">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl">Plan Blueprint Matrix</CardTitle>
-                  <CardDescription className="text-sm mt-1">Formulating a targeted dietary strategy based on clinical profile.</CardDescription>
+                  <CardDescription className="text-sm mt-1 text-muted-foreground">Formulating a targeted dietary strategy based on clinical profile.</CardDescription>
                 </div>
                 {selectedPatient.status === "completed" && (
-                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 py-1.5 px-3">
+                   <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 py-1.5 px-3">
                      <CheckCircle className="w-4 h-4 mr-2" /> Plan Deployed
                    </Badge>
                 )}
@@ -376,59 +376,59 @@ export default function ConsultationsAndPlansPage() {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-2">
                    <Label htmlFor="title" className="font-semibold">Plan Title <span className="text-red-500">*</span></Label>
-                   <Input id="title" value={planData.title} onChange={(e) => setPlanData({...planData, title: e.target.value})} placeholder="e.g. Hypertension Reduction Protocol" disabled={selectedPatient.status === "completed"} className="h-11 bg-slate-50 dark:bg-slate-900 focus-visible:ring-emerald-500" />
+                   <Input id="title" value={planData.title} onChange={(e) => setPlanData({...planData, title: e.target.value})} placeholder="e.g. Hypertension Reduction Protocol" disabled={selectedPatient.status === "completed"} className="h-11 bg-background focus-visible:ring-ring" />
                  </div>
                  <div className="space-y-2">
                    <Label htmlFor="duration" className="font-semibold">Protocol Duration (Days)</Label>
-                   <Input id="duration" type="number" min={1} value={planData.duration} onChange={(e) => setPlanData({...planData, duration: parseInt(e.target.value) || 7})} disabled={selectedPatient.status === "completed"} className="h-11 bg-slate-50 dark:bg-slate-900 focus-visible:ring-emerald-500" />
+                   <Input id="duration" type="number" min={1} value={planData.duration} onChange={(e) => setPlanData({...planData, duration: parseInt(e.target.value) || 7})} disabled={selectedPatient.status === "completed"} className="h-11 bg-background focus-visible:ring-ring" />
                  </div>
                </div>
 
-               <div className="mt-8 border rounded-xl overflow-hidden shadow-sm">
+               <div className="mt-8 border border-border rounded-xl overflow-hidden shadow-sm">
                  <Tabs defaultValue="meals" className="w-full">
-                  <TabsList className="flex w-full min-h-12 border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 rounded-none p-0 overflow-x-auto">
-                    <TabsTrigger value="meals" className="flex-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 font-medium py-3">
+                  <TabsList className="flex w-full min-h-12 border-b border-border bg-muted rounded-none p-0 overflow-x-auto">
+                    <TabsTrigger value="meals" className="flex-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-background font-medium py-3">
                       Meal Matrix Breakdown
                     </TabsTrigger>
-                    <TabsTrigger value="instructions" className="flex-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 font-medium py-3">
+                    <TabsTrigger value="instructions" className="flex-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-background font-medium py-3">
                       Therapeutic Guidelines
                     </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="meals" className="p-6 space-y-6 bg-white dark:bg-slate-950 m-0">
+                  <TabsContent value="meals" className="p-6 space-y-6 bg-background m-0">
                     <div className="space-y-2">
-                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-amber-400 shadow-sm" /> BREAKFAST PROTOCOL</Label>
-                       <textarea className="w-full min-h-[90px] rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors" placeholder="Define macronutrient thresholds and ingredient constraints..." value={planData.breakfast} onChange={(e) => setPlanData({...planData, breakfast: e.target.value})} disabled={selectedPatient.status === "completed"} />
+                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-primary/40 shadow-sm" /> BREAKFAST PROTOCOL</Label>
+                       <textarea className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors" placeholder="Define macronutrient thresholds and ingredient constraints..." value={planData.breakfast} onChange={(e) => setPlanData({...planData, breakfast: e.target.value})} disabled={selectedPatient.status === "completed"} />
                     </div>
                     <div className="space-y-2">
-                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-orange-400 shadow-sm" /> LUNCH PROTOCOL</Label>
-                       <textarea className="w-full min-h-[90px] rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors" value={planData.lunch} onChange={(e) => setPlanData({...planData, lunch: e.target.value})} disabled={selectedPatient.status === "completed"} />
+                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-primary/60 shadow-sm" /> LUNCH PROTOCOL</Label>
+                       <textarea className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors" value={planData.lunch} onChange={(e) => setPlanData({...planData, lunch: e.target.value})} disabled={selectedPatient.status === "completed"} />
                     </div>
                     <div className="space-y-2">
-                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-indigo-400 shadow-sm" /> DINNER PROTOCOL</Label>
-                       <textarea className="w-full min-h-[90px] rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors" value={planData.dinner} onChange={(e) => setPlanData({...planData, dinner: e.target.value})} disabled={selectedPatient.status === "completed"} />
+                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-primary/80 shadow-sm" /> DINNER PROTOCOL</Label>
+                       <textarea className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors" value={planData.dinner} onChange={(e) => setPlanData({...planData, dinner: e.target.value})} disabled={selectedPatient.status === "completed"} />
                     </div>
                     <div className="space-y-2">
-                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-emerald-400 shadow-sm" /> SUPPLEMENTS & SNACKS</Label>
-                       <textarea className="w-full min-h-[90px] rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors" value={planData.snacks} onChange={(e) => setPlanData({...planData, snacks: e.target.value})} disabled={selectedPatient.status === "completed"} />
+                       <Label className="flex items-center gap-2 font-bold mb-2"><div className="w-3 h-3 rounded bg-primary shadow-sm" /> SUPPLEMENTS & SNACKS</Label>
+                       <textarea className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors" value={planData.snacks} onChange={(e) => setPlanData({...planData, snacks: e.target.value})} disabled={selectedPatient.status === "completed"} />
                     </div>
                   </TabsContent>
                   
-                  <TabsContent value="instructions" className="p-6 m-0 bg-white dark:bg-slate-950">
+                  <TabsContent value="instructions" className="p-6 m-0 bg-background">
                      <div className="space-y-2">
                        <Label className="font-bold mb-2 block">Physiological Guidelines</Label>
-                       <textarea className="w-full min-h-[300px] rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors leading-relaxed" placeholder="Hydration, exercise contraindications..." value={planData.instructions} onChange={(e) => setPlanData({...planData, instructions: e.target.value})} disabled={selectedPatient.status === "completed"} />
+                       <textarea className="w-full min-h-[300px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors leading-relaxed" placeholder="Hydration, exercise contraindications..." value={planData.instructions} onChange={(e) => setPlanData({...planData, instructions: e.target.value})} disabled={selectedPatient.status === "completed"} />
                     </div>
                   </TabsContent>
                 </Tabs>
                </div>
 
             </CardContent>
-            <CardFooter className="pt-6 pb-6 px-6 flex items-center justify-end bg-slate-50 border-t border-slate-100 dark:bg-slate-900 dark:border-slate-800 gap-3">
+            <CardFooter className="pt-6 pb-6 px-6 flex items-center justify-end bg-muted border-t border-border gap-3">
               <Button type="button" variant="outline" onClick={() => setViewState("profile")}>
                 Discard
               </Button>
-              <Button type="submit" disabled={isSubmitting || selectedPatient.status === "completed"} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl hover:shadow-emerald-500/20 px-8">
+              <Button type="submit" disabled={isSubmitting || selectedPatient.status === "completed"} className="shadow-xl hover:shadow-primary/20 px-8">
                 {isSubmitting ? "Deploying..." : <span>Deploy Protocol <Send className="ml-2 w-4 h-4 inline" /></span>}
               </Button>
             </CardFooter>
@@ -479,18 +479,18 @@ export default function ConsultationsAndPlansPage() {
             <Skeleton className="h-[200px] w-full" />
           </div>
         ) : progressError ? (
-          <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/10">
-            <CardContent className="p-6 text-red-700 dark:text-red-400">{progressError}</CardContent>
+          <Card className="border-destructive/20 bg-destructive/10">
+            <CardContent className="p-6 text-destructive">{progressError}</CardContent>
           </Card>
         ) : (
           <>
             <CalorieStats intakeCalories={latestPoint?.intake_calories ?? 0} targetCalories={latestPoint?.target_calories ?? 0} />
             <ProgressChart data={progressSeries} />
 
-            <Card className="dark:bg-[#1a2027] border-gray-200 dark:border-[#2a3038]">
+            <Card className="border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Utensils className="h-5 w-5 text-emerald-500" />
+                  <Utensils className="h-5 w-5 text-primary" />
                   Meal Plan Progression
                 </CardTitle>
                 <CardDescription>Active plan adherence and current day status for this patient.</CardDescription>
@@ -500,7 +500,7 @@ export default function ConsultationsAndPlansPage() {
                   <p className="text-sm text-muted-foreground">No assigned meal plan found for this patient yet.</p>
                 ) : (
                   <>
-                    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+                    <div className="rounded-xl border border-border p-4">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <p className="font-semibold">{activePlan.title}</p>
                         <Badge variant="outline" className="capitalize">{activePlan.status}</Badge>
@@ -508,8 +508,8 @@ export default function ConsultationsAndPlansPage() {
                       <p className="text-sm text-muted-foreground">
                         Day {currentPlanDay} of {activePlan.duration_days}
                       </p>
-                      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                        <div className="h-full bg-emerald-500" style={{ width: `${activePlan.progress_percent}%` }} />
+                      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
+                        <div className="h-full bg-primary" style={{ width: `${activePlan.progress_percent}%` }} />
                       </div>
                       <p className="mt-2 text-right text-sm font-medium">{Math.round(activePlan.progress_percent)}%</p>
                     </div>
@@ -520,7 +520,7 @@ export default function ConsultationsAndPlansPage() {
 
                     {isPlanDetailsOpen && (
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Card className="border-slate-200 dark:border-slate-800">
+                        <Card className="border-border">
                           <CardHeader>
                             <CardTitle className="text-base">Day {currentPlanDay} Meals</CardTitle>
                           </CardHeader>
@@ -531,7 +531,7 @@ export default function ConsultationsAndPlansPage() {
                             <p><span className="font-semibold">Snacks:</span> {currentDayContent?.snacks || "N/A"}</p>
                           </CardContent>
                         </Card>
-                        <Card className="border-slate-200 dark:border-slate-800">
+                        <Card className="border-border">
                           <CardHeader>
                             <CardTitle className="text-base">Nutritionist Instructions</CardTitle>
                           </CardHeader>

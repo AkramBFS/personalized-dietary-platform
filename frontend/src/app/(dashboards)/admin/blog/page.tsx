@@ -133,7 +133,6 @@ export default function AdminBlogPage() {
           </p>
         </div>
         <Button
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={() => setEditorOpen(true)}
         >
           New Article
@@ -175,7 +174,7 @@ export default function AdminBlogPage() {
       {/* Editor Modal */}
       {editorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-background dark:bg-slate-900 border border-border rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-card border border-border rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
             <div className="flex justify-between items-center px-6 py-4 border-b">
               <div>
@@ -248,7 +247,6 @@ export default function AdminBlogPage() {
               <Button
                 disabled={submitting}
                 onClick={handleCreate}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {submitting ? "Publishing..." : "Publish Article"}
               </Button>

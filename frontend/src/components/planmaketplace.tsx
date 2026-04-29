@@ -179,7 +179,7 @@ const featuredPlans = [
     badge: {
       icon: <Leaf className="w-4 h-4 mr-1.5" />,
       text: "Vegetarian",
-      bgClass: "bg-green-100 text-green-700",
+      bgClass: "bg-accent text-accent-foreground",
     },
     author: {
       name: "Marcus Chen, RD",
@@ -214,19 +214,19 @@ const getCategoryIcon = (iconName: string) => {
   switch (iconName) {
     case "restaurant":
       return (
-        <Utensils className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-emerald-600" />
+        <Utensils className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
       );
     case "track_changes":
       return (
-        <Target className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-emerald-600" />
+        <Target className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
       );
     case "medical_services":
       return (
-        <Stethoscope className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-emerald-600" />
+        <Stethoscope className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
       );
     case "payments":
       return (
-        <Wallet className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-emerald-600" />
+        <Wallet className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
       );
     default:
       return <Target className="w-8 h-8" />;
@@ -255,35 +255,35 @@ export default function ClinicalNutritionPlans() {
         stars.push(
           <Star
             key={i}
-            className="w-3.5 h-3.5 fill-amber-400 text-amber-400"
+            className="w-3.5 h-3.5 fill-primary text-primary"
           />,
         );
       } else if (i - 0.5 === rating) {
         stars.push(
           <StarHalf
             key={i}
-            className="w-3.5 h-3.5 fill-amber-400 text-amber-400"
+            className="w-3.5 h-3.5 fill-primary text-primary"
           />,
         );
       } else {
-        stars.push(<Star key={i} className="w-3.5 h-3.5 text-slate-300" />);
+        stars.push(<Star key={i} className="w-3.5 h-3.5 text-muted-foreground/40" />);
       }
     }
     return <div className="flex items-center gap-0.5">{stars}</div>;
   };
 
   return (
-    <div className="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
+    <div className="bg-background text-foreground font-sans min-h-screen flex flex-col">
       <main className="flex-grow w-full max-w-[1280px] mx-auto px-6 md:px-8 py-12 flex flex-col gap-20 mt-8">
         {/* Improved Hero Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative rounded-3xl overflow-hidden min-h-[480px] flex items-center shadow-xl shadow-slate-200/50 group bg-slate-900"
+          className="relative rounded-3xl overflow-hidden min-h-[480px] flex items-center shadow-xl group bg-secondary"
         >
           {/* Enhanced Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent z-10 pointer-events-none"></div>
 
           <img
             alt="Fresh healthy salad spread placeholder"
@@ -297,7 +297,7 @@ export default function ClinicalNutritionPlans() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-sm font-semibold tracking-wide mb-6 backdrop-blur-md">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/20 border border-brand/30 text-brand text-sm font-semibold tracking-wide mb-6 backdrop-blur-md">
                 <BadgeCheck className="w-4 h-4" />
                 Evidence-Based Protocols
               </span>
@@ -307,9 +307,9 @@ export default function ClinicalNutritionPlans() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6 tracking-tight"
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6 tracking-tight"
             >
-              Curated <span className="text-emerald-400">Clinical</span>
+              Curated <span className="text-brand">Clinical</span>
               <br />
               Nutrition
             </motion.h1>
@@ -318,7 +318,7 @@ export default function ClinicalNutritionPlans() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-lg md:text-xl text-slate-300 mb-10 leading-relaxed max-w-xl font-light"
+              className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed max-w-xl font-light"
             >
               Discover evidence-based meal plans designed by registered
               dietitians and medical experts to meet your specific health goals.
@@ -328,7 +328,7 @@ export default function ClinicalNutritionPlans() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="group flex items-center gap-3 bg-emerald-500 text-white px-8 py-4 rounded-full font-semibold hover:bg-emerald-400 transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50"
+              className="group flex items-center gap-3 bg-button-primary bg-btn-primary text-button-primary-foreground px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-all duration-300 shadow-brand"
             >
               Explore Plans
               <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -338,9 +338,9 @@ export default function ClinicalNutritionPlans() {
 
         {/* --- Etsy Style Category Circles with Popovers --- */}
         <section className="relative">
-          <h2 className="text-2xl font-bold text-slate-900 mb-10 tracking-tight flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-foreground mb-10 tracking-tight flex items-center gap-3">
             Browse through filters
-            <ChevronDown className="w-5 h-5 text-slate-400" />
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -354,19 +354,19 @@ export default function ClinicalNutritionPlans() {
                   href="#"
                   className="flex flex-col items-center gap-4 group cursor-pointer"
                 >
-                  <div className="w-24 h-24 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:border-emerald-200 group-hover:text-emerald-600 transition-all duration-300 hover:scale-105 active:scale-95">
+                  <div className="w-24 h-24 rounded-full bg-card shadow-sm border border-border flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:border-brand/30 group-hover:text-brand transition-all duration-300 hover:scale-105 active:scale-95">
                     {category.icon}
                   </div>
-                  <span className="font-semibold text-slate-700 group-hover:text-emerald-700 transition-colors">
+                  <span className="font-semibold text-foreground group-hover:text-brand transition-colors">
                     {category.label}
                   </span>
                 </a>
 
                 {/* Pop-over Menu */}
                 <div className="absolute top-[80%] left-1/2 -translate-x-1/2 pt-8 z-50 opacity-0 invisible group-hover/popover:opacity-100 group-hover/popover:visible transition-all duration-300 w-[500px]">
-                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 p-8 relative">
+                  <div className="bg-card rounded-2xl shadow-2xl border border-border p-8 relative">
                     {/* Arrow Decor */}
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-t border-l border-slate-100"></div>
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card rotate-45 border-t border-l border-border"></div>
 
                     <div className="grid grid-cols-3 gap-6">
                       {category.options.map((opt, idx) => (
@@ -375,14 +375,14 @@ export default function ClinicalNutritionPlans() {
                           href="#"
                           className="flex flex-col items-center gap-3 group/item"
                         >
-                          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-transparent group-hover/item:border-emerald-500 group-hover/item:shadow-lg group-hover/item:shadow-emerald-500/20 transition-all duration-300 bg-slate-100">
+                          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-transparent group-hover/item:border-brand group-hover/item:shadow-lg group-hover/item:shadow-brand/20 transition-all duration-300 bg-muted">
                             <img
                               alt={opt.label}
                               className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500 opacity-90"
                               src={opt.image}
                             />
                           </div>
-                          <span className="text-sm font-bold text-slate-700 group-hover/item:text-emerald-600 transition-colors">
+                          <span className="text-sm font-bold text-foreground group-hover/item:text-brand transition-colors">
                             {opt.label}
                           </span>
                         </a>
@@ -403,10 +403,10 @@ export default function ClinicalNutritionPlans() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">
                 Featured Clinical Plans
               </h2>
-              <p className="text-slate-500 mt-2 text-lg">
+              <p className="text-muted-foreground mt-2 text-lg">
                 Top-rated protocols verified by our medical board.
               </p>
             </motion.div>
@@ -420,16 +420,16 @@ export default function ClinicalNutritionPlans() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.15 }}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col group cursor-pointer"
+                className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
               >
-                <div className="relative h-60 overflow-hidden bg-slate-100">
+                <div className="relative h-60 overflow-hidden bg-muted">
                   <img
                     alt={plan.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     src={plan.image}
                   />
                   <div
-                    className={`absolute top-4 left-4 ${plan.badge.bgClass || "bg-white/95 text-slate-800"} backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm`}
+                    className={`absolute top-4 left-4 ${plan.badge.bgClass || "bg-card/95 text-foreground"} backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm`}
                   >
                     {plan.badge.icon}
                     {plan.badge.text}
@@ -438,20 +438,20 @@ export default function ClinicalNutritionPlans() {
 
                 <div className="p-6 flex-grow flex flex-col">
                   <div className="flex justify-between items-start mb-3 gap-4">
-                    <h3 className="text-xl font-bold text-slate-900 line-clamp-2 leading-tight">
+                    <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight">
                       {plan.title}
                     </h3>
-                    <span className="text-lg font-bold text-emerald-600 shrink-0">
+                    <span className="text-lg font-bold text-primary shrink-0">
                       {plan.price}
                     </span>
                   </div>
-                  <p className="text-slate-600 mb-6 line-clamp-2 leading-relaxed">
+                  <p className="text-muted-foreground mb-6 line-clamp-2 leading-relaxed">
                     {plan.description}
                   </p>
 
-                  <div className="mt-auto pt-5 border-t border-slate-100 flex items-center justify-between">
+                  <div className="mt-auto pt-5 border-t border-border flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
                         <img
                           alt={plan.author.name}
                           className="w-full h-full object-cover"
@@ -459,12 +459,12 @@ export default function ClinicalNutritionPlans() {
                         />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-slate-900">
+                        <p className="text-sm font-bold text-foreground">
                           {plan.author.name}
                         </p>
                         <div className="flex items-center mt-0.5">
                           {renderStars(plan.author.rating)}
-                          <span className="text-xs font-medium ml-2 text-slate-500">
+                          <span className="text-xs font-medium ml-2 text-muted-foreground">
                             ({plan.author.reviews})
                           </span>
                         </div>
@@ -483,7 +483,7 @@ export default function ClinicalNutritionPlans() {
             viewport={{ once: true }}
             className="flex justify-center mt-16"
           >
-            <button className="group relative inline-flex items-center justify-center gap-2 px-10 py-3.5 text-base font-semibold text-emerald-600 transition-all duration-300 bg-white border-2 border-emerald-600 rounded-full hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-600/20 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
+            <button className="group relative inline-flex items-center justify-center gap-2 px-10 py-3.5 text-base font-semibold text-primary transition-all duration-300 bg-card border-2 border-primary rounded-full hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
               <span>Load More Plans</span>
               <Loader2 className="w-5 h-5 transition-transform duration-500 group-hover:rotate-180" />
             </button>

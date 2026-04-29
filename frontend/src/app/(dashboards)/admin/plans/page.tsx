@@ -186,7 +186,7 @@ export default function AdminPlansPage() {
         </TabsList>
 
         <TabsContent value="pending" className="mt-4">
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <Card className="border-border shadow-sm overflow-hidden">
             <CardHeader>
               <CardTitle>Plans Awaiting Review</CardTitle>
             </CardHeader>
@@ -243,7 +243,7 @@ export default function AdminPlansPage() {
         </TabsContent>
 
         <TabsContent value="live" className="mt-4">
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <Card className="border-border shadow-sm overflow-hidden">
             <CardHeader>
               <CardTitle>Live Marketplace Plans</CardTitle>
             </CardHeader>
@@ -289,7 +289,7 @@ export default function AdminPlansPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
@@ -304,7 +304,7 @@ export default function AdminPlansPage() {
         </TabsContent>
 
         <TabsContent value="seasonal" className="mt-4">
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <Card className="border-border shadow-sm overflow-hidden">
             <CardHeader>
               <CardTitle>Seasonal Plans</CardTitle>
             </CardHeader>
@@ -358,15 +358,15 @@ export default function AdminPlansPage() {
       </Tabs>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-lg font-semibold">
                 Plan Review - {selectedPlan?.title}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -414,7 +414,7 @@ export default function AdminPlansPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Content</label>
-                    <div className="text-sm text-muted-foreground bg-gray-50 dark:bg-gray-900 p-4 rounded-md max-h-60 overflow-y-auto">
+                    <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md max-h-60 overflow-y-auto">
                       {planDetails.content}
                     </div>
                   </div>

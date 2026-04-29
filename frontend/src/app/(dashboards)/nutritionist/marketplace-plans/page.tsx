@@ -160,9 +160,9 @@ export default function MarketplacePlansPage() {
 
   const getStatusBadge = (status: NutritionistPlan["status"]) => {
     switch(status) {
-      case "approved": return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 shadow-none border-0">Approved</Badge>;
+      case "approved": return <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0">Approved</Badge>;
       case "pending": return <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 shadow-none border-0">Pending Admin</Badge>;
-      case "rejected": return <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20 shadow-none border-0">Rejected</Badge>;
+      case "rejected": return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/20 shadow-none border-0">Rejected</Badge>;
       default: return <Badge variant="secondary">Deleted</Badge>;
     }
   };
@@ -177,22 +177,22 @@ export default function MarketplacePlansPage() {
         <div className="flex items-center space-x-3">
           <div className="relative w-full md:w-64 hidden sm:block">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search plans..." className="pl-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800" />
+            <Input type="search" placeholder="Search plans..." className="pl-8 bg-background border-border" />
           </div>
-          <Button onClick={() => setIsDesigning(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm whitespace-nowrap">
+          <Button onClick={() => setIsDesigning(true)} className="shadow-sm whitespace-nowrap">
             <FileText className="w-4 h-4 mr-2" />
             Create Public Plan
           </Button>
         </div>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <Card className="border-border shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-muted-foreground">Loading plans...</div>
         ) : (
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead>Plan Title</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
@@ -210,18 +210,18 @@ export default function MarketplacePlansPage() {
             ) : (
               plans.map((plan) => (
                 <TableRow key={plan.id}>
-                  <TableCell className="font-semibold text-slate-800 dark:text-slate-200">{plan.title}</TableCell>
+                  <TableCell className="font-semibold text-foreground">{plan.title}</TableCell>
                   <TableCell className="capitalize">{plan.category}</TableCell>
-                  <TableCell className="font-medium text-emerald-600 dark:text-emerald-500">${plan.price.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium text-primary">${plan.price.toFixed(2)}</TableCell>
                   <TableCell>{plan.duration_days} Days</TableCell>
-                  <TableCell className="text-slate-500">{plan.created_at}</TableCell>
+                  <TableCell className="text-muted-foreground">{plan.created_at}</TableCell>
                   <TableCell>{getStatusBadge(plan.status)}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => startEdit(plan)}>
-                      <Pencil className="w-4 h-4 text-slate-500" />
+                      <Pencil className="w-4 h-4 text-muted-foreground" />
                     </Button>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => void removePlan(plan.id)}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -243,12 +243,12 @@ export default function MarketplacePlansPage() {
         </Button>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+      <Card className="border-border shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/70"></div>
         <form onSubmit={handleCreatePlan}>
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-6 mb-6">
+          <CardHeader className="border-b border-border pb-6 mb-6">
             <CardTitle className="text-2xl">New Public Plan</CardTitle>
-            <CardDescription className="text-base mt-2">
+            <CardDescription className="text-base mt-2 text-muted-foreground">
               Design a high-quality nutritional template to sell on the global marketplace.
             </CardDescription>
           </CardHeader>
@@ -256,7 +256,7 @@ export default function MarketplacePlansPage() {
           <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="title">Plan Title <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="title">Plan Title <span className="text-destructive">*</span></Label>
                   <Input 
                     id="title" 
                     value={planData.title}
@@ -287,9 +287,9 @@ export default function MarketplacePlansPage() {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="price">Price (USD) <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="price">Price (USD) <span className="text-destructive">*</span></Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-3 text-slate-500 select-none">$</span>
+                    <span className="absolute left-3 top-3 text-muted-foreground select-none">$</span>
                     <Input 
                       id="price" 
                       type="number" 
@@ -297,7 +297,7 @@ export default function MarketplacePlansPage() {
                       min={0}
                       value={planData.price}
                       onChange={(e) => setPlanData({...planData, price: parseFloat(e.target.value) || 0})}
-                      className="pl-7 h-11 border-emerald-200 dark:border-emerald-900 focus-visible:ring-emerald-500"
+                      className="pl-7 h-11 border-primary/30 focus-visible:ring-ring"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5">Set to 0 for a free plan.</p>
@@ -318,13 +318,13 @@ export default function MarketplacePlansPage() {
               </div>
 
               <div className="pt-4">
-                <h3 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200">Daily Content Template</h3>
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Content Template</h3>
                 <div className="space-y-4">
                   {planData.days.map((day, index) => (
-                    <div key={`day-${index}`} className="rounded-md border p-4 space-y-2">
+                    <div key={`day-${index}`} className="rounded-md border border-border p-4 space-y-2">
                       <p className="text-sm font-semibold">Day {index + 1}</p>
                       <textarea
-                        className="flex min-h-[70px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+                        className="flex min-h-[70px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                         placeholder="Breakfast"
                         value={day.breakfast}
                         onChange={(event) =>
@@ -337,7 +337,7 @@ export default function MarketplacePlansPage() {
                         }
                       />
                       <textarea
-                        className="flex min-h-[70px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+                        className="flex min-h-[70px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                         placeholder="Lunch"
                         value={day.lunch}
                         onChange={(event) =>
@@ -350,7 +350,7 @@ export default function MarketplacePlansPage() {
                         }
                       />
                       <textarea
-                        className="flex min-h-[70px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+                        className="flex min-h-[70px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                         placeholder="Dinner"
                         value={day.dinner}
                         onChange={(event) =>
@@ -363,7 +363,7 @@ export default function MarketplacePlansPage() {
                         }
                       />
                       <textarea
-                        className="flex min-h-[50px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+                        className="flex min-h-[50px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                         placeholder="Snacks"
                         value={day.snacks}
                         onChange={(event) =>
@@ -376,7 +376,7 @@ export default function MarketplacePlansPage() {
                         }
                       />
                       <textarea
-                        className="flex min-h-[90px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+                        className="flex min-h-[90px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                         placeholder="Instructions"
                         value={day.instructions}
                         onChange={(event) =>
@@ -402,13 +402,13 @@ export default function MarketplacePlansPage() {
               </div>
 
           </CardContent>
-          <CardFooter className="border-t border-slate-100 dark:border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 rounded-b-xl gap-4">
+          <CardFooter className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between bg-muted/50 rounded-b-xl gap-4">
             <p className="text-xs text-muted-foreground max-w-md">Public plans require administrative approval before appearing natively on the platform marketplace.</p>
             <div className="flex w-full sm:w-auto gap-3">
               <Button type="button" variant="outline" onClick={() => { setIsDesigning(false); resetForm(); }} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[160px] w-full sm:w-auto shadow-sm">
+              <Button type="submit" disabled={isSubmitting} className="min-w-[160px] w-full sm:w-auto shadow-sm">
                 {isSubmitting ? "Submitting..." : <span>{editingPlanId ? "Save Changes" : "Submit for Review"}</span>}
               </Button>
             </div>

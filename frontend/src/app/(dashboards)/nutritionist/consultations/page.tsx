@@ -20,8 +20,8 @@ import { X } from "lucide-react";
 
 function statusBadge(status: NutritionistConsultation["status"]) {
   if (status === "scheduled") return <Badge variant="outline">Scheduled</Badge>;
-  if (status === "notified") return <Badge className="bg-blue-600 text-white">Notified</Badge>;
-  if (status === "finished") return <Badge className="bg-emerald-600 text-white">Finished</Badge>;
+  if (status === "notified") return <Badge variant="secondary" className="bg-primary/15 text-primary border-0">Notified</Badge>;
+  if (status === "finished") return <Badge className="bg-primary text-primary-foreground">Finished</Badge>;
   return <Badge variant="destructive">Cancelled</Badge>;
 }
 
@@ -142,8 +142,8 @@ export default function ConsultationsPage() {
       </Card>
 
       {selected ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6 backdrop-blur-sm">
-          <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 py-6 backdrop-blur-sm">
+          <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border-border">
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
                 <CardTitle>Consultation Workspace</CardTitle>
@@ -187,7 +187,7 @@ export default function ConsultationsPage() {
                 <Label htmlFor="note">Add note about patient</Label>
                 <textarea
                   id="note"
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={noteInput}
                   onChange={(event) => setNoteInput(event.target.value)}
                   placeholder="Clinical note for follow-up..."
