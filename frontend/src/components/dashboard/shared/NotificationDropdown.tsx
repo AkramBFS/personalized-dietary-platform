@@ -75,28 +75,28 @@ export function NotificationDropdown() {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="relative rounded-full w-10 h-10 p-0 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+          className="relative rounded-full w-10 h-10 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-[#12161b]"></span>
+            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-destructive border border-background"></span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto dark:bg-[#1a2027] border-gray-200 dark:border-gray-800 shadow-xl custom-scrollbar">
+      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto bg-card border-border shadow-xl custom-scrollbar">
         <DropdownMenuLabel className="font-normal py-3 flex justify-between items-center">
-          <span className="font-semibold text-gray-900 dark:text-white">Notifications</span>
+          <span className="font-semibold text-foreground">Notifications</span>
           {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">{unreadCount} new</span>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">{unreadCount} new</span>
           )}
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+        <DropdownMenuSeparator className="bg-border" />
         
         {loading && notifications.length === 0 ? (
           <div className="py-8 text-center text-sm text-gray-500">Loading notifications...</div>
         ) : error ? (
-          <div className="py-8 px-4 text-center text-sm text-red-500 flex flex-col items-center justify-center gap-2">
-            <AlertCircle className="w-6 h-6 text-red-500/80" />
+          <div className="py-8 px-4 text-center text-sm text-destructive flex flex-col items-center justify-center gap-2">
+            <AlertCircle className="w-6 h-6 text-destructive/80" />
             <p>{error}</p>
           </div>
         ) : notifications.length === 0 ? (
@@ -104,12 +104,12 @@ export function NotificationDropdown() {
         ) : (
           <div className="flex flex-col">
             {notifications.map((notification) => (
-              <DropdownMenuItem key={notification.id} className="cursor-pointer focus:bg-gray-50 hover:bg-gray-50 dark:focus:bg-gray-800/50 dark:hover:bg-gray-800/50 py-3 px-4 flex flex-col items-start gap-1">
+              <DropdownMenuItem key={notification.id} className="cursor-pointer focus:bg-accent hover:bg-accent py-3 px-4 flex flex-col items-start gap-1">
                 <div className="flex justify-between items-start w-full">
-                  <span className={`text-sm font-medium ${!notification.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
+                  <span className={`text-sm font-medium ${!notification.is_read ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {notification.title}
                   </span>
-                  {!notification.is_read && <span className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0"></span>}
+                  {!notification.is_read && <span className="h-2 w-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></span>}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">{notification.message}</p>
                 <div className="flex items-center justify-between w-full mt-2">

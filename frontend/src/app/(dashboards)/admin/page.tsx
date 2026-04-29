@@ -42,7 +42,7 @@ export default function AdminOverviewPage() {
   return (
     <div className="flex flex-col gap-8 pb-10 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
           Admin Overview
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -79,7 +79,7 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <Card className="dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+        <Card className="border-none shadow-sm shadow-card/50">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
@@ -114,17 +114,17 @@ function StatCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card className="dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+    <Card className="border-none shadow-sm shadow-card/50">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          <div className="bg-emerald-600/20 p-3 rounded-xl text-emerald-500 mt-1">
+          <div className="bg-primary/20 p-3 rounded-xl text-primary mt-1">
             <Icon className="w-6 h-6" />
           </div>
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {title}
             </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {value}
             </p>
             <p className="text-sm text-muted-foreground">{description}</p>
