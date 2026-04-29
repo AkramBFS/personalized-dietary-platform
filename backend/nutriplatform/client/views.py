@@ -956,7 +956,7 @@ class AICalorieConfirmView(APIView):
         # Recalculate nutrition with user-corrected masses
         # using CalorieNinjas (same as manual tracker for consistency)
         try:
-            from .apininjas import get_nutrition_data
+            from .apiNinja import get_nutrition_data
             ingredients = [
                 {
                     "name":       item.get('label', ''),
