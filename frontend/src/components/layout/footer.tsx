@@ -15,8 +15,8 @@ const footerLinks = {
     { title: "Support", href: "/support" },
   ],
   company: [
-    { title: "About Us", href: "/about" },
     { title: "FAQ", href: "/faq" },
+    { title: "About Us", href: "/about" },
     { title: "Privacy Policy", href: "/privacypolicy" },
     { title: "Terms of Service", href: "/tos" },
   ],

@@ -50,7 +50,7 @@ export default function CommunityComponent() {
   return (
     <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row gap-8 w-full">
       {/* Main Content Area */}
-      <div className="flex-1 max-w-3xl">
+      <div className="flex-1 max-w-3xl mt-12">
         {/* Community Header */}
         <div className="bg-card rounded-xl border border-border p-8 mb-8 flex items-start justify-between relative overflow-hidden shadow-sm">
           <div className="absolute top-0 left-0 w-full h-2 bg-secondary"></div>
@@ -125,7 +125,7 @@ export default function CommunityComponent() {
       </div>
 
       {/* Sidebar */}
-      <aside className="w-full lg:w-80 flex flex-col gap-6 hidden md:flex">
+      <aside className="w-full lg:w-80 flex flex-col gap-6 hidden md:flex mt-12">
         {/* About Community */}
         <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <h3 className="text-xl font-bold text-foreground mb-4 border-b border-border pb-2">

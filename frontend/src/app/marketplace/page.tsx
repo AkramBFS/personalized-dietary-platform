@@ -1,12 +1,13 @@
 "use client";
-import AboutComponent from "@/components/About";
 import { HeroHeader } from "@/components/header";
 import FooterSection from "@/components/layout/footer";
-export default function AboutPage() {
+import PlanMarketplace from "@/components/planmaketplace";
+
+export default function MarketplacePage() {
   return (
-    <main className="bg-gradient-to-br from-[#052025] via-[#01181D] to-[#052025]">
+    <main>
       <HeroHeader />
-      <AboutComponent />
+      <PlanMarketplace />
       <FooterSection />
     </main>
   );

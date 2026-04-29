@@ -10,7 +10,7 @@ import { AIDetection } from "@/components/ai/aidetection";
 import { HeroHeader } from "@/components/header";
 export default function HomePage() {
   return (
-    <main>
+    <main className="selection:bg-[#3DDC97]/30 selection:text-[#3DDC97]">
       <HeroHeader />
       <HeroSection />
       <AIDetection />

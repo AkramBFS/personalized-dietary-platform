@@ -224,7 +224,7 @@ export function AIDetection() {
   return (
     <section
       ref={triggerRef}
-      className="relative h-screen flex items-center justify-center bg-[#010C0E]"
+      className="relative h-screen flex items-center justify-center"
     >
       <div
         ref={wrapperRef}

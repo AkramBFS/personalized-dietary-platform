@@ -4,7 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronRight, Circle, Plus, Sparkles } from "lucide-react";
 
-export default function AboutPage() {
+export default function AboutComponent() {
   // --- Data Models ---
   const problemStatements = [
     "Hormonal imbalances (thyroid disorders, insulin resistance, PCOS)",
