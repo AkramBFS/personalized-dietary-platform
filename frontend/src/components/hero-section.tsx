@@ -6,22 +6,22 @@ import { ChevronRight, MessageCircle } from "lucide-react";
 export default function HeroSection() {
   return (
     <main>
-      <section className="relative h-screen flex items-center">
+      <section className="relative h-screen flex items-center bg-section-hero">
         <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl">
-            <p className="mb-4 text-sm uppercase tracking-widest text-emerald-300 font-medium">
+            <p className="mb-4 text-sm uppercase tracking-widest text-primary font-medium">
               SVMB / professional dietary assessment platform
             </p>
 
-            <h1 className="font-syne text-white text-5xl leading-[1.05] md:text-6xl lg:text-7xl tracking-tight">
+            <h1 className="font-syne text-foreground text-5xl leading-[1.05] md:text-6xl lg:text-7xl tracking-tight">
               Your personal
               <br />
-              <span className="text-emerald-300">AI dietitian</span>,
+              <span className="text-primary">AI dietitian</span>,
               <br />
               powered by data
             </h1>
 
-            <p className="mt-8 max-w-2xl text-lg md:text-xl text-white/80 leading-relaxed">
+            <p className="mt-8 max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed">
               Track calories, analyze meals from photos, and get personalized
               nutrition guidance — all in one intelligent system built to adapt
               to you.
@@ -39,7 +39,7 @@ export default function HeroSection() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="border-white/30 text-foreground hover:bg-foreground/10"
+                className="border-border text-foreground hover:bg-accent"
               >
                 <Link href="#chat">
                   <MessageCircle className="w-5 h-5" />

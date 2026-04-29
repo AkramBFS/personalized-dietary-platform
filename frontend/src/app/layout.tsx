@@ -40,8 +40,9 @@ export default function RootLayout({
     >
       <body className="h-full flex flex-col">
         <ThemeProvider
-          attribute="class"
+          attribute="data-theme"
           defaultTheme="system"
+          themes={['light', 'dark', 'special']}
           enableSystem
           disableTransitionOnChange
         >

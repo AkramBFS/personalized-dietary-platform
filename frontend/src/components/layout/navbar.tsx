@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sun, Moon } from "lucide-react";
 import {
   Popover,
@@ -79,9 +80,6 @@ export const HeroHeader = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const isDark = resolvedTheme === "dark";
-  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   return (
     <header>
@@ -180,23 +178,7 @@ export const HeroHeader = () => {
               {/* RIGHT SIDE ACTIONS */}
               <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
                 {/* THEME TOGGLE */}
-                <button
-                  id="theme-toggle"
-                  type="button"
-                  onClick={toggleTheme}
-                  aria-label="Toggle theme"
-                  className="relative inline-flex items-center justify-center rounded-full p-2
-                    text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
-                    hover:bg-black/5 dark:hover:bg-white/10
-                    transition-colors duration-200
-                    focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                >
-                  {mounted && (
-                    isDark
-                      ? <Sun className="size-5" />
-                      : <Moon className="size-5" />
-                  )}
-                </button>
+                <ThemeToggle />
 
                 {!isScrolled ? (
                   <>
@@ -215,7 +197,8 @@ export const HeroHeader = () => {
                     </Button>
                     <Button
                       key="signup-btn"
-                      className="animate-in fade-in zoom-in duration-300"
+                      asChild
+                      className="animate-in fade-in zoom-in duration-300 shadow-sm"
                     >
                       <Link href="/register">Sign Up</Link>
                     </Button>
@@ -246,21 +229,7 @@ export const HeroHeader = () => {
           <div className="flex items-center justify-between">
             <Logo />
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                className="inline-flex items-center justify-center rounded-full p-2
-                  text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
-                  hover:bg-black/5 dark:hover:bg-white/10
-                  transition-colors duration-200"
-              >
-                {mounted && (
-                  isDark
-                    ? <Sun className="size-5" />
-                    : <Moon className="size-5" />
-                )}
-              </button>
+              <ThemeToggle />
               <button onClick={() => setMobileMenuOpen(false)}>
                 <XMarkIcon className="size-7" />
               </button>

@@ -24,7 +24,7 @@ const footerLinks = {
 
 export default function FooterSection() {
   return (
-    <footer className="bg-gradient-to-br from-[#052023] via-[#01181D] to-[#052025] dark:bg-foreground pt-20 pb-10">
+    <footer className="bg-background pt-20 pb-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* --- Main Footer Content --- */}
         <div className="grid grid-cols-1 gap-12 mb-16 md:grid-cols-2 lg:grid-cols-6 lg:gap-8">
@@ -32,10 +32,10 @@ export default function FooterSection() {
           <div className="lg:col-span-2">
             <div className="mb-6 flex items-center gap-2">
               <Link href="/" className="flex items-center space-x-3">
-                <Logo forceDark />
+                <Logo />
               </Link>
             </div>
-            <p className="max-w-sm text-teal-50 dark:text-gray-400">
+            <p className="max-w-sm text-muted-foreground">
               Your AI-powered personal dietitian and calorie counter. We make
               healthy eating simple and personalized.
             </p>
@@ -43,7 +43,7 @@ export default function FooterSection() {
 
           {/* Links Sections */}
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Solutions
             </h3>
             <ul className="space-y-3">
@@ -51,7 +51,7 @@ export default function FooterSection() {
                 <li key={link.title}>
                   <Link
                     href={link.href}
-                    className="text-teal-50 transition-colors hover:text-emerald-500 dark:text-gray-400"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.title}
                   </Link>
@@ -61,7 +61,7 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Resources
             </h3>
             <ul className="space-y-3">
@@ -69,7 +69,7 @@ export default function FooterSection() {
                 <li key={link.title}>
                   <Link
                     href={link.href}
-                    className="text-teal-50 transition-colors hover:text-emerald-500 dark:text-gray-400"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.title}
                   </Link>
@@ -79,7 +79,7 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Company
             </h3>
             <ul className="space-y-3">
@@ -87,7 +87,7 @@ export default function FooterSection() {
                 <li key={link.title}>
                   <Link
                     href={link.href}
-                    className="text-teal-50 transition-colors hover:text-emerald-500 dark:text-gray-400"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.title}
                   </Link>
@@ -98,10 +98,10 @@ export default function FooterSection() {
 
           {/* Stay Healthy / Newsletter */}
           <div className="lg:pl-4">
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Stay Healthy
             </h3>
-            <p className="mb-4 text-sm text-teal-50 dark:text-gray-400">
+            <p className="mb-4 text-sm text-muted-foreground">
               Get weekly tips and meal ideas.
             </p>
             <form
@@ -112,11 +112,11 @@ export default function FooterSection() {
                 type="email"
                 placeholder="Email address @"
                 required
-                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-teal-50 focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-foreground focus:border-primary focus:ring-primary"
               />
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 font-medium text-white transition-colors hover:bg-emerald-500"
+                className="w-full rounded-lg bg-primary py-2.5 font-medium text-primary-foreground transition-colors hover:opacity-90"
               >
                 Subscribe
               </button>
@@ -125,14 +125,14 @@ export default function FooterSection() {
         </div>
 
         {/* --- Bottom Bar --- */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-teal-800 dark:border-gray-800 pt-8 md:flex-row">
-          <p className="text-sm text-teal-50 dark:text-gray-400">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
+          <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} SVMB. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link
               href="#"
-              className="text-teal-50 hover:text-emerald-500 transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               <span className="sr-only">Twitter</span>
               <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@ export default function FooterSection() {
             </Link>
             <Link
               href="#"
-              className="text-teal-50 hover:text-emerald-500 transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               <span className="sr-only">Instagram</span>
               <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
@@ -154,7 +154,7 @@ export default function FooterSection() {
             </Link>
             <Link
               href="#"
-              className="text-teal-50 hover:text-emerald-500 transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               <span className="sr-only">Facebook</span>
               <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
