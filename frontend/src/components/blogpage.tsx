@@ -11,34 +11,42 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+import Link from "next/link";
+
 export default function BlogPageComponent() {
   const articles = [
     {
+      slug: "effective-retrospectives-coronavirus",
       tag: "Healthcare",
       title: "Effective Retrospectives in the Age of Coronavirus",
       desc: "Learn how modern healthcare teams are adapting their communication strategies to improve patient outcomes during challenging times.",
     },
     {
+      slug: "tools-effective-agile-teams-healthcare",
       tag: "Webinar",
       title: "Tools for Effective Agile Teams in Healthcare",
       desc: "Discover the latest digital tools that are helping medical practices streamline their operations and deliver better care.",
     },
     {
+      slug: "navigating-stress-burnout-clinicians",
       tag: "Mental Health",
       title: "Navigating Stress and Burnout for Clinicians",
       desc: "Strategies and resources for healthcare professionals to maintain their mental well-being in high-pressure environments.",
     },
     {
+      slug: "role-diet-preventative-medicine",
       tag: "Nutrition",
       title: "The Role of Diet in Preventative Medicine",
       desc: "A comprehensive look at how nutritional choices can significantly impact long-term health outcomes and prevent chronic diseases.",
     },
     {
+      slug: "redefining-patient-experience-case-study",
       tag: "Patient Stories",
       title: "Redefining the Patient Experience: A Case Study",
       desc: "How one clinic overhauled its approach to patient care, resulting in higher satisfaction rates and better clinical results.",
     },
     {
+      slug: "advancements-telehealth-technologies",
       tag: "Medical Care",
       title: "Advancements in Telehealth Technologies",
       desc: "Exploring the latest software and hardware solutions making remote patient monitoring more effective than ever.",
@@ -89,7 +97,7 @@ export default function BlogPageComponent() {
               <span className="text-sm font-semibold">Nutrition</span>
             </a>
             <a
-              href="#"
+              href="/community"
               className="text-muted-foreground pl-4 py-2 hover:text-primary transition-all ease-in-out duration-200 flex items-center gap-3 border-l-4 border-transparent hover:border-border"
             >
               <Users className="w-5 h-5" />
@@ -172,13 +180,13 @@ export default function BlogPageComponent() {
                 <p className="text-sm text-muted-foreground line-clamp-2 mt-auto leading-relaxed">
                   {article.desc}
                 </p>
-                <a
-                  href="#"
+                <Link
+                  href={`/blog/${article.slug}`}
                   className="inline-flex items-center gap-2 text-sm font-semibold text-primary/80 hover:text-primary transition-colors mt-4 group"
                 >
                   Read more{" "}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </a>
+                </Link>
               </div>
             </article>
           ))}
