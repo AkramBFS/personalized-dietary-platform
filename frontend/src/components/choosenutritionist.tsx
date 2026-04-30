@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   Info,
   CheckCircle2,
@@ -46,19 +47,19 @@ export default function ChooseNutritionist() {
   // Reusable classes from your custom component
   const selectClasses = `
     w-full flex items-center justify-between
-    bg-white/80 backdrop-blur-md 
-    border border-gray-200
-    text-slate-800 font-medium
+    bg-card/80 backdrop-blur-md 
+    border border-border
+    text-foreground font-medium
     py-3 px-4 rounded-xl 
-    shadow-[0_4px_12px_rgba(0,0,0,0.05)]
-    hover:bg-white transition-all duration-300
+    shadow-sm
+    hover:bg-accent transition-all duration-300
     cursor-pointer group text-sm
   `;
 
   const dropdownMenuClasses = `
     absolute z-20 w-full mt-2 
-    bg-white backdrop-blur-xl border border-gray-200
-    shadow-2xl rounded-xl overflow-hidden py-2
+    bg-card backdrop-blur-xl border border-border
+    shadow-xl rounded-xl overflow-hidden py-2
     animate-in fade-in slide-in-from-top-2 duration-200
   `;
 
@@ -104,7 +105,7 @@ export default function ChooseNutritionist() {
           </h2>
 
           <div className="mb-8">
-            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 block mb-2">
+            <label className="text-sm font-bold text-foreground ml-1 block mb-2">
               Search Name or Keyword
             </label>
             <div className="relative">
@@ -112,7 +113,7 @@ export default function ChooseNutritionist() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary/30 text-foreground"
+                className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-xl focus:ring-1 focus:ring-primary/30 text-foreground"
                 placeholder="e.g. 'Hormones' or 'Dr. Smith'"
                 type="text"
               />
@@ -122,7 +123,7 @@ export default function ChooseNutritionist() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Specialty Dropdown */}
             <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-slate-600 ml-1">
+              <label className="text-xs font-bold text-foreground ml-1">
                 Specialty
               </label>
               <button
@@ -155,7 +156,7 @@ export default function ChooseNutritionist() {
                           opt === "All Specialties" ? "" : opt,
                         )
                       }
-                      className="px-4 py-2 hover:bg-primary hover:text-white cursor-pointer text-sm"
+                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
                     >
                       {opt}
                     </li>
@@ -166,7 +167,7 @@ export default function ChooseNutritionist() {
 
             {/* Focus Dropdown */}
             <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-slate-600 ml-1">
+              <label className="text-xs font-bold text-foreground ml-1">
                 Focus
               </label>
               <button
@@ -192,7 +193,7 @@ export default function ChooseNutritionist() {
                           opt === "All Focus Areas" ? "" : opt,
                         )
                       }
-                      className="px-4 py-2 hover:bg-primary hover:text-white cursor-pointer text-sm"
+                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
                     >
                       {opt}
                     </li>
@@ -203,7 +204,7 @@ export default function ChooseNutritionist() {
 
             {/* Language Dropdown */}
             <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-slate-600 ml-1">
+              <label className="text-xs font-bold text-foreground ml-1">
                 Language
               </label>
               <button
@@ -226,7 +227,7 @@ export default function ChooseNutritionist() {
                     <li
                       key={opt}
                       onClick={() => handleSelect("language", opt)}
-                      className="px-4 py-2 hover:bg-primary hover:text-white cursor-pointer text-sm"
+                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
                     >
                       {opt}
                     </li>
@@ -237,7 +238,7 @@ export default function ChooseNutritionist() {
 
             {/* Availability Dropdown */}
             <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-slate-600 ml-1">
+              <label className="text-xs font-bold text-foreground ml-1">
                 Availability
               </label>
               <button
@@ -265,7 +266,7 @@ export default function ChooseNutritionist() {
                           opt === "Any Time" ? "" : opt,
                         )
                       }
-                      className="px-4 py-2 hover:bg-primary hover:text-white cursor-pointer text-sm"
+                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
                     >
                       {opt}
                     </li>
@@ -281,6 +282,7 @@ export default function ChooseNutritionist() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
           {
+            id: "101",
             name: "Dr. Sarah Jenkins",
             certs: "MS, RDN, CDCES",
             tags: ["Hormonal Health", "PCOS"],
@@ -288,6 +290,7 @@ export default function ChooseNutritionist() {
             desc: "Evidence-based approach focusing on endocrine balance through sustainable dietary adjustments.",
           },
           {
+            id: "102",
             name: "Michael Chen",
             certs: "MPH, RDN",
             tags: ["Weight Loss", "Sports Nutrition"],
@@ -295,6 +298,7 @@ export default function ChooseNutritionist() {
             desc: "Specializes in body composition changes through metabolic optimization and practical meal prep.",
           },
           {
+            id: "103",
             name: "Elena Rodriguez",
             certs: "MS, RDN, CNSC",
             tags: ["Gut Health", "Autoimmune"],
@@ -309,7 +313,7 @@ export default function ChooseNutritionist() {
             <div className="flex items-start gap-6 mb-6">
               <img
                 alt={nutri.name}
-                className="w-20 h-20 rounded-full object-cover border-2 border-muted"
+                className="w-20 h-20 rounded-full object-cover border-2 border-border"
                 src="https://placehold.co/150x150/png"
               />
               <div>
@@ -323,7 +327,7 @@ export default function ChooseNutritionist() {
                   {nutri.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-muted text-primary px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider"
+                      className="bg-accent text-accent-foreground px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider"
                     >
                       {tag}
                     </span>
@@ -356,12 +360,15 @@ export default function ChooseNutritionist() {
                 </span>
               </div>
               <div className="flex gap-3">
-                <button className="flex-1 py-3 px-4 border border-primary text-primary rounded-xl text-xs font-bold hover:bg-muted transition-colors">
+                <button className="flex-1 py-3 px-4 border border-primary text-primary rounded-xl text-xs font-bold hover:bg-accent transition-colors">
                   View Profile
                 </button>
-                <button className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-colors">
+                <Link
+                  href={`/consultations/schedule?id=${nutri.id}`}
+                  className="flex-1 py-3 px-4 bg-button-primary text-button-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-colors text-center inline-flex items-center justify-center"
+                >
                   Select
-                </button>
+                </Link>
               </div>
             </div>
           </div>

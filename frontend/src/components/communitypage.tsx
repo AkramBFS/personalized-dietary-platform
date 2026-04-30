@@ -5,6 +5,9 @@ import {
   MessageSquare,
   Share2,
   Calendar,
+  Clock,
+  Flame,
+  Shuffle,
 } from "lucide-react";
 
 export default function CommunityComponent() {
@@ -48,9 +51,30 @@ export default function CommunityComponent() {
   ];
 
   return (
-    <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row gap-8 w-full">
+    <main className="max-w-7xl mx-auto px-4 md:px-8 py-12 flex flex-col lg:flex-row gap-8 w-full items-start">
+      {/* Left Sidebar - Navigation & Filters */}
+      <aside className="w-full lg:w-64 hidden lg:flex flex-col gap-4 shrink-0 mt-8">
+        <div className="bg-card rounded-xl border border-border p-4 shadow-sm flex flex-col gap-1">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-3 pt-2">
+            Sort By
+          </h3>
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary text-foreground font-semibold hover:bg-secondary/80 transition-colors">
+            <Clock className="w-5 h-5" />
+            Most Recent
+          </button>
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground font-semibold transition-colors">
+            <Flame className="w-5 h-5" />
+            Most Liked
+          </button>
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground font-semibold transition-colors">
+            <Shuffle className="w-5 h-5" />
+            Random
+          </button>
+        </div>
+      </aside>
+
       {/* Main Content Area */}
-      <div className="flex-1 max-w-3xl mt-12">
+      <div className="flex-1 min-w-0 w-full mt-8">
         {/* Community Header */}
         <div className="bg-card rounded-xl border border-border p-8 mb-8 flex items-start justify-between relative overflow-hidden shadow-sm">
           <div className="absolute top-0 left-0 w-full h-2 bg-secondary"></div>
@@ -124,8 +148,8 @@ export default function CommunityComponent() {
         </div>
       </div>
 
-      {/* Sidebar */}
-      <aside className="w-full lg:w-80 flex flex-col gap-6 hidden md:flex mt-12">
+      {/* Right Sidebar - Community Info */}
+      <aside className="mt-8 w-full lg:w-80 hidden lg:flex flex-col gap-6 shrink-0">
         {/* About Community */}
         <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <h3 className="text-xl font-bold text-foreground mb-4 border-b border-border pb-2">
