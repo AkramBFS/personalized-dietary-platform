@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useTheme } from "next-themes";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Logo } from "../layout/logo";
 import { loginSchema } from "@/lib/constants";
 import api from "@/lib/api";
 import { setAccessToken, setRefreshToken } from "@/lib/auth";
+import { Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import Link from "next/link";
 
 export default function LoginPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -19,6 +25,11 @@ export default function LoginPage() {
   }>({});
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Wait until mounted to avoid hydration errors
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const router = useRouter();
 
@@ -88,6 +99,19 @@ export default function LoginPage() {
     }
   };
 
+  let bgImage = "/branding/login-bg.jpg";
+  let divImage = "/branding/login-div.jpg";
+
+  if (mounted) {
+    if (theme === "special") {
+      bgImage = "/branding/login-bg2.png";
+      divImage = "/branding/login-div2.png";
+    } else if (theme === "dark") {
+      bgImage = "/branding/login-bg3.png";
+      divImage = "/branding/login-div3.png";
+    }
+  }
+
   const containerVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -124,14 +148,14 @@ export default function LoginPage() {
     <main className="relative min-h-screen overflow-hidden">
       <AnimatePresence>
         <motion.div
-          key="background"
+          key={bgImage} // Change the key so Framer Motion animates the transition between images
           className="absolute inset-0 -z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
           <Image
-            src="/branding/login-bg.jpg"
+            src={bgImage}
             alt="Login background"
             fill
             priority
@@ -140,18 +164,31 @@ export default function LoginPage() {
         </motion.div>
       </AnimatePresence>
 
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+        <Link
+          href="/"
+          className="p-2 rounded-full bg-card/50 backdrop-blur-md border border-border hover:bg-accent transition-colors"
+          title="Back to Home"
+        >
+          <Home className="w-5 h-5 text-foreground" />
+        </Link>
+        <div className="p-1 rounded-full bg-card/50 backdrop-blur-md border border-border">
+          <ThemeToggle />
+        </div>
+      </div>
+
       <div className="min-h-screen w-full flex items-center justify-center p-4">
         <motion.div
-          className="relative w-full max-w-4xl h-[600px] bg-white dark:bg-[#1a2027] rounded-3xl overflow-hidden shadow-lg flex border dark:border-white/10"
+          className="relative w-full max-w-4xl h-[600px] bg-card rounded-3xl overflow-hidden shadow-lg flex border border-border"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           {/* Left panel */}
           <div
-            className="hidden md:flex relative w-2/5 p-8 flex-col justify-center bg-cover bg-center"
+            className="hidden md:flex relative w-2/5 p-8 flex-col justify-center bg-cover bg-center transition-all duration-500"
             style={{
-              backgroundImage: "url('/branding/login-div.jpg')",
+              backgroundImage: `url('${divImage}')`,
               backgroundBlendMode: "overlay",
             }}
           ></div>
@@ -163,7 +200,7 @@ export default function LoginPage() {
           >
             <div className="flex items-start mb-6">
               <motion.div
-                className="relative h-16 w-16 rounded-xl bg-gradient-to-br from-emerald-400 to-yellow flex items-center justify-center"
+                className="relative h-16 w-16 rounded-xl bg-gradient-to-br from-brand to-brand/80 flex items-center justify-center"
                 animate={{
                   rotate: [0, 5, -5, 0],
                   scale: [1, 1.05, 0.95, 1],
@@ -180,10 +217,10 @@ export default function LoginPage() {
             </div>
 
             <motion.div className="mb-8" variants={itemVariants}>
-              <h2 className="text-4xl text-gray-700 dark:text-white font-medium mb-2">
+              <h2 className="text-4xl text-foreground font-medium mb-2">
                 Dieton account
               </h2>
-              <p className="text-xl text-gray-600 dark:text-gray-400">
+              <p className="text-xl text-muted-foreground">
                 Sign in to continue
               </p>
             </motion.div>
@@ -191,7 +228,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-6">
               {/* Email */}
               <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Email
                 </label>
                 <input
@@ -199,21 +236,21 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="example@email.com"
-                  className={`w-full px-4 py-3 rounded-lg border bg-gray-50 dark:bg-gray-800/50 dark:text-white focus:outline-none focus:ring-2 transition
+                  className={`w-full px-4 py-3 rounded-lg border bg-muted/30 text-foreground focus:outline-none focus:ring-2 transition
                     ${
                       errors.email
-                        ? "border-red-400 focus:ring-red-400"
-                        : "border-gray-200 dark:border-gray-700 focus:ring-emerald-400"
+                        ? "border-destructive focus:ring-destructive"
+                        : "border-border focus:ring-brand"
                     }`}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.email}</p>
                 )}
               </motion.div>
 
               {/* Password */}
               <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Password
                 </label>
                 <input
@@ -221,15 +258,15 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-3 rounded-lg border bg-gray-50 dark:bg-gray-800/50 dark:text-white focus:outline-none focus:ring-2 transition
+                  className={`w-full px-4 py-3 rounded-lg border bg-muted/30 text-foreground focus:outline-none focus:ring-2 transition
                     ${
                       errors.password
-                        ? "border-red-400 focus:ring-red-400"
-                        : "border-gray-200 dark:border-gray-700 focus:ring-emerald-400"
+                        ? "border-destructive focus:ring-destructive"
+                        : "border-border focus:ring-brand"
                     }`}
                 />
                 {errors.password && (
-                  <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.password}</p>
                 )}
               </motion.div>
 
@@ -241,8 +278,8 @@ export default function LoginPage() {
                 initial="rest"
                 whileHover={isFormValid && !isLoading ? "hover" : undefined}
                 whileTap={isFormValid && !isLoading ? "tap" : undefined}
-                className={`w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-base font-medium text-white
-                  bg-gradient-to-r from-emerald-400 to-emerald-300
+                className={`w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-base font-medium text-button-primary-foreground
+                  bg-button-primary
                   transition-opacity
                   ${
                     isFormValid && !isLoading

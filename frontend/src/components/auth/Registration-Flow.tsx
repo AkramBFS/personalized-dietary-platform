@@ -9,6 +9,8 @@ import { stepSchemas } from "@/lib/constants";
 import ProgressBar from "../ui/ProgressBar";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const BACKGROUNDS = [
   "/branding/bg-1.jpg",
@@ -258,6 +260,18 @@ export default function RegistrationFlow() {
 
   return (
     <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden">
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+        <Link
+          href="/"
+          className="p-2 rounded-full bg-card/50 backdrop-blur-md border border-border hover:bg-accent transition-colors"
+          title="Back to Home"
+        >
+          <Home className="w-5 h-5 text-foreground" />
+        </Link>
+        <div className="p-1 rounded-full bg-card/50 backdrop-blur-md border border-border">
+          <ThemeToggle />
+        </div>
+      </div>
       <AnimatePresence>
         <motion.div
           key={bgImage}
@@ -296,8 +310,8 @@ export default function RegistrationFlow() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={`relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] 
-            bg-gradient-to-br from-white/90 via-white/70 to-white/90 dark:from-emerald-950/90 dark:via-emerald-950/70 dark:to-emerald-950/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
-            border border-white/30 dark:border-white/10 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
+            bg-card/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
+            border border-border hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
             flex flex-col overflow-hidden transition-colors duration-500
             ${isAnimating ? "pointer-events-none" : ""}`}
         >
@@ -312,12 +326,12 @@ export default function RegistrationFlow() {
             {renderStep()}
           </div>
 
-          <div className="p-6 pt-4 bg-white/60 dark:bg-black/20 border-t border-gray-100 dark:border-white/10 mt-auto">
+          <div className="p-6 pt-4 bg-muted/40 border-t border-border mt-auto">
             <div className="flex justify-between items-center">
               <button
                 onClick={prevStep}
                 disabled={currentStep === 1 || isAnimating}
-                className="px-6 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white disabled:opacity-30 transition-colors"
+                className="px-6 py-2 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
               >
                 Back
               </button>
@@ -326,7 +340,7 @@ export default function RegistrationFlow() {
                 <button
                   onClick={nextStep}
                   disabled={!isStepValid || isAnimating}
-                  className="px-8 py-2 bg-gradient-to-r from-emerald-400 to-emerald-300 text-white font-semibold rounded-lg 
+                  className="px-8 py-2 bg-button-primary text-button-primary-foreground font-semibold rounded-lg 
     transition-all duration-300 
     hover:brightness-105 hover:shadow-[0_0_20px_rgba(110,231,183,0.6)] 
     hover:-translate-y-0.5
@@ -339,29 +353,29 @@ export default function RegistrationFlow() {
                 <button
                   onClick={handleSubmit}
                   disabled={isPending || !isStepValid || isAnimating}
-                  className="px-8 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 
-                    transition-all hover:bg-green-700 shadow-md"
+                  className="px-8 py-2 bg-button-primary text-button-primary-foreground rounded-lg disabled:opacity-50 
+                    transition-all hover:brightness-105 shadow-md"
                 >
                   {isPending ? "Submitting..." : "Complete Setup"}
                 </button>
               )}
             </div>
 
-            <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="mt-6 text-center text-sm text-muted-foreground">
               Already onboard?{" "}
               <Link
                 href="/login"
-                className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
+                className="text-brand hover:text-brand/80 font-semibold underline underline-offset-4"
               >
                 Sign in!
               </Link>
             </div>
 
-            <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="mt-2 text-center text-sm text-muted-foreground">
               Are you a certified nutritionist?{" "}
               <Link
                 href="/register/nutritionist"
-                className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
+                className="text-brand hover:text-brand/80 font-semibold underline underline-offset-4"
               >
                 Get on board!
               </Link>

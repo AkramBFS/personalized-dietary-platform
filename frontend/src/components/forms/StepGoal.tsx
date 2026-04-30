@@ -53,10 +53,10 @@ export default function StepGoal({ formData, setFormData, goals }: Props) {
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
           What is your primary goal?
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed">
           Select the option that best describes your objective.
         </p>
       </div>
@@ -74,8 +74,8 @@ export default function StepGoal({ formData, setFormData, goals }: Props) {
                   ${cardClasses}
                   ${
                     isSelected
-                      ? "bg-emerald-400 text-white border-emerald-400 scale-[1.02] shadow-emerald-200/50"
-                      : "bg-white/40 dark:bg-emerald-900/20 border-white/50 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-emerald-900/30"
+                      ? "bg-brand text-primary-foreground border-brand scale-[1.02] shadow-brand/20"
+                      : "bg-card/40 border-border text-foreground hover:bg-accent"
                   }
                 `}
               >
@@ -97,7 +97,7 @@ export default function StepGoal({ formData, setFormData, goals }: Props) {
               className="pt-4"
             >
               <div className="space-y-3">
-                <label className="text-sm font-bold text-slate-700 ml-1">
+                <label className="text-sm font-bold text-foreground ml-1">
                   Please specify your goal
                 </label>
                 <input
@@ -109,11 +109,11 @@ export default function StepGoal({ formData, setFormData, goals }: Props) {
                   placeholder="e.g. Training for a marathon..."
                   className="
                     w-full py-4 px-6 rounded-2xl
-                    bg-white/60 dark:bg-emerald-900/40 backdrop-blur-md 
-                    border border-white/50 dark:border-white/10
-                    text-slate-800 dark:text-white font-medium
+                    bg-muted/40 backdrop-blur-md 
+                    border border-border
+                    text-foreground font-medium
                     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
-                    focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400
+                    focus:ring-2 focus:ring-brand/50 focus:border-brand
                     outline-none transition-all
                   "
                 />

@@ -25,10 +25,10 @@ export default function StepActivity({ formData, setFormData }: Props) {
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
           How active are you?
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed">
           This helps us calculate your daily calorie requirements.
         </p>
       </div>
@@ -51,16 +51,16 @@ export default function StepActivity({ formData, setFormData }: Props) {
                 ${cardBaseClasses}
                 ${
                   isSelected
-                    ? "bg-emerald-400/90 border-emerald-300 scale-[1.02] shadow-emerald-200/50"
-                    : "bg-white/40 dark:bg-emerald-900/20 border-white/50 dark:border-white/10 hover:bg-white/60 dark:hover:bg-emerald-900/30"
+                    ? "bg-brand/90 border-brand/30 scale-[1.02] shadow-brand/20"
+                    : "bg-card/40 border-border hover:bg-accent"
                 }
               `}
             >
               <div
                 className={`text-lg font-bold transition-colors duration-300 ${
                   isSelected
-                    ? "text-white"
-                    : "text-slate-800 dark:text-slate-100"
+                    ? "text-primary-foreground"
+                    : "text-foreground"
                 }`}
               >
                 {level.label}
@@ -68,8 +68,8 @@ export default function StepActivity({ formData, setFormData }: Props) {
               <div
                 className={`text-sm font-medium transition-colors duration-300 ${
                   isSelected
-                    ? "text-emerald-50/90"
-                    : "text-slate-500 dark:text-slate-400"
+                    ? "text-primary-foreground/90"
+                    : "text-muted-foreground"
                 }`}
               >
                 {level.desc}

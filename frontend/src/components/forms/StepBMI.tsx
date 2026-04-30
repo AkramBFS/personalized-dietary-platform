@@ -50,17 +50,17 @@ export default function StepBMI({ formData, setFormData }: Props) {
   ]);
 
   const getBMIDetails = (bmi: number) => {
-    if (bmi < 18.5) return { label: "Underweight", color: "text-amber-500" };
-    if (bmi < 25) return { label: "Healthy Weight", color: "text-emerald-500" };
-    if (bmi < 30) return { label: "Overweight", color: "text-orange-500" };
-    return { label: "Obese", color: "text-red-500" };
+    if (bmi < 18.5) return { label: "Underweight", color: "text-foreground/80" };
+    if (bmi < 25) return { label: "Healthy Weight", color: "text-brand" };
+    if (bmi < 30) return { label: "Overweight", color: "text-foreground/80" };
+    return { label: "Obese", color: "text-destructive" };
   };
 
   const { label, color } = getBMIDetails(formData.bmi);
 
   const cardClasses = `
-    w-full bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md 
-    border border-white/50 dark:border-white/10
+    w-full bg-card/40 backdrop-blur-md 
+    border border-border
     rounded-2xl p-8 
     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
     text-center
@@ -70,10 +70,10 @@ export default function StepBMI({ formData, setFormData }: Props) {
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
           Your Health Metrics
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed">
           We've calculated your baseline metrics based on your profile.
         </p>
       </div>
@@ -81,10 +81,10 @@ export default function StepBMI({ formData, setFormData }: Props) {
       <div className="w-full max-w-md space-y-6">
         {/* BMI Card */}
         <div className={cardClasses}>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-2">
             Body Mass Index
           </p>
-          <div className="text-6xl font-black text-slate-800 dark:text-white tabular-nums mb-2">
+          <div className="text-6xl font-black text-foreground tabular-nums mb-2">
             {formData.bmi}
           </div>
           <div
@@ -96,22 +96,22 @@ export default function StepBMI({ formData, setFormData }: Props) {
 
         {/* BMR Card */}
         <div className={cardClasses}>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-2">
             Basal Metabolic Rate
           </p>
-          <div className="text-4xl font-black text-slate-700 dark:text-slate-200 tabular-nums">
+          <div className="text-4xl font-black text-foreground tabular-nums">
             {formData.bmr}
-            <span className="text-lg font-bold text-slate-400 dark:text-slate-500 ml-2">
+            <span className="text-lg font-bold text-muted-foreground ml-2">
               kcal
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-2 font-medium uppercase tracking-wide">
+          <p className="text-[11px] text-muted-foreground mt-2 font-medium uppercase tracking-wide">
             Daily calories burned at rest
           </p>
         </div>
 
         {/* Disclaimer */}
-        <p className="text-center text-[11px] text-slate-400 italic px-8 leading-relaxed">
+        <p className="text-center text-[11px] text-muted-foreground italic px-8 leading-relaxed">
           Note: These calculations are estimates based on standard clinical
           formulas (Harris-Benedict).
         </p>

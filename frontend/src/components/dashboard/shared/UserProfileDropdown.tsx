@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronDown, User, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { ChevronDown, User, Settings, LogOut, Sun, Moon, Palette } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface UserProfileDropdownProps {
@@ -102,17 +102,28 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
         {/* Theme Toggle */}
         <DropdownMenuItem
           className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
-          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          onClick={() => {
+            if (resolvedTheme === "light") setTheme("dark");
+            else if (resolvedTheme === "dark") setTheme("special");
+            else setTheme("light");
+          }}
         >
-          {mounted && resolvedTheme === "dark" ? (
-            <>
-              <Sun className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span>Light Mode</span>
-            </>
-          ) : (
+          {mounted && resolvedTheme === "light" && (
             <>
               <Moon className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <span>Dark Mode</span>
+            </>
+          )}
+          {mounted && resolvedTheme === "dark" && (
+            <>
+              <Palette className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span>Special Mode</span>
+            </>
+          )}
+          {mounted && resolvedTheme === "special" && (
+            <>
+              <Sun className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span>Light Mode</span>
             </>
           )}
         </DropdownMenuItem>
