@@ -53,3 +53,6 @@ next-env.d.ts
 # Next.js & Node
 **/.next/
 **/node_modules/
+
+**/.kilo/
+**/.kilo/**
