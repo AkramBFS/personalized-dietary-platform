@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -11,19 +10,6 @@ import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-
-const BACKGROUNDS = [
-  "/branding/bg-1.jpg",
-  "/branding/bg-2.jpg",
-  "/branding/bg-3.jpg",
-  "/branding/bg-4.jpg",
-  "/branding/bg-5.jpg",
-  "/branding/bg-6.jpg",
-  "/branding/bg-7.jpg",
-  "/branding/bg-8.jpg",
-  "/branding/bg-9.jpg",
-  "/branding/bg-10.jpg",
-];
 
 const StepCountry = dynamic(() => import("../forms/StepCountrySelect"));
 const StepGoal = dynamic(() => import("../forms/StepGoal"));
@@ -40,7 +26,6 @@ export default function RegistrationFlow() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [isHovered, setIsHovered] = useState(false);
 
   const [countries, setCountries] = useState<{ id: number; name: string }[]>(
     [],
@@ -71,7 +56,6 @@ export default function RegistrationFlow() {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
     password: "",
     agreedToTerms: false,
   });
@@ -80,33 +64,35 @@ export default function RegistrationFlow() {
 
   const cardVariants: Variants = {
     initial: (step: number) => {
-      if (step === 10) return { opacity: 1, x: 0, scale: 1 };
-      if ([3, 6, 9].includes(step)) return { scale: 0.5, opacity: 0, x: 0 };
-      if ([2, 5, 8].includes(step))
-        return { x: "-100%", opacity: 0, rotate: -5 };
-      return { x: "100%", opacity: 0, rotate: 5 };
+      // Step 10: Simple fade in
+      if (step === 10) return { opacity: 0, y: 10 }; 
+      
+      // Group 1 (Steps 3, 6, 9): Fade in while going from small to big
+      if ([3, 6, 9].includes(step)) return { scale: 0.95, opacity: 0, x: 0 };
+      
+      // Group 2 (Steps 2, 5, 8): Fade in while sliding in from the left
+      if ([2, 5, 8].includes(step)) return { x: -40, opacity: 0 };
+      
+      // Default (Steps 1, 4, 7): Fade in while sliding in from the right
+      return { x: 40, opacity: 0 };
     },
-    animate: (step: number) => ({
+    animate: {
       x: 0,
+      y: 0,
       scale: 1,
       opacity: 1,
-      rotate: 0,
       transition: {
-        type: "spring" as const,
-        stiffness: 220,
-        damping: [3, 6, 9].includes(step) ? 26 : 18,
-        mass: 1,
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1], // Elegant ease-out curve
       },
-    }),
+    },
     exit: (step: number) => {
-      if (step === 10) return { opacity: 1 };
-      if ([3, 6, 9].includes(step)) return { scale: 0.5, opacity: 0 };
-      if ([2, 5, 8].includes(step)) return { x: "-100%", opacity: 0 };
-      return { x: "100%", opacity: 0 };
+      if (step === 10) return { opacity: 0 };
+      if ([3, 6, 9].includes(step)) return { scale: 1.05, opacity: 0 };
+      if ([2, 5, 8].includes(step)) return { x: 40, opacity: 0 };
+      return { x: -40, opacity: 0 };
     },
   };
-
-  const bgImage = BACKGROUNDS[currentStep - 1] || BACKGROUNDS[0];
 
   useEffect(() => {
     const fetchLookupData = async () => {
@@ -116,9 +102,14 @@ export default function RegistrationFlow() {
           api.get("/lookup/goals/"),
           api.get("/lookup/languages/"),
         ]);
-        setCountries(countriesRes.data);
-        setGoals(goalsRes.data);
-        setLanguages(languagesRes.data);
+        const extractData = (res: any) => {
+          if (Array.isArray(res.data)) return res.data;
+          if (res.data && Array.isArray(res.data.results)) return res.data.results;
+          return [];
+        };
+        setCountries(extractData(countriesRes));
+        setGoals(extractData(goalsRes));
+        setLanguages(extractData(languagesRes));
       } catch (error) {
         console.error("Failed to fetch lookup data", error);
         // Fallback to hardcoded
@@ -259,7 +250,7 @@ export default function RegistrationFlow() {
   };
 
   return (
-    <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden">
+    <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-background">
       <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
         <Link
           href="/"
@@ -272,29 +263,6 @@ export default function RegistrationFlow() {
           <ThemeToggle />
         </div>
       </div>
-      <AnimatePresence>
-        <motion.div
-          key={bgImage}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            filter: isHovered
-              ? "blur(5px) brightness(0.8)"
-              : "blur(0px) brightness(1)",
-          }}
-          exit={{ opacity: 0 }}
-          transition={{ opacity: { duration: 0.6, ease: "easeInOut" } }}
-          className="absolute inset-0 -z-10"
-        >
-          <Image
-            src={bgImage}
-            alt={`Step ${currentStep} Background`}
-            fill
-            priority
-            className="object-cover"
-          />
-        </motion.div>
-      </AnimatePresence>
 
       <AnimatePresence mode="popLayout" custom={currentStep}>
         <motion.div
@@ -307,12 +275,8 @@ export default function RegistrationFlow() {
           // ensure the lock is active for the full duration of the spring
           onAnimationStart={() => setIsAnimating(true)}
           onAnimationComplete={() => setIsAnimating(false)}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
           className={`relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] 
-            bg-card/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
-            border border-border hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
-            flex flex-col overflow-hidden transition-colors duration-500
+            absolute inset-0 flex flex-col overflow-hidden transition-colors duration-500
             ${isAnimating ? "pointer-events-none" : ""}`}
         >
           <div className="p-6 pb-0">
@@ -326,7 +290,7 @@ export default function RegistrationFlow() {
             {renderStep()}
           </div>
 
-          <div className="p-6 pt-4 bg-muted/40 border-t border-border mt-auto">
+          <div className="p-6 pt-4 mt-auto">
             <div className="flex justify-between items-center">
               <button
                 onClick={prevStep}

@@ -39,11 +39,17 @@ export async function bootstrapLookups(): Promise<void> {
         api.get("/lookup/languages/").catch(() => ({ data: [] })),
       ]);
 
+      const extractData = (res: any) => {
+        if (Array.isArray(res.data)) return res.data;
+        if (res.data && Array.isArray(res.data.results)) return res.data.results;
+        return [];
+      };
+
       lookupCache = {
-        countries: countriesRes.data,
-        goals: goalsRes.data,
-        specializations: specializationsRes.data,
-        languages: languagesRes.data,
+        countries: extractData(countriesRes),
+        goals: extractData(goalsRes),
+        specializations: extractData(specializationsRes),
+        languages: extractData(languagesRes),
       };
     } catch (err) {
       console.error("Failed to bootstrap lookup data", err);

@@ -18,7 +18,9 @@ interface Props {
 }
 
 export default function StepGoal({ formData, setFormData, goals }: Props) {
-  const goalsList = goals ? goals.map((g) => g.name) : GOALS_FALLBACK;
+  const goalsList = Array.isArray(goals) && goals.length > 0
+    ? goals.map((g) => g.name)
+    : GOALS_FALLBACK;
   const isOtherSelected = formData.goal === "Other";
   const otherInputRef = useRef<HTMLDivElement | null>(null);
 
