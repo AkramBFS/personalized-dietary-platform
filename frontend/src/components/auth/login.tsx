@@ -200,7 +200,7 @@ export default function LoginPage() {
           >
             <div className="flex items-start mb-6">
               <motion.div
-                className="relative h-16 w-16 rounded-xl bg-gradient-to-br from-brand to-brand/80 flex items-center justify-center"
+                className=""
                 animate={{
                   rotate: [0, 5, -5, 0],
                   scale: [1, 1.05, 0.95, 1],
@@ -289,6 +289,19 @@ export default function LoginPage() {
               >
                 {isLoading ? "Signing in..." : "Sign in"}
               </motion.button>
+
+              <motion.div
+                variants={itemVariants}
+                className="text-center text-sm text-muted-foreground"
+              >
+                Not onboard?{" "}
+                <Link
+                  href="/register"
+                  className="text-brand hover:text-brand/80 font-semibold underline underline-offset-4"
+                >
+                  Sign up!
+                </Link>
+              </motion.div>
             </form>
           </motion.div>
         </motion.div>

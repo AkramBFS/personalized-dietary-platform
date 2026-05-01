@@ -243,7 +243,7 @@ export default function NutritionistRegistrationForm() {
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
               >
                 <option value="">Select a country</option>
-                {countries.map((country) => (
+                {Array.isArray(countries) && countries.map((country) => (
                   <option key={country.id} value={country.id}>
                     {country.name}
                   </option>
@@ -266,7 +266,7 @@ export default function NutritionistRegistrationForm() {
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
               >
                 <option value="">Select a specialization</option>
-                {specializations.map((spec) => (
+                {Array.isArray(specializations) && specializations.map((spec) => (
                   <option key={spec.id} value={spec.id}>
                     {spec.name}
                   </option>

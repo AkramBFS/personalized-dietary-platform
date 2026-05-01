@@ -106,19 +106,6 @@ export default function StepSignUp({ formData, setFormData }: Props) {
           />
         </div>
 
-        {/* Phone */}
-        <div className="space-y-2">
-          <label className={labelStyles}>Phone Number</label>
-          <Input
-            name="phone"
-            className={inputStyles}
-            type="tel"
-            placeholder="+213 000000000"
-            value={formData.phone || ""}
-            onChange={handleChange}
-          />
-        </div>
-
         {/* Password */}
         <div className="space-y-2">
           <label className={labelStyles}>Password</label>

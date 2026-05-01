@@ -45,7 +45,6 @@ export default function StepReview({ formData, setFormData }: Props) {
         : null,
     },
     { label: "Email", value: formData.email },
-    { label: "Phone", value: formData.phone },
   ];
 
   return (
