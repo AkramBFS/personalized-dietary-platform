@@ -2,7 +2,10 @@ import api from "@/lib/api";
 
 export interface LookupItem {
   id: number;
-  name: string;
+  name?: string;
+  value?: string;
+  label?: string;
+  description?: string;
 }
 
 let lookupCache: {
@@ -44,8 +47,10 @@ export async function bootstrapLookups(): Promise<void> {
       ]);
 
       const extractData = (res: any) => {
+        if (!res || !res.data) return [];
         if (Array.isArray(res.data)) return res.data;
         if (res.data && Array.isArray(res.data.results)) return res.data.results;
+        if (res.data && Array.isArray(res.data.data)) return res.data.data;
         return [];
       };
 

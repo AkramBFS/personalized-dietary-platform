@@ -76,11 +76,7 @@ export default function StepDiet({ formData, setFormData, diets = [] }: Props) {
           onClick={() => setOpenDropdown((prev) => !prev)}
           className={selectClasses}
         >
-          <span
-            className={
-              !formData.diet ? "text-muted-foreground" : ""
-            }
-          >
+          <span className={!formData.diet ? "text-muted-foreground" : ""}>
             {formData.diet || "Choose a diet..."}
           </span>
 
@@ -103,15 +99,16 @@ export default function StepDiet({ formData, setFormData, diets = [] }: Props) {
 
         {openDropdown && (
           <ul className={dropdownMenuClasses}>
-            {Array.isArray(diets) && diets.map((diet) => (
-              <li
-                key={diet.id}
-                onClick={() => handleSelect(diet.name)}
-                className="px-6 py-3 hover:bg-brand hover:text-primary-foreground cursor-pointer transition-colors text-foreground text-sm font-medium"
-              >
-                {diet.name}
-              </li>
-            ))}
+            {Array.isArray(diets) &&
+              diets.map((diet) => (
+                <li
+                  key={diet.value} // Use 'value' as the unique key
+                  onClick={() => handleSelect(diet.label)} // Use 'label' for the display name
+                  className="px-6 py-3 hover:bg-brand hover:text-primary-foreground cursor-pointer transition-colors text-foreground text-sm font-medium"
+                >
+                  {diet.label}
+                </li>
+              ))}
           </ul>
         )}
       </div>
