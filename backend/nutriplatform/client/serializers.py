@@ -29,6 +29,8 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'country_id', 'country_name',
             'target_calories', 'target_protein',
             'target_carbs', 'target_fats',
+            'activity_level',  
+            'diet', 
         ]
         read_only_fields = ['client_id', 'bmi', 'bmr', 'gender']
 
