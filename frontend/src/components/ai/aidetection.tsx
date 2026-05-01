@@ -234,7 +234,7 @@ export function AIDetection() {
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover translate-x-[5px]"
         />
 
         {/* ===== INSTRUCTIONS: SCROLL TO PLAY ===== */}
