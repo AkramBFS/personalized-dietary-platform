@@ -1,10 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sun, Moon } from "lucide-react";
@@ -70,6 +77,7 @@ export const HeroHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -81,10 +89,29 @@ export const HeroHeader = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useGSAP(() => {
+    // Ensure the AI section exists before creating the trigger
+    const aiSection = document.querySelector("#ai-scan-section");
+    if (!aiSection) return;
+
+    ScrollTrigger.create({
+      trigger: "#ai-scan-section",
+      start: "top top",
+      // Calculate the end point to match the 3000px scrub distance + 100vh for the initial zoom phase.
+      end: () => `+=${3000 + window.innerHeight}`,
+      onEnter: () => gsap.to(headerRef.current, { yPercent: -100, autoAlpha: 0, duration: 0.4, ease: "power2.out" }),
+      onLeave: () => gsap.to(headerRef.current, { yPercent: 0, autoAlpha: 1, duration: 0.4, ease: "power2.out" }),
+      onEnterBack: () => gsap.to(headerRef.current, { yPercent: -100, autoAlpha: 0, duration: 0.4, ease: "power2.out" }),
+      onLeaveBack: () => gsap.to(headerRef.current, { yPercent: 0, autoAlpha: 1, duration: 0.4, ease: "power2.out" }),
+      // Invalidate on refresh to ensure window.innerHeight is recalculated if the user resizes
+      invalidateOnRefresh: true,
+    });
+  }, { scope: headerRef });
+
   return (
-    <header>
+    <header ref={headerRef} className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none">
       {/* OUTER NAV (CENTERING CONTAINER) */}
-      <nav className="fixed z-50 w-full flex justify-center pointer-events-none">
+      <nav className="w-full flex justify-center pointer-events-none">
         {/* ANIMATED NAVBAR SHELL */}
         <div
           className={cn(

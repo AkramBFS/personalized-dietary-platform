@@ -252,7 +252,7 @@ export default function MealPlanDetailPage() {
         </Card>
       </div>
 
-      {content.snacks && content.snacks.length > 0 && (
+      {Array.isArray(content.snacks) && content.snacks.length > 0 && (
         <Card className="mt-6 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-card-foreground">Snacks</CardTitle>

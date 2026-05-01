@@ -92,16 +92,16 @@
   --destructive-foreground: #ffffff;
 
   /* LIGHT MODE BUTTONS (Restored for visibility) */
-  --button-primary: #059669; 
+  --button-primary: #059669;
   --button-primary-foreground: #ffffff;
-  
-  --button-secondary: #f3f4f6; 
-  --button-secondary-foreground: #4b5563; 
-  
-  --button-accent: #ecfdf5; 
-  --button-accent-foreground: #10b981; 
-  
-  --button-destructive: #f87171; 
+
+  --button-secondary: #f3f4f6;
+  --button-secondary-foreground: #4b5563;
+
+  --button-accent: #ecfdf5;
+  --button-accent-foreground: #10b981;
+
+  --button-destructive: #f87171;
   --button-destructive-foreground: #ffffff;
 
   --border: #f3f4f6;
@@ -142,16 +142,16 @@
   --destructive-foreground: #ffffff;
 
   /* DARK MODE BUTTONS (Restored for visibility) */
-  --button-primary: #34D399; 
+  --button-primary: #34D399;
   --button-primary-foreground: #000000;
-  
-  --button-secondary: #1f2937; 
+
+  --button-secondary: #1f2937;
   --button-secondary-foreground: #f9fafb;
-  
-  --button-accent: #064E3B; 
-  --button-accent-foreground: #34D399; 
-  
-  --button-destructive: #ef4444; 
+
+  --button-accent: #064E3B;
+  --button-accent-foreground: #34D399;
+
+  --button-destructive: #ef4444;
   --button-destructive-foreground: #ffffff;
 
   --border: #1f2937;
@@ -253,4 +253,9 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+*::-webkit-scrollbar {
+  display: none;
 }
