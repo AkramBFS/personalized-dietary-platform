@@ -63,10 +63,10 @@ export default function StepMedicalHistory({ formData, setFormData }: Props) {
     <div className="flex flex-col items-center w-full space-y-10">
       {/* Header Section */}
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
           Medical History
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed">
           Select all that apply. This helps us tailor your plan safely.
         </p>
       </div>
@@ -89,15 +89,15 @@ export default function StepMedicalHistory({ formData, setFormData }: Props) {
                   ${
                     isChecked
                       ? isNone
-                        ? "bg-emerald-400 border-primary/50 shadow-[0_0_25px_oklch(0.72_0.17_153_/_0.4)]"
-                        : "bg-emerald-400 border-emerald/50 shadow-[0_0_25px_oklch(0.25_0.06_160_/_0.3)]"
-                      : "bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md border-white/50 dark:border-white/10 hover:bg-white/60 dark:hover:bg-emerald-900/30 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                        ? "bg-brand border-brand/50 shadow-brand/20"
+                        : "bg-brand border-brand/50 shadow-brand/20"
+                      : "bg-card/40 backdrop-blur-md border-border hover:bg-accent shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   }
                 `}
               >
                 <span
                   className={`text-lg font-bold transition-colors ${
-                    isChecked ? "text-white" : "text-slate-800 dark:text-white"
+                    isChecked ? "text-primary-foreground" : "text-foreground"
                   }`}
                 >
                   {condition}
@@ -109,14 +109,14 @@ export default function StepMedicalHistory({ formData, setFormData }: Props) {
                   h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all
                   ${
                     isChecked
-                      ? "bg-white dark:bg-emerald-400 border-white dark:border-emerald-400 scale-110"
-                      : "border-slate-300 dark:border-white/20 bg-transparent"
+                      ? "bg-primary-foreground border-primary-foreground scale-110"
+                      : "border-border bg-transparent"
                   }
                 `}
                 >
                   {isChecked && (
                     <svg
-                      className={`h-4 w-4 ${isNone ? "text-primary" : "text-secondary dark:text-emerald-950"}`}
+                      className={`h-4 w-4 ${isNone ? "text-brand" : "text-brand"}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -147,7 +147,7 @@ export default function StepMedicalHistory({ formData, setFormData }: Props) {
               className="pt-2"
             >
               <div className="space-y-3">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+                <label className="text-sm font-bold text-foreground ml-1">
                   Please specify conditions
                 </label>
                 <input
@@ -162,12 +162,12 @@ export default function StepMedicalHistory({ formData, setFormData }: Props) {
                   placeholder="e.g. Asthma, anemia..."
                   className="
                     w-full py-4 px-6
-                    bg-white/60 dark:bg-emerald-900/40 backdrop-blur-md 
-                    border-2 border-white/50 dark:border-white/10
+                    bg-muted/40 backdrop-blur-md 
+                    border-2 border-border
                     rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.05)]
-                    text-slate-800 dark:text-white font-semibold outline-none
-                    placeholder:text-slate-400 dark:placeholder:text-slate-500
-                    focus:border-primary transition-all
+                    text-foreground font-semibold outline-none
+                    placeholder:text-muted-foreground
+                    focus:border-brand transition-all
                   "
                 />
               </div>

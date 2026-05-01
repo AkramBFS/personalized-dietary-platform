@@ -244,7 +244,7 @@ export default function EarningsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {earnings.transactions.map((tx) => (
+                {Array.isArray(earnings.transactions) && earnings.transactions.map((tx) => (
                   <TableRow key={tx.transaction_number}>
                     <TableCell className="text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">

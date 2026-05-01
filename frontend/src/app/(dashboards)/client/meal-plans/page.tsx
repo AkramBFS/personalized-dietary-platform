@@ -37,7 +37,8 @@ export default function MealPlansPage() {
     const fetchPlans = async () => {
       try {
         const response = await api.get("/client/user-plans/");
-        setPlans(response.data.results || response.data || []);
+        const raw = response.data.results || response.data || [];
+        setPlans(Array.isArray(raw) ? raw : []);
       } catch (error) {
         console.error("Failed to fetch plans", error);
         // Mock fallback

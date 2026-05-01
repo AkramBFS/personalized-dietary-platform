@@ -36,7 +36,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
-              {links.map((link) => {
+              {Array.isArray(links) && links.map((link) => {
                 const rolePath = role === "high_admin" ? "admin" : role;
                 const isActive =
                   link.url === `/${rolePath}`

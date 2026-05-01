@@ -103,7 +103,13 @@ export default function ScheduleConsultation({
           nutritionistId,
           formattedDate,
         );
-        setAvailability(data.available_slots || []);
+        const extractSlots = (resData: any) => {
+          if (Array.isArray(resData)) return resData;
+          if (resData && Array.isArray(resData.available_slots)) return resData.available_slots;
+          if (resData && Array.isArray(resData.results)) return resData.results;
+          return [];
+        };
+        setAvailability(extractSlots(data));
       } catch (err) {
         console.error("Failed to load slots", err);
         // Fallback to mock data for development
@@ -231,7 +237,7 @@ export default function ScheduleConsultation({
                 </button>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {currentNutritionist.tags.map((tag) => (
+                {Array.isArray(currentNutritionist.tags) && currentNutritionist.tags.map((tag) => (
                   <span
                     key={tag}
                     className="bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-full"

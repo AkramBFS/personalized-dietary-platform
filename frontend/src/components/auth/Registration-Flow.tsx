@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -9,19 +8,17 @@ import { stepSchemas } from "@/lib/constants";
 import ProgressBar from "../ui/ProgressBar";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
-
-const BACKGROUNDS = [
-  "/branding/bg-1.jpg",
-  "/branding/bg-2.jpg",
-  "/branding/bg-3.jpg",
-  "/branding/bg-4.jpg",
-  "/branding/bg-5.jpg",
-  "/branding/bg-6.jpg",
-  "/branding/bg-7.jpg",
-  "/branding/bg-8.jpg",
-  "/branding/bg-9.jpg",
-  "/branding/bg-10.jpg",
-];
+import { Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import {
+  bootstrapLookups,
+  getCountries,
+  getGoals,
+  getLanguages,
+  getActivityLevels,
+  getDiets,
+  LookupItem
+} from "@/lib/lookups";
 
 const StepCountry = dynamic(() => import("../forms/StepCountrySelect"));
 const StepGoal = dynamic(() => import("../forms/StepGoal"));
@@ -38,15 +35,12 @@ export default function RegistrationFlow() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [isHovered, setIsHovered] = useState(false);
 
-  const [countries, setCountries] = useState<{ id: number; name: string }[]>(
-    [],
-  );
-  const [goals, setGoals] = useState<{ id: number; name: string }[]>([]);
-  const [languages, setLanguages] = useState<{ id: number; name: string }[]>(
-    [],
-  );
+  const [countries, setCountries] = useState<LookupItem[]>([]);
+  const [goals, setGoals] = useState<LookupItem[]>([]);
+  const [languages, setLanguages] = useState<LookupItem[]>([]);
+  const [activityLevels, setActivityLevels] = useState<LookupItem[]>([]);
+  const [diets, setDiets] = useState<LookupItem[]>([]);
   const [loadingLookup, setLoadingLookup] = useState(true);
 
   const router = useRouter();
@@ -62,14 +56,11 @@ export default function RegistrationFlow() {
     weight: 70,
     height: 170,
     gender: "",
-    bmi: 24.2,
-    bmr: 1600,
     medicalConditions: [] as string[],
     medicalConditionsCustom: "",
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
     password: "",
     agreedToTerms: false,
   });
@@ -78,68 +69,52 @@ export default function RegistrationFlow() {
 
   const cardVariants: Variants = {
     initial: (step: number) => {
-      if (step === 10) return { opacity: 1, x: 0, scale: 1 };
-      if ([3, 6, 9].includes(step)) return { scale: 0.5, opacity: 0, x: 0 };
-      if ([2, 5, 8].includes(step))
-        return { x: "-100%", opacity: 0, rotate: -5 };
-      return { x: "100%", opacity: 0, rotate: 5 };
+      // Step 10: Simple fade in
+      if (step === 10) return { opacity: 0, y: 10 }; 
+      
+      // Group 1 (Steps 3, 6, 9): Fade in while going from small to big
+      if ([3, 6, 9].includes(step)) return { scale: 0.95, opacity: 0, x: 0 };
+      
+      // Group 2 (Steps 2, 5, 8): Fade in while sliding in from the left
+      if ([2, 5, 8].includes(step)) return { x: -40, opacity: 0 };
+      
+      // Default (Steps 1, 4, 7): Fade in while sliding in from the right
+      return { x: 40, opacity: 0 };
     },
-    animate: (step: number) => ({
+    animate: {
       x: 0,
+      y: 0,
       scale: 1,
       opacity: 1,
-      rotate: 0,
       transition: {
-        type: "spring" as const,
-        stiffness: 220,
-        damping: [3, 6, 9].includes(step) ? 26 : 18,
-        mass: 1,
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1], // Elegant ease-out curve
       },
-    }),
+    },
     exit: (step: number) => {
-      if (step === 10) return { opacity: 1 };
-      if ([3, 6, 9].includes(step)) return { scale: 0.5, opacity: 0 };
-      if ([2, 5, 8].includes(step)) return { x: "-100%", opacity: 0 };
-      return { x: "100%", opacity: 0 };
+      if (step === 10) return { opacity: 0 };
+      if ([3, 6, 9].includes(step)) return { scale: 1.05, opacity: 0 };
+      if ([2, 5, 8].includes(step)) return { x: 40, opacity: 0 };
+      return { x: -40, opacity: 0 };
     },
   };
 
-  const bgImage = BACKGROUNDS[currentStep - 1] || BACKGROUNDS[0];
-
   useEffect(() => {
-    const fetchLookupData = async () => {
+    const loadLookups = async () => {
       try {
-        const [countriesRes, goalsRes, languagesRes] = await Promise.all([
-          api.get("/lookup/countries/"),
-          api.get("/lookup/goals/"),
-          api.get("/lookup/languages/"),
-        ]);
-        setCountries(countriesRes.data);
-        setGoals(goalsRes.data);
-        setLanguages(languagesRes.data);
+        await bootstrapLookups();
+        setCountries(getCountries());
+        setGoals(getGoals());
+        setLanguages(getLanguages());
+        setActivityLevels(getActivityLevels());
+        setDiets(getDiets());
       } catch (error) {
         console.error("Failed to fetch lookup data", error);
-        // Fallback to hardcoded
-        setCountries([
-          { id: 1, name: "United States" },
-          { id: 2, name: "Canada" },
-          { id: 3, name: "Algeria" },
-        ]);
-        setGoals([
-          { id: 1, name: "Weight Loss" },
-          { id: 2, name: "Muscle Gain" },
-          { id: 3, name: "Maintenance" },
-        ]);
-        setLanguages([
-          { id: 1, name: "English" },
-          { id: 2, name: "Arabic" },
-          { id: 3, name: "French" },
-        ]);
       } finally {
         setLoadingLookup(false);
       }
     };
-    fetchLookupData();
+    loadLookups();
   }, []);
 
   useEffect(() => {
@@ -178,9 +153,11 @@ export default function RegistrationFlow() {
           (c) => c.name === formData.country,
         )?.id;
         const goalId = goals.find((g) => g.name === formData.goal)?.id;
+        const activityId = activityLevels.find((a) => a.name === formData.activityLevel)?.id;
+        const dietId = diets.find((d) => d.name === formData.diet)?.id;
 
-        if (!countryId || !goalId) {
-          throw new Error("Invalid country or goal selection");
+        if (!countryId || !goalId || !activityId || !dietId) {
+          throw new Error("Please ensure all fields (Country, Goal, Activity Level, Diet) are selected correctly.");
         }
 
         const healthHistory = (formData.medicalConditions as string[])
@@ -202,6 +179,8 @@ export default function RegistrationFlow() {
         payload.append("gender", formData.gender);
         payload.append("country_id", countryId.toString());
         payload.append("goal_id", goalId.toString());
+        payload.append("activity_level_id", activityId.toString());
+        payload.append("diet_id", dietId.toString());
         if (healthHistory) {
           payload.append("health_history", healthHistory);
         }
@@ -236,9 +215,9 @@ export default function RegistrationFlow() {
       case 2:
         return <StepGoal {...props} goals={goals} />;
       case 3:
-        return <StepActivity {...props} />;
+        return <StepActivity {...props} activityLevels={activityLevels} />;
       case 4:
-        return <StepDiet {...props} />;
+        return <StepDiet {...props} diets={diets} />;
       case 5:
         return <StepAgeWeight {...props} />;
       case 6:
@@ -257,30 +236,19 @@ export default function RegistrationFlow() {
   };
 
   return (
-    <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden">
-      <AnimatePresence>
-        <motion.div
-          key={bgImage}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            filter: isHovered
-              ? "blur(5px) brightness(0.8)"
-              : "blur(0px) brightness(1)",
-          }}
-          exit={{ opacity: 0 }}
-          transition={{ opacity: { duration: 0.6, ease: "easeInOut" } }}
-          className="absolute inset-0 -z-10"
+    <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-background">
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+        <Link
+          href="/"
+          className="p-2 rounded-full bg-card/50 backdrop-blur-md border border-border hover:bg-accent transition-colors"
+          title="Back to Home"
         >
-          <Image
-            src={bgImage}
-            alt={`Step ${currentStep} Background`}
-            fill
-            priority
-            className="object-cover"
-          />
-        </motion.div>
-      </AnimatePresence>
+          <Home className="w-5 h-5 text-foreground" />
+        </Link>
+        <div className="p-1 rounded-full bg-card/50 backdrop-blur-md border border-border">
+          <ThemeToggle />
+        </div>
+      </div>
 
       <AnimatePresence mode="popLayout" custom={currentStep}>
         <motion.div
@@ -293,12 +261,8 @@ export default function RegistrationFlow() {
           // ensure the lock is active for the full duration of the spring
           onAnimationStart={() => setIsAnimating(true)}
           onAnimationComplete={() => setIsAnimating(false)}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
           className={`relative z-10 w-full max-w-xl h-[calc(100vh-2rem)] max-h-[850px] 
-            bg-gradient-to-br from-white/90 via-white/70 to-white/90 dark:from-emerald-950/90 dark:via-emerald-950/70 dark:to-emerald-950/90 absolute inset-0 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]
-            border border-white/30 dark:border-white/10 hover:shadow-[0_25px_80px_rgba(16,185,129,0.25)]
-            flex flex-col overflow-hidden transition-colors duration-500
+            absolute inset-0 flex flex-col overflow-hidden transition-colors duration-500
             ${isAnimating ? "pointer-events-none" : ""}`}
         >
           <div className="p-6 pb-0">
@@ -312,12 +276,12 @@ export default function RegistrationFlow() {
             {renderStep()}
           </div>
 
-          <div className="p-6 pt-4 bg-white/60 dark:bg-black/20 border-t border-gray-100 dark:border-white/10 mt-auto">
+          <div className="p-6 pt-4 mt-auto">
             <div className="flex justify-between items-center">
               <button
                 onClick={prevStep}
                 disabled={currentStep === 1 || isAnimating}
-                className="px-6 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white disabled:opacity-30 transition-colors"
+                className="px-6 py-2 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
               >
                 Back
               </button>
@@ -326,7 +290,7 @@ export default function RegistrationFlow() {
                 <button
                   onClick={nextStep}
                   disabled={!isStepValid || isAnimating}
-                  className="px-8 py-2 bg-gradient-to-r from-emerald-400 to-emerald-300 text-white font-semibold rounded-lg 
+                  className="px-8 py-2 bg-button-primary text-button-primary-foreground font-semibold rounded-lg 
     transition-all duration-300 
     hover:brightness-105 hover:shadow-[0_0_20px_rgba(110,231,183,0.6)] 
     hover:-translate-y-0.5
@@ -339,29 +303,29 @@ export default function RegistrationFlow() {
                 <button
                   onClick={handleSubmit}
                   disabled={isPending || !isStepValid || isAnimating}
-                  className="px-8 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 
-                    transition-all hover:bg-green-700 shadow-md"
+                  className="px-8 py-2 bg-button-primary text-button-primary-foreground rounded-lg disabled:opacity-50 
+                    transition-all hover:brightness-105 shadow-md"
                 >
                   {isPending ? "Submitting..." : "Complete Setup"}
                 </button>
               )}
             </div>
 
-            <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="mt-6 text-center text-sm text-muted-foreground">
               Already onboard?{" "}
               <Link
                 href="/login"
-                className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
+                className="text-brand hover:text-brand/80 font-semibold underline underline-offset-4"
               >
                 Sign in!
               </Link>
             </div>
 
-            <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="mt-2 text-center text-sm text-muted-foreground">
               Are you a certified nutritionist?{" "}
               <Link
                 href="/register/nutritionist"
-                className="bg-emerald-400 bg-clip-text text-transparent hover:text-emerald-600 font-semibold underline underline-offset-4"
+                className="text-brand hover:text-brand/80 font-semibold underline underline-offset-4"
               >
                 Get on board!
               </Link>

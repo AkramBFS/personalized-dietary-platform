@@ -48,18 +48,18 @@ export default function StepCountrySelect({
 
   const selectClasses = `
     w-full flex items-center justify-between
-    bg-white/40 dark:bg-emerald-900/20 backdrop-blur-md 
-    border border-white/50 dark:border-white/10
-    text-slate-800 dark:text-slate-200 font-medium
+    bg-card/40 backdrop-blur-md 
+    border border-border
+    text-foreground font-medium
     py-4 px-6 rounded-2xl 
     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
-    hover:bg-white/60 dark:hover:bg-emerald-900/30 transition-all duration-300
+    hover:bg-accent transition-all duration-300
     cursor-pointer group
   `;
 
   const dropdownMenuClasses = `
     absolute z-20 w-full mt-2 
-    bg-white/90 dark:bg-[#1a2027] backdrop-blur-xl border border-white/40 dark:border-white/10
+    bg-card/90 backdrop-blur-xl border border-border
     shadow-2xl rounded-2xl overflow-hidden py-2
     animate-in fade-in slide-in-from-top-2 duration-200
   `;
@@ -70,10 +70,10 @@ export default function StepCountrySelect({
       ref={containerRef}
     >
       <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
           Regional Settings
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed">
           Please provide your location and language preference.
         </p>
       </div>
@@ -81,7 +81,7 @@ export default function StepCountrySelect({
       <div className="w-full max-w-md space-y-8">
         {/* Country Selection */}
         <div className="space-y-3 relative">
-          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+          <label className="text-sm font-bold text-foreground ml-1">
             Current Location
           </label>
           <button
@@ -93,13 +93,13 @@ export default function StepCountrySelect({
           >
             <span
               className={
-                !formData.country ? "text-slate-400 dark:text-slate-500" : ""
+                !formData.country ? "text-muted-foreground" : ""
               }
             >
               {formData.country || "Select country"}
             </span>
             <svg
-              className={`h-5 w-5 text-slate-400 dark:text-slate-500 transition-transform duration-300 ${openDropdown === "country" ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${openDropdown === "country" ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -118,7 +118,7 @@ export default function StepCountrySelect({
                 <li
                   key={country}
                   onClick={() => handleSelect("country", country)}
-                  className="px-6 py-3 hover:bg-emerald-400 hover:text-white cursor-pointer transition-colors text-slate-700 dark:text-slate-200 text-sm font-medium"
+                  className="px-6 py-3 hover:bg-brand hover:text-primary-foreground cursor-pointer transition-colors text-foreground text-sm font-medium"
                 >
                   {country}
                 </li>
@@ -129,7 +129,7 @@ export default function StepCountrySelect({
 
         {/* Language Selection */}
         <div className="space-y-3 relative">
-          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+          <label className="text-sm font-bold text-foreground ml-1">
             Preferred Language
           </label>
           <button
@@ -141,13 +141,13 @@ export default function StepCountrySelect({
           >
             <span
               className={
-                !formData.language ? "text-slate-400 dark:text-slate-500" : ""
+                !formData.language ? "text-muted-foreground" : ""
               }
             >
               {formData.language || "Select preferred language"}
             </span>
             <svg
-              className={`h-5 w-5 text-slate-400 dark:text-slate-500 transition-transform duration-300 ${openDropdown === "language" ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${openDropdown === "language" ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -166,7 +166,7 @@ export default function StepCountrySelect({
                 <li
                   key={language}
                   onClick={() => handleSelect("language", language)}
-                  className="px-6 py-3 hover:bg-emerald-400 hover:text-white cursor-pointer transition-colors text-slate-700 dark:text-slate-200 text-sm font-medium"
+                  className="px-6 py-3 hover:bg-brand hover:text-primary-foreground cursor-pointer transition-colors text-foreground text-sm font-medium"
                 >
                   {language}
                 </li>

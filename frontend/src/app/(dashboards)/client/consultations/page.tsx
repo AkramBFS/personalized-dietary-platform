@@ -40,12 +40,16 @@ export default function ConsultationsPage() {
           api.get("/marketplace/nutritionists/").catch(() => null),
         ]);
 
-        if (consRes?.data)
-          setConsultations(consRes.data.results || consRes.data);
+        if (consRes?.data) {
+          const raw = consRes.data.results || consRes.data || [];
+          setConsultations(Array.isArray(raw) ? raw : []);
+        }
         else throw new Error("Mock cons");
 
-        if (nutriRes?.data)
-          setNutritionists(nutriRes.data.results || nutriRes.data);
+        if (nutriRes?.data) {
+          const raw = nutriRes.data.results || nutriRes.data || [];
+          setNutritionists(Array.isArray(raw) ? raw : []);
+        }
       } catch (e) {
         // Populated Mock Data based on API Doc fields
         setConsultations([

@@ -61,19 +61,16 @@ export default function ClientDashboardPage() {
 
         // 2. Active Plan
         if (plansRes?.data) {
-          const plans = Array.isArray(plansRes.data.results)
-            ? plansRes.data.results
-            : Array.isArray(plansRes.data)
-              ? plansRes.data
-              : [];
+          const rawPlans = plansRes.data.results || plansRes.data || [];
+          const plans = Array.isArray(rawPlans) ? rawPlans : [];
           const current = plans.find((p: any) => p.status === "active");
           if (current) setActivePlan(current);
         }
 
         // 3. Consultations
         if (consultationsRes?.data) {
-          const consultations =
-            consultationsRes.data.results || consultationsRes.data;
+          const rawCons = consultationsRes.data.results || consultationsRes.data || [];
+          const consultations = Array.isArray(rawCons) ? rawCons : [];
           const upcoming = consultations
             .filter((c: any) => c.status === "scheduled")
             .sort(
@@ -87,7 +84,8 @@ export default function ClientDashboardPage() {
 
         // 4. Progress (Today's stats & Chart)
         if (progressRes?.data) {
-          const logs = progressRes.data.results || progressRes.data;
+          const rawLogs = progressRes.data.results || progressRes.data || [];
+          const logs = Array.isArray(rawLogs) ? rawLogs : [];
 
           // Get today's date in YYYY-MM-DD
           const todayStr = new Date().toISOString().split("T")[0];
