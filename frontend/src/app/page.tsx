@@ -10,7 +10,7 @@ import { AIDetection } from "@/components/ai/aidetection";
 import { HeroHeader } from "@/components/layout/navbar";
 export default function HomePage() {
   return (
-    <main className="selection:bg-brand/30 selection:text-brand">
+    <div className="selection:bg-brand/30 selection:text-brand min-h-screen overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       <HeroHeader />
       <HeroSection />
       <AIDetection />
@@ -30,6 +30,6 @@ export default function HomePage() {
         <CallToAction />
       </FadeIn>
       <FooterSection />
-    </main>
+    </div>
   );
 }
