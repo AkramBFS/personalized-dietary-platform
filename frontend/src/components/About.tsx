@@ -4,7 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronRight, Circle, Plus, Sparkles } from "lucide-react";
 
-export default function AboutPage() {
+export default function AboutComponent() {
   // --- Data Models ---
   const problemStatements = [
     "Hormonal imbalances (thyroid disorders, insulin resistance, PCOS)",
@@ -44,7 +44,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <main className="flex-grow pt-40 pb-32 text-[#cce8e7] selection:bg-[#3DDC97]/30">
+    <main className="flex-grow pt-40 pb-32 text-card-foreground selection:bg-[#3DDC97]/30">
       <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-48">
         {/* --- HERO SECTION: TYPOGRAPHY FOCUS --- */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
@@ -60,7 +60,7 @@ export default function AboutPage() {
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-6xl md:text-8xl font-bold font-headline tracking-tighter leading-[0.9] text-[#cce8e7] mb-12"
+              className="text-6xl md:text-8xl font-bold font-headline tracking-tighter leading-[0.9] text-card-foreground mb-12"
             >
               Redefining <br />
               <span className="text-[#3DDC97] italic">Personalized</span> <br />
@@ -99,7 +99,7 @@ export default function AboutPage() {
             </h2>
           </div>
           <div className="lg:col-span-7 space-y-12">
-            <p className="text-2xl text-[#cce8e7] font-light leading-relaxed">
+            <p className="text-2xl text-card-foreground font-light leading-relaxed">
               Obesity and weight management difficulties are not solely caused
               by overeating. Many struggle despite repeated efforts due to
               systemic physiological factors.
@@ -110,7 +110,7 @@ export default function AboutPage() {
                   key={i}
                   className="group flex items-center justify-between py-6 border-b border-[#414848] hover:border-[#3DDC97] transition-colors cursor-default"
                 >
-                  <span className="text-xl md:text-2xl font-medium text-[#c0c8c8] group-hover:text-[#cce8e7] transition-colors">
+                  <span className="text-xl md:text-2xl font-medium text-[#c0c8c8] group-hover:text-card-foreground transition-colors">
                     {item}
                   </span>
                   <Plus className="text-[#3DDC97] opacity-0 group-hover:opacity-100 transition-all transform group-hover:rotate-90" />
@@ -123,7 +123,7 @@ export default function AboutPage() {
         {/* --- PLATFORM OFFERINGS: GRID REFINED --- */}
         <section className="space-y-20">
           <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-[#414848] pb-12 gap-8">
-            <h2 className="text-5xl font-bold font-headline text-[#cce8e7]">
+            <h2 className="text-5xl font-bold font-headline text-card-foreground">
               Core Pillars
             </h2>
             <p className="max-w-md text-[#c0c8c8] text-lg">
@@ -136,12 +136,12 @@ export default function AboutPage() {
             {offerings.map((offer, i) => (
               <div
                 key={i}
-                className="bg-[#15464E] p-12 md:p-16 hover:bg-[#1c5a64] transition-colors space-y-6"
+                className="bg-accent p-12 md:p-16 hover:bg-[#1c5a64] transition-colors space-y-6"
               >
                 <span className="text-[#3DDC97] font-mono text-sm tracking-widest">
                   0{i + 1} //
                 </span>
-                <h3 className="text-3xl font-bold font-headline text-[#cce8e7]">
+                <h3 className="text-3xl font-bold font-headline text-card-foreground">
                   {offer.title}
                 </h3>
                 <p className="text-[#c0c8c8] text-lg leading-relaxed">
@@ -153,12 +153,12 @@ export default function AboutPage() {
         </section>
 
         {/* --- TARGET AUDIENCE: MARQUEE STYLE TEXT --- */}
-        <section className="py-24 bg-[#15464E] rounded-[3rem] border border-[#414848] overflow-hidden">
+        <section className="py-24 bg-accent rounded-[3rem] border border-[#414848] overflow-hidden">
           <div className="px-12 mb-16">
             <h2 className="text-sm font-bold tracking-[0.3em] uppercase text-[#3DDC97] mb-4">
               Target Audience
             </h2>
-            <p className="text-3xl font-medium max-w-2xl text-[#cce8e7]">
+            <p className="text-3xl font-medium max-w-2xl text-card-foreground">
               Designed for those seeking recovery, balance, and longevity
               through science-backed nutrition.
             </p>
@@ -167,7 +167,7 @@ export default function AboutPage() {
             {targetAudience.map((target, i) => (
               <span
                 key={i}
-                className="px-8 py-4 rounded-full border border-[#414848] bg-[#15464E] text-xl font-medium text-[#c0c8c8] hover:border-[#3DDC97] hover:text-[#3DDC97] transition-all cursor-default"
+                className="px-8 py-4 rounded-full border border-[#414848] bg-accent text-xl font-medium text-[#c0c8c8] hover:border-[#3DDC97] hover:text-[#3DDC97] transition-all cursor-default"
               >
                 {target}
               </span>
@@ -177,7 +177,7 @@ export default function AboutPage() {
 
         {/* --- SYSTEM ROLES: LARGE TYPOGRAPHY --- */}
         <section className="space-y-16">
-          <h2 className="text-5xl font-bold font-headline text-center text-[#cce8e7]">
+          <h2 className="text-5xl font-bold font-headline text-center text-card-foreground">
             System Architecture
           </h2>
           <div className="grid grid-cols-1 gap-12">
@@ -203,7 +203,7 @@ export default function AboutPage() {
                   {i + 1}
                 </span>
                 <div className="space-y-4">
-                  <h3 className="text-4xl font-bold text-[#cce8e7]">
+                  <h3 className="text-4xl font-bold text-card-foreground">
                     {r.role}
                   </h3>
                   <p className="text-xl text-[#c0c8c8] max-w-xl">{r.desc}</p>
@@ -217,7 +217,7 @@ export default function AboutPage() {
         {/* --- ACADEMIC & VISION: FINAL STATEMENT --- */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start pt-24 border-t border-[#414848]">
           <div className="space-y-8">
-            <h2 className="text-4xl font-bold font-headline leading-tight text-[#cce8e7]">
+            <h2 className="text-4xl font-bold font-headline leading-tight text-card-foreground">
               Bridging professional care with accessible digital tools.
             </h2>
             <p className="text-xl text-[#c0c8c8] leading-relaxed">

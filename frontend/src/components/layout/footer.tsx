@@ -1,56 +1,41 @@
 "use client";
 import Link from "next/link";
+import { Logo } from "./logo";
 
 const footerLinks = {
   solutions: [
-    { title: "Personal Dietitian", href: "#" },
-    { title: "Calorie Tracker", href: "#" },
-    { title: "Meal Plans", href: "#" },
-    { title: "API Access", href: "#" },
+    { title: "Ai calorie tracker", href: "/services/#ai-calorie-estimation" },
+    { title: "Online Consultation", href: "/services/#online-consultation" },
+    { title: "Personalized Plans", href: "/services/#personalized-plans" },
+    { title: "Seasonal Programs", href: "/services/#seasonal-programs" },
   ],
   resources: [
-    { title: "Blog", href: "#" },
-    { title: "Nutrition Guides", href: "#" },
-    { title: "Community", href: "#" },
-    { title: "Help Center", href: "#" },
+    { title: "Blog", href: "/blog" },
+    { title: "Community", href: "/community" },
+    { title: "Support", href: "/support" },
   ],
   company: [
-    { title: "About Us", href: "#" },
-    { title: "Careers", href: "#" },
-    { title: "Privacy Policy", href: "#" },
-    { title: "Terms of Service", href: "#" },
+    { title: "FAQ", href: "/faq" },
+    { title: "About Us", href: "/about" },
+    { title: "Privacy Policy", href: "/privacypolicy" },
+    { title: "Terms of Service", href: "/tos" },
   ],
 };
 
 export default function FooterSection() {
   return (
-    <footer className="bg-teal-950 dark:bg-[#0B1F16] pt-20 pb-10">
+    <footer className="bg-background pt-20 pb-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* --- Main Footer Content --- */}
         <div className="grid grid-cols-1 gap-12 mb-16 md:grid-cols-2 lg:grid-cols-6 lg:gap-8">
           {/* Brand Info */}
           <div className="lg:col-span-2">
             <div className="mb-6 flex items-center gap-2">
-              <div className="rounded-lg bg-emerald-500 p-2 text-teal-50">
-                <svg
-                  className="size-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-                  />
-                </svg>
-              </div>
-              <span className="text-2xl font-bold tracking-tight text-teal-50 dark:text-white">
-                Dieton
-              </span>
+              <Link href="/" className="flex items-center space-x-3">
+                <Logo />
+              </Link>
             </div>
-            <p className="max-w-sm text-teal-50 dark:text-gray-400">
+            <p className="max-w-sm text-muted-foreground">
               Your AI-powered personal dietitian and calorie counter. We make
               healthy eating simple and personalized.
             </p>
@@ -58,7 +43,7 @@ export default function FooterSection() {
 
           {/* Links Sections */}
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Solutions
             </h3>
             <ul className="space-y-3">
@@ -66,7 +51,7 @@ export default function FooterSection() {
                 <li key={link.title}>
                   <Link
                     href={link.href}
-                    className="text-teal-50 transition-colors hover:text-emerald-500 dark:text-gray-400"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.title}
                   </Link>
@@ -76,7 +61,7 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Resources
             </h3>
             <ul className="space-y-3">
@@ -84,7 +69,7 @@ export default function FooterSection() {
                 <li key={link.title}>
                   <Link
                     href={link.href}
-                    className="text-teal-50 transition-colors hover:text-emerald-500 dark:text-gray-400"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.title}
                   </Link>
@@ -94,7 +79,7 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Company
             </h3>
             <ul className="space-y-3">
@@ -102,7 +87,7 @@ export default function FooterSection() {
                 <li key={link.title}>
                   <Link
                     href={link.href}
-                    className="text-teal-50 transition-colors hover:text-emerald-500 dark:text-gray-400"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.title}
                   </Link>
@@ -113,10 +98,10 @@ export default function FooterSection() {
 
           {/* Stay Healthy / Newsletter */}
           <div className="lg:pl-4">
-            <h3 className="mb-4 text-lg font-semibold text-teal-50 dark:text-white">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
               Stay Healthy
             </h3>
-            <p className="mb-4 text-sm text-teal-50 dark:text-gray-400">
+            <p className="mb-4 text-sm text-muted-foreground">
               Get weekly tips and meal ideas.
             </p>
             <form
@@ -127,11 +112,11 @@ export default function FooterSection() {
                 type="email"
                 placeholder="Email address @"
                 required
-                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-teal-50 focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-foreground focus:border-primary focus:ring-primary"
               />
               <button
                 type="submit"
-                className="w-full rounded-lg bg-emerald-500 py-2.5 font-medium text-white transition-colors hover:bg-emerald-600"
+                className="w-full rounded-lg bg-primary py-2.5 font-medium text-primary-foreground transition-colors hover:opacity-90"
               >
                 Subscribe
               </button>
@@ -140,14 +125,14 @@ export default function FooterSection() {
         </div>
 
         {/* --- Bottom Bar --- */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-teal-800 dark:border-gray-800 pt-8 md:flex-row">
-          <p className="text-sm text-teal-50 dark:text-gray-400">
-            © {new Date().getFullYear()} Dieton. All rights reserved.
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} SVMB. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link
               href="#"
-              className="text-teal-50 hover:text-emerald-500 transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               <span className="sr-only">Twitter</span>
               <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
@@ -156,7 +141,7 @@ export default function FooterSection() {
             </Link>
             <Link
               href="#"
-              className="text-teal-50 hover:text-emerald-500 transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               <span className="sr-only">Instagram</span>
               <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
@@ -169,7 +154,7 @@ export default function FooterSection() {
             </Link>
             <Link
               href="#"
-              className="text-teal-50 hover:text-emerald-500 transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               <span className="sr-only">Facebook</span>
               <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">

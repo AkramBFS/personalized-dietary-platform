@@ -101,9 +101,9 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <div className="space-y-6 md:col-span-1">
-          <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-[#1a2027]">
+          <Card className="border-border shadow-sm">
             <CardHeader className="pb-4">
-              <div className="mx-auto mb-2 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gray-100 text-gray-400 shadow-sm dark:border-[#1a2027] dark:bg-[#12161b] dark:text-gray-600">
+              <div className="mx-auto mb-2 flex h-24 w-24 items-center justify-center rounded-full border-4 border-card bg-muted text-muted-foreground shadow-sm">
                 {profilePhotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -119,19 +119,19 @@ export default function ProfilePage() {
               <CardDescription className="text-center">{profileMeta?.user?.email || "No email available"}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                <div className="mb-1 flex items-center gap-2 font-medium text-emerald-800 dark:text-emerald-400">
+              <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/10 p-4">
+                <div className="mb-1 flex items-center gap-2 font-medium text-primary">
                   <Activity className="h-4 w-4" /> Professional Snapshot
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-emerald-600/80 dark:text-emerald-400/80">Specialization</span>
-                  <span className="font-bold text-gray-900 dark:text-white">
+                  <span className="text-primary/80">Specialization</span>
+                  <span className="font-bold text-foreground">
                     {profileMeta?.specialization_name || "Not set"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-emerald-600/80 dark:text-emerald-400/80">Experience</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{form.years_experience} yrs</span>
+                  <span className="text-primary/80">Experience</span>
+                  <span className="font-bold text-foreground">{form.years_experience} yrs</span>
                 </div>
               </div>
             </CardContent>
@@ -139,14 +139,14 @@ export default function ProfilePage() {
         </div>
 
         <div className="md:col-span-2">
-          <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-[#1a2027]">
+          <Card className="border-border shadow-sm">
             <form onSubmit={handleSubmit}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5 text-emerald-500" />
+                  <Stethoscope className="h-5 w-5 text-primary" />
                   Edit Information
                 </CardTitle>
-                <CardDescription>Update your professional details and public consultation settings.</CardDescription>
+                <CardDescription className="text-muted-foreground">Update your professional details and public consultation settings.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -155,7 +155,7 @@ export default function ProfilePage() {
                     id="bio"
                     value={form.bio}
                     onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))}
-                    className="flex min-h-[110px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                    className="flex min-h-[110px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     placeholder="Share your expertise and focus areas."
                   />
                 </div>
@@ -195,7 +195,7 @@ export default function ProfilePage() {
                     multiple
                     value={form.language_ids.map(String)}
                     onChange={handleLanguageSelect}
-                    className="min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                    className="min-h-[120px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                   >
                     {supportedLanguages.map((language) => (
                       <option key={language.id} value={language.id}>

@@ -1,12 +1,12 @@
 "use client";
-import AboutPage from "@/components/About";
-import { HeroHeader } from "@/components/header";
+import AboutComponent from "@/components/About";
+import { HeroHeader } from "@/components/layout/navbar";
 import FooterSection from "@/components/layout/footer";
-export default function PrivacyPolicyPage() {
+export default function AboutPage() {
   return (
-    <main className="bg-foreground">
+    <main>
       <HeroHeader />
-      <AboutPage />
+      <AboutComponent />
       <FooterSection />
     </main>
   );

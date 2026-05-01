@@ -2,101 +2,210 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme='dark'] *, [data-theme='special'] *));
 
 @theme inline {
-  /* --- Brand Design System: Rise Together --- */
+  /* Dynamic colors using CSS variables defined in :root */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 
-  /* Background: Snow Gray or Soft Cream for that high-end editorial feel */
-  --color-background: oklch(0.98 0.01 235);
-  --color-foreground: oklch(0.25 0.05 235);
-  /* Midnight Cyan (#052B34) */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
 
-  /* Cards: Using the Soft Cream (#FFF5DE) for subtle elevation */
-  --color-card: oklch(1 0.01 235);
-  --color-card-foreground: oklch(0.25 0.05 235);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--card-foreground);
 
-  --color-popover: oklch(1 0.01 235);
-  --color-popover-foreground: oklch(0.25 0.05 235);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
 
-  /* Primary: Mint Green (#50CD95) */
-  --color-primary: oklch(0.78 0.14 165);
-  --color-primary-foreground: oklch(0.25 0.05 235);
-  /* Dark text on mint looks better for this brand */
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
 
-  /* Secondary: Aqua Teal (#00A3A3) */
-  --color-secondary: oklch(0.62 0.12 210);
-  --color-secondary-foreground: oklch(0.98 0.01 235);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
 
-  /* Muted: Snow Gray (#F7F7F7) */
-  --color-muted: oklch(0.97 0 0);
-  --color-muted-foreground: oklch(0.45 0.05 235);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 
-  /* Accent: Aqua Forest (#3EAD88) */
-  --color-accent: oklch(0.68 0.12 165);
-  --color-accent-foreground: oklch(0.98 0.01 235);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 
-  --color-destructive: oklch(0.6 0.18 25);
-  --color-destructive-foreground: oklch(0.98 0.01 25);
+  --color-button-primary: var(--button-primary);
+  --color-button-primary-foreground: var(--button-primary-foreground);
 
-  --color-border: oklch(0.88 0.03 210);
-  --color-input: oklch(0.88 0.03 210);
-  --color-ring: oklch(0.78 0.14 165);
+  --color-button-secondary: var(--button-secondary);
+  --color-button-secondary-foreground: var(--button-secondary-foreground);
 
-  /* Chart Colors shifted to match Cyan/Mint/Teal spectrum */
-  --color-chart-1: oklch(0.78 0.14 165);
-  /* Mint */
-  --color-chart-2: oklch(0.25 0.05 235);
-  /* Midnight Cyan */
-  --color-chart-3: oklch(0.62 0.12 210);
-  /* Aqua Teal */
-  --color-chart-4: oklch(0.85 0.08 180);
-  /* Soft Cyan */
-  --color-chart-5: oklch(0.68 0.12 165);
-  /* Aqua Forest */
+  --color-button-accent: var(--button-accent);
+  --color-button-accent-foreground: var(--button-accent-foreground);
 
-  /* Radius: Sticking with the 1.5rem for that "Tablet" aesthetic in your design */
+  --color-button-destructive: var(--button-destructive);
+  --color-button-destructive-foreground: var(--button-destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Special tokens */
+  --color-brand: #3DDC97;
+  /* Locked brand color */
+
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
+
+  --shadow-brand: var(--shadow-brand-val);
+
+  --font-sans: var(--font-space-grotesk), system-ui, sans-serif;
 }
 
 :root {
-  --background: 0.98 0.01 235;
-  --foreground: 0.25 0.05 235;
-  --card: 0.97 0.02 85;
-  --card-foreground: 0.25 0.05 235;
-  --primary: 0.78 0.14 165;
-  --primary-foreground: 0.25 0.05 235;
-  --secondary: 0.62 0.12 210;
-  --secondary-foreground: 0.98 0.01 235;
-  --muted: 0.97 0 0;
-  --muted-foreground: 0.45 0.05 235;
-  --accent: 0.68 0.12 165;
-  --accent-foreground: 0.98 0.01 235;
-  --border: 0.88 0.03 210;
-  --input: 0.88 0.03 210;
-  --ring: 0.78 0.14 165;
+  /* LIGHT MODE */
+  --background: #f9fafb;
+  /* bg-gray-50 */
+  --foreground: #111827;
+  /* gray-900 */
+
+  --card: #ffffff;
+  --card-foreground: #111827;
+
+  --primary: #059669;
+  /* emerald-600 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #f3f4f6;
+  /* gray-100 */
+  --secondary-foreground: #4b5563;
+  /* gray-600 */
+
+  --muted: #f3f4f6;
+  --muted-foreground: rgba(17, 24, 39, 0.7);
+  /* 70% opacity */
+
+  --accent: #ecfdf5;
+  /* emerald-50 */
+  --accent-foreground: #10b981;
+  /* emerald-500 */
+
+  --destructive: #f87171;
+  /* red-400 */
+  --destructive-foreground: #ffffff;
+
+  /* LIGHT MODE BUTTONS (Restored for visibility) */
+  --button-primary: #059669; 
+  --button-primary-foreground: #ffffff;
+  
+  --button-secondary: #f3f4f6; 
+  --button-secondary-foreground: #4b5563; 
+  
+  --button-accent: #ecfdf5; 
+  --button-accent-foreground: #10b981; 
+  
+  --button-destructive: #f87171; 
+  --button-destructive-foreground: #ffffff;
+
+  --border: #f3f4f6;
+  /* gray-100 */
+  --input: #e5e7eb;
+  /* gray-200 */
+  --ring: #3DDC97;
+
+  --shadow-brand-val: 0 4px 12px 0 rgba(97, 221, 163, 0.15);
 }
 
-.dark {
-  /* Inverting to Black Teal (#001918) and Midnight Cyan */
-  --background: 0.12 0.03 190;
-  /* Black Teal */
-  --foreground: 0.97 0.02 85;
-  /* Soft Cream text */
-  --card: 0.15 0.04 210;
-  --card-foreground: 0.97 0.02 85;
-  --primary: 0.78 0.14 165;
-  /* Mint pops even more in dark mode */
-  --primary-foreground: 0.12 0.03 190;
-  --secondary: 0.25 0.05 235;
-  --secondary-foreground: 0.97 0.02 85;
-  --muted: 0.18 0.03 210;
-  --muted-foreground: 0.7 0.02 210;
-  --border: 0.25 0.05 210;
-  --input: 0.25 0.05 210;
-  --ring: 0.78 0.14 165;
+[data-theme='dark'] {
+  --background: #12161b;
+  --foreground: #ffffff;
+
+  --card: #1a2027;
+  --card-foreground: #ffffff;
+
+  --primary: #34D399;
+  /* emerald-400 */
+  --primary-foreground: #000000;
+
+  --secondary: #1f2937;
+  /* gray-800 */
+  --secondary-foreground: #f9fafb;
+
+  --muted: #1f2937;
+  --muted-foreground: rgba(255, 255, 255, 0.7);
+  /* 70% opacity */
+
+  --accent: #064E3B;
+  /* emerald-900 */
+  --accent-foreground: #34D399;
+  /* emerald-400 */
+
+  --destructive: #ef4444;
+  /* red-500 */
+  --destructive-foreground: #ffffff;
+
+  /* DARK MODE BUTTONS (Restored for visibility) */
+  --button-primary: #34D399; 
+  --button-primary-foreground: #000000;
+  
+  --button-secondary: #1f2937; 
+  --button-secondary-foreground: #f9fafb;
+  
+  --button-accent: #064E3B; 
+  --button-accent-foreground: #34D399; 
+  
+  --button-destructive: #ef4444; 
+  --button-destructive-foreground: #ffffff;
+
+  --border: #1f2937;
+  /* gray-800 */
+  --input: #374151;
+  /* gray-700 */
+  --ring: #3DDC97;
+}
+
+[data-theme='special'] {
+  --background: #01181D;
+  /* Base color, gradient applied via utility */
+  --foreground: #ffffff;
+
+  --card: #0D3239;
+  --card-foreground: #cce8e7;
+
+  --primary: #3DDC97;
+  --primary-foreground: #00161c;
+
+  --secondary: #0D3239;
+  --secondary-foreground: #3DDC97;
+
+  --muted: #051b20;
+  --muted-foreground: rgba(255, 255, 255, 0.7);
+  /* 70% opacity */
+
+  --accent: #15464E;
+  --accent-foreground: #ffffff;
+
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+
+  /* SPECIAL MODE BUTTONS */
+  --button-primary: #3DDC97;
+  --button-primary-foreground: #00161c;
+
+  --button-secondary: #0D3239;
+  --button-secondary-foreground: #3DDC97;
+
+  --button-accent: #15464E;
+  --button-accent-foreground: #ffffff;
+
+  --button-destructive: #f87171;
+  --button-destructive-foreground: #ffffff;
+
+  --border: #15464E;
+  --input: #082E35;
+  --ring: #3DDC97;
+
+  /* Gradients for special mode */
+  --bg-main-gradient: linear-gradient(to bottom, #052023, #01181D, #052025);
+  --bg-hero-gradient: linear-gradient(to right, #082E35, #0D3239);
+  --btn-primary-gradient: linear-gradient(to right, #61dda3, #5dd9d8);
 }
 
 @layer base {
@@ -105,11 +214,23 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground bg-main-app;
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: var(--font-space-grotesk), system-ui, -apple-system,
-      BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--font-space-grotesk), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
+}
+
+/* Special Mode Utility Classes */
+@utility bg-main-app {
+  background-image: var(--bg-main-gradient, none);
+}
+
+@utility bg-section-hero {
+  background-image: var(--bg-hero-gradient, none);
+}
+
+@utility bg-btn-primary {
+  background-image: var(--btn-primary-gradient, none);
 }
 
 /* Custom Scrollbar - The "Mint Glow" */
@@ -123,11 +244,13 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #50CD95;
-  /* Mint Green */
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #3EAD88;
-  /* Aqua Forest */
+}
+
+html {
+  scroll-behavior: smooth;
 }

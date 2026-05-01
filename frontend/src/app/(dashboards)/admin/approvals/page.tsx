@@ -126,7 +126,7 @@ export default function AdminApprovalsPage() {
         </p>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <Card className="border-border shadow-sm overflow-hidden">
         <CardHeader>
           <CardTitle>Pending Applications</CardTitle>
         </CardHeader>
@@ -184,13 +184,13 @@ export default function AdminApprovalsPage() {
       </Card>
 
       {isModalOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-lg font-semibold">Applicant Review</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -225,7 +225,7 @@ export default function AdminApprovalsPage() {
                     href={selected.nutritionist.cert_image_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sm text-emerald-600 underline"
+                    className="text-sm text-primary underline"
                   >
                     View Certificate
                   </a>

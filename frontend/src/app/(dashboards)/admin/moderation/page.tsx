@@ -132,11 +132,11 @@ export default function AdminModerationPage() {
       </div>
 
       {error && (
-        <Card className="border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-500/10">
+        <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="py-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-500 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              <p className="text-sm font-medium text-destructive">
                 {error}
               </p>
               <Button
@@ -152,7 +152,7 @@ export default function AdminModerationPage() {
         </Card>
       )}
 
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <Card className="border-border shadow-sm overflow-hidden">
         <CardHeader>
           <CardTitle>Community Posts</CardTitle>
         </CardHeader>
@@ -180,11 +180,11 @@ export default function AdminModerationPage() {
             </Table>
           ) : posts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
-              <p className="text-slate-600 dark:text-slate-400 font-medium">
+              <AlertCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
+              <p className="text-foreground font-medium">
                 No posts to moderate
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 All community posts have been reviewed.
               </p>
             </div>
@@ -209,10 +209,10 @@ export default function AdminModerationPage() {
                         variant="outline"
                         className={
                           post.status === "approved"
-                            ? "text-emerald-600 border-emerald-200"
+                            ? "text-primary border-primary/30"
                             : post.status === "rejected"
-                              ? "text-red-600 border-red-200"
-                              : "text-yellow-600 border-yellow-200"
+                              ? "text-destructive border-destructive/30"
+                              : "text-amber-600 border-amber-300"
                         }
                       >
                         {post.status ?? "pending"}
@@ -242,15 +242,15 @@ export default function AdminModerationPage() {
       </Card>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-lg font-semibold">
                 Post Review - {selectedPost?.title}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -292,7 +292,7 @@ export default function AdminModerationPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Content</label>
-                    <div className="text-sm text-muted-foreground bg-gray-50 dark:bg-gray-900 p-4 rounded-md max-h-60 overflow-y-auto">
+                    <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md max-h-60 overflow-y-auto">
                       {postDetails.content}
                     </div>
                   </div>
@@ -301,7 +301,7 @@ export default function AdminModerationPage() {
                       variant="outline"
                       onClick={() => handleDeletePost(selectedPost!.id)}
                       disabled={submitting}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-destructive hover:text-destructive"
                     >
                       <X className="w-4 h-4 mr-2" />
                       Delete

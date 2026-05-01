@@ -48,7 +48,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      className={`h-11 rounded-xl transition-all duration-200 ${isActive ? "bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                      className={`h-11 rounded-xl transition-all duration-200 ${isActive ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
                       tooltip={link.title}
                     >
                       <Link
@@ -56,7 +56,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
                         className="flex items-center gap-3 px-4"
                       >
                         <link.icon
-                          className={`h-5 w-5 ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70"}`}
+                          className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground/70"}`}
                         />
                         <span className="text-[15px]">{link.title}</span>
                       </Link>

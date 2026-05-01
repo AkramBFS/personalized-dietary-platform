@@ -207,10 +207,10 @@ export default function SchedulePage() {
 
   const getStatusColor = (status: Consultation["status"]) => {
     if (status === "scheduled")
-      return "bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400";
+      return "bg-primary/10 border-primary/20 text-primary";
     if (status === "notified")
-      return "bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-400";
-    return "bg-emerald-100 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400";
+      return "bg-amber-500/10 border-amber-500/20 text-amber-600";
+    return "bg-emerald-500/10 border-emerald-500/20 text-emerald-600";
   };
 
   return (
@@ -228,7 +228,7 @@ export default function SchedulePage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-100 dark:bg-[#171c23] border border-slate-200 dark:border-slate-800 mb-6">
+        <TabsList className="bg-muted border border-border mb-6">
           <TabsTrigger value="calendar">
             <CalendarIcon className="w-4 h-4 mr-2" /> Weekly Time-Grid
           </TabsTrigger>
@@ -238,16 +238,16 @@ export default function SchedulePage() {
         </TabsList>
 
         <TabsContent value="calendar" className="mt-0">
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-[#12161b]">
-            <div className="flex bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-500">
-              <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-800 py-3 text-center">
+          <Card className="border-border shadow-sm overflow-hidden bg-background">
+            <div className="flex bg-muted/50 border-b border-border text-sm font-semibold text-muted-foreground">
+              <div className="w-20 shrink-0 border-r border-border py-3 text-center">
                 GMT
               </div>
               <div className="flex-1 grid grid-cols-1 md:grid-cols-7">
                 {daysOfWeek.map((day, idx) => (
                   <div
                     key={day}
-                    className={`hidden md:block text-center py-3 border-r relative border-slate-200 dark:border-slate-800 ${idx === 5 || idx === 6 ? "bg-slate-100/50 dark:bg-slate-800/30 text-slate-400" : ""}`}
+                    className={`hidden md:block text-center py-3 border-r relative border-border ${idx === 5 || idx === 6 ? "bg-muted/30 text-muted-foreground/60" : ""}`}
                   >
                     {day}
                     <div className="text-xs font-normal text-muted-foreground mt-0.5">
@@ -263,15 +263,15 @@ export default function SchedulePage() {
             </div>
 
             <div
-              className="flex relative bg-white dark:bg-[#12161b]"
+              className="flex relative bg-background"
               style={{ height: `${workHours.length * 64}px` }}
             >
               {/* Time axis */}
-              <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#12161b] z-10">
+              <div className="w-20 shrink-0 border-r border-border bg-background z-10">
                 {workHours.map((hour) => (
                   <div
                     key={hour}
-                    className="h-[64px] border-b border-slate-100 dark:border-slate-800/50 text-xs text-slate-400 text-center pr-2 relative"
+                    className="h-[64px] border-b border-border/50 text-xs text-muted-foreground text-center pr-2 relative"
                   >
                     <span className="absolute -top-2.5 right-2">{hour}:00</span>
                   </div>
@@ -284,7 +284,7 @@ export default function SchedulePage() {
                 {workHours.map((hour) => (
                   <div
                     key={`line-${hour}`}
-                    className="absolute w-full border-b border-slate-100 dark:border-slate-800/50 pointer-events-none"
+                    className="absolute w-full border-b border-border/50 pointer-events-none"
                     style={{ top: `${(hour - 8) * 64}px` }}
                   />
                 ))}
@@ -323,25 +323,25 @@ export default function SchedulePage() {
                   return (
                     <div
                       key={`col-${dayIdx}`}
-                      className="h-full border-r border-slate-100 dark:border-slate-800/50 relative hidden md:block"
+                      className="h-full border-r border-border/50 relative hidden md:block"
                     >
                       {/* Out of Office / Off Schedule Visual Blocks */}
                       {!isHoliday &&
-                        unavailableBlocks.map((block, i) => (
-                          <div
-                            key={`unavail-${dayIdx}-${i}`}
-                            className="absolute w-full z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0wIDQwbDQwLTQwSDB6TTQwIDB2NDBMMCAwem0tMTAgMEwwIDUwdjUwbDUwLTUwVjBIMzB6TTAgMTAwVjUwbDUwIDUwSDB6TTAgOTBWMzBsNzAgNzBIMHoiIGZpbGw9IiNlN2U1ZTRhYyIgZmlsbC1ydWxlPSJldmVub2RkIi8+Cjwvc3ZnPg==')] dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0wIDQwbDQwLTQwSDB6TTQwIDB2NDBMMCAwem0tMTAgMEwwIDUwdjUwbDUwLTUwVjBIMzB6TTAgMTAwVjUwbDUwIDUwSDB6TTAgOTBWMzBsNzAgNzBIMHoiIGZpbGw9IiMxZTI5M2I4MCIgZmlsbC1ydWxlPSJldmVub2RkIi8+Cjwvc3ZnPg==')] opacity-40 shadow-inner"
-                            style={{
-                              top: `${getTopPosition(block.start)}px`,
-                              height: `${getHeight(block.start, block.end)}px`,
-                            }}
-                          />
-                        ))}
+  unavailableBlocks.map((block, i) => (
+    <div
+      key={`unavail-${dayIdx}-${i}`}
+      className="absolute w-full z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0wIDQwbDQwLTQwSDB6TTQwIDB2NDBMMCAwem0tMTAgMEwwIDUwdjUwbDUwLTUwVjBIMzB6TTAgMTAwVjUwbDUwIDUwSDB6TTAgOTBWMzBsNzAgNzBIMHoiIGZpbGw9IiNlN2U1ZTRhYyIgZmlsbC1ydWxlPSJldmVub2RkIi8+Cjwvc3ZnPg==')] dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0wIDQwbDQwLTQwSDB6TTQwIDB2NDBMMCAwem0tMTAgMEwwIDUwdjUwbDUwLTUwVjBIMzB6TTAgMTAwVjUwbDUwIDUwSDB6TTAgOTBWMzBsNzAgNzBIMHoiIGZpbGw9IiMxZTI5M2I4MCIgZmlsbC1ydWxlPSJldmVub2RkIi8+Cjwvc3ZnPg==')] opacity-40 shadow-inner"
+      style={{
+        top: `${getTopPosition(block.start)}px`,
+        height: `${getHeight(block.start, block.end)}px`,
+      }}
+    />
+  ))}
 
                       {/* Full Day Holiday Override Overlay */}
                       {isHoliday && (
-                        <div className="absolute inset-0 bg-rose-50/40 dark:bg-rose-900/10 flex items-center justify-center pointer-events-none z-10">
-                          <span className="bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-400 text-xs px-2 py-1 rounded font-semibold border border-rose-200 dark:border-rose-800 rotate-90 whitespace-nowrap tracking-widest shadow-sm">
+                        <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center pointer-events-none z-10">
+                          <span className="bg-destructive/20 text-destructive text-xs px-2 py-1 rounded font-semibold border border-destructive/30 rotate-90 whitespace-nowrap tracking-widest shadow-sm">
                             HOLIDAY
                           </span>
                         </div>
@@ -364,7 +364,7 @@ export default function SchedulePage() {
                           >
                             <div className="flex flex-col h-full justify-between">
                               <div>
-                                <p className="text-xs font-bold truncate leading-tight group-hover:text-black dark:group-hover:text-white transition-colors">
+                                <p className="text-xs font-bold truncate leading-tight group-hover:text-foreground transition-colors">
                                   {consultation.patientName}
                                 </p>
                                 <p className="text-[10px] font-medium opacity-80">
@@ -379,7 +379,7 @@ export default function SchedulePage() {
                                     target="_blank"
                                     rel="noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="p-1.5 bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 rounded shadow-sm text-blue-600 dark:text-blue-400 transition-colors"
+                                    className="p-1.5 bg-background/60 hover:bg-background rounded shadow-sm text-primary transition-colors"
                                     title="Join Meeting"
                                   >
                                     <Video className="w-3.5 h-3.5" />
@@ -409,7 +409,7 @@ export default function SchedulePage() {
 
         <TabsContent value="availability" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
+            <Card className="border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">
                   Weekly Availability Rules
@@ -424,14 +424,14 @@ export default function SchedulePage() {
                   return (
                     <div
                       key={day}
-                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800"
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-muted/50 rounded-lg border border-border"
                     >
                       <label className="flex items-center space-x-3 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={!!slot}
                           onChange={() => toggleDayAvailability(idx)}
-                          className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 bg-white dark:bg-slate-900"
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-ring bg-background"
                         />
                         <span className="font-semibold text-sm w-24">
                           {day}
@@ -449,7 +449,7 @@ export default function SchedulePage() {
                                 e.target.value,
                               )
                             }
-                            className="w-28 h-8 text-xs bg-white dark:bg-slate-950"
+                            className="w-28 h-8 text-xs bg-background"
                           />
                           <span className="text-muted-foreground">-</span>
                           <Input
@@ -462,11 +462,11 @@ export default function SchedulePage() {
                                 e.target.value,
                               )
                             }
-                            className="w-28 h-8 text-xs bg-white dark:bg-slate-950"
+                            className="w-28 h-8 text-xs bg-background"
                           />
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-400 italic bg-slate-100 px-3 py-1 rounded-md dark:bg-slate-800/50 mt-2 sm:mt-0 ml-7 sm:ml-0">
+                        <span className="text-sm text-muted-foreground italic bg-muted px-3 py-1 rounded-md mt-2 sm:mt-0 ml-7 sm:ml-0">
                           Off Schedule
                         </span>
                       )}
@@ -474,20 +474,20 @@ export default function SchedulePage() {
                   );
                 })}
               </CardContent>
-              <CardFooter className="bg-slate-50 border-t border-slate-100 dark:bg-slate-900/40 dark:border-slate-800 rounded-b-xl py-4 flex justify-end">
+              <CardFooter className="bg-muted border-t border-border rounded-b-xl py-4 flex justify-end">
                 <Button
                   onClick={handleSaveAvailability}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  className="shadow-sm"
                 >
                   Save Restrictions
                 </Button>
               </CardFooter>
             </Card>
 
-            <Card className="border-slate-200 dark:border-slate-800 shadow-sm h-fit">
+            <Card className="border-border shadow-sm h-fit">
               <form onSubmit={handleAddHoliday}>
                 <CardHeader>
-                  <CardTitle className="text-lg text-rose-600 dark:text-rose-500">
+                  <CardTitle className="text-lg text-destructive">
                     Holiday & Time-Off Picker
                   </CardTitle>
                   <CardDescription>
@@ -503,29 +503,29 @@ export default function SchedulePage() {
                         required
                         value={holidayDateInput}
                         onChange={(e) => setHolidayDateInput(e.target.value)}
-                        className="w-full h-11 border-slate-200 dark:border-slate-700 focus-visible:ring-rose-500"
+                        className="w-full h-11 border-border focus-visible:ring-destructive"
                       />
                       <Button
                         type="submit"
                         variant="outline"
-                        className="h-11 border-rose-200 dark:border-rose-900/50 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-8"
+                        className="h-11 border-destructive/20 text-destructive hover:bg-destructive/10 px-8"
                       >
                         <Plus className="w-4 h-4 mr-2" /> Block
                       </Button>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <h4 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">
+                  <div className="pt-4 border-t border-border">
+                    <h4 className="text-sm font-semibold mb-3 text-foreground">
                       Upcoming Blocked Dates
                     </h4>
                     <div className="space-y-2">
                       {holidays.map((holiday) => (
                         <div
                           key={holiday.id}
-                          className="flex justify-between items-center p-3 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-md"
+                          className="flex justify-between items-center p-3 bg-destructive/10 border border-destructive/20 rounded-md"
                         >
-                          <div className="flex items-center text-rose-700 dark:text-rose-400 font-medium text-sm">
+                          <div className="flex items-center text-destructive font-medium text-sm">
                             <CalendarIcon className="w-4 h-4 mr-2" />{" "}
                             {holiday.date}
                           </div>
@@ -534,14 +534,14 @@ export default function SchedulePage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveHoliday(holiday.id)}
-                            className="h-8 w-8 p-0 text-rose-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/50"
+                            className="h-8 w-8 p-0 text-destructive/60 hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       ))}
                       {holidays.length === 0 && (
-                        <p className="text-sm text-slate-400 italic px-2">
+                        <p className="text-sm text-muted-foreground italic px-2">
                           No holidays scheduled.
                         </p>
                       )}
@@ -556,9 +556,9 @@ export default function SchedulePage() {
 
       {/* Slide-over custom mock Dialog for consultation clicking */}
       {selectedConsultation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="w-full max-w-md shadow-2xl border-0 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 rounded-t-xl">
+            <div className="flex justify-between items-center p-4 border-b border-border bg-muted/50 rounded-t-xl">
               <h3 className="font-bold">Consultation Details</h3>
               <Button
                 variant="ghost"
@@ -585,7 +585,7 @@ export default function SchedulePage() {
                       Date
                     </p>
                     <p className="font-medium text-sm flex items-center">
-                      <CalendarIcon className="w-4 h-4 mr-1.5 text-slate-400" />{" "}
+                      <CalendarIcon className="w-4 h-4 mr-1.5 text-muted-foreground" />{" "}
                       {selectedConsultation.date}
                     </p>
                   </div>
@@ -594,7 +594,7 @@ export default function SchedulePage() {
                       Time Frame
                     </p>
                     <p className="font-medium text-sm flex items-center">
-                      <Clock className="w-4 h-4 mr-1.5 text-slate-400" />{" "}
+                      <Clock className="w-4 h-4 mr-1.5 text-muted-foreground" />{" "}
                       {selectedConsultation.startTime} -{" "}
                       {selectedConsultation.endTime}
                     </p>
@@ -603,12 +603,12 @@ export default function SchedulePage() {
 
                 <form
                   onSubmit={handleUpdateZoom}
-                  className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800"
+                  className="pt-4 mt-4 border-t border-border"
                 >
                   <div className="space-y-3">
                     <Label
                       htmlFor="zoom"
-                      className="font-bold text-slate-700 dark:text-slate-300"
+                      className="font-bold text-foreground"
                     >
                       Assign Zoom/Meeting Link
                     </Label>
@@ -617,18 +617,18 @@ export default function SchedulePage() {
                       'notified' and automatically email the client.
                     </p>
                     <div className="relative">
-                      <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                      <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="zoom"
                         defaultValue={selectedConsultation.zoomLink || ""}
                         onChange={(e) => setZoomLinkInput(e.target.value)}
-                        className="pl-9 border-blue-200 focus-visible:ring-blue-500 bg-blue-50/30 dark:bg-slate-900 dark:border-slate-700"
+                        className="pl-9 border-primary/20 focus-visible:ring-primary bg-primary/5"
                         placeholder="https://zoom.us/j/..."
                       />
                     </div>
                     <Button
                       type="submit"
-                      className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="w-full mt-2"
                     >
                       Update & Notify Client
                     </Button>

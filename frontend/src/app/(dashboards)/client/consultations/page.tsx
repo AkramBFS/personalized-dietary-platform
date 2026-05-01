@@ -59,7 +59,7 @@ export default function ConsultationsPage() {
             is_free_from_plan: true,
             price_paid: 0.0,
             zoom_link: "https://zoom.us/j/mock123456",
-            nutritionist_name: "Dr. Sarah Smith", // Assuming frontend joins or backend provides
+            nutritionist_name: "Dr. Sarah Smith",
           },
         ]);
         setNutritionists([
@@ -80,11 +80,11 @@ export default function ConsultationsPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
       {/* Page Header */}
-      <div className="space-y-2 pb-6 border-b border-gray-200 dark:border-[#2a3038]">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">
+      <div className="space-y-2 pb-6 border-b border-border">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Consultations
         </h1>
-        <p className="text-muted-foreground dark:text-gray-400">
+        <p className="text-muted-foreground">
           Manage your upcoming sessions and professional guidance.
         </p>
       </div>
@@ -92,17 +92,17 @@ export default function ConsultationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Left Column: List Past/Upcoming */}
         <div className="flex flex-col gap-6">
-          <h2 className="text-xl font-semibold dark:text-white flex items-center gap-3">
-            <Video className="w-5 h-5 text-emerald-500" />
+          <h2 className="text-xl font-semibold text-foreground flex items-center gap-3">
+            <Video className="w-5 h-5 text-primary" />
             My Schedule
           </h2>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : consultations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed border-gray-200 dark:border-[#2a3038] rounded-xl">
+            <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed border-border rounded-xl">
               <p className="text-muted-foreground font-medium">
                 No past or upcoming consultations found.
               </p>
@@ -112,16 +112,16 @@ export default function ConsultationsPage() {
               {consultations.map((c) => (
                 <Card
                   key={c.id}
-                  className="dark:bg-[#1a2027] border border-gray-200 dark:border-[#2a3038] rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                  className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <CardHeader className="pb-3 pt-5 px-5">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                          <CalendarIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="p-2 bg-primary/15 rounded-lg">
+                          <CalendarIcon className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg font-bold dark:text-white">
+                          <CardTitle className="text-lg font-bold text-card-foreground">
                             {new Date(c.appointment_date).toLocaleDateString(
                               "en-US",
                               {
@@ -141,7 +141,7 @@ export default function ConsultationsPage() {
                         className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${
                           c.status === "scheduled"
                             ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                            : "bg-secondary text-muted-foreground"
                         }`}
                       >
                         {c.status}
@@ -150,12 +150,12 @@ export default function ConsultationsPage() {
                   </CardHeader>
 
                   <CardContent className="px-5 pb-5 pt-2 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-gray-100 dark:border-[#2a3038]">
+                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-border">
                       <div className="space-y-1">
                         <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
                           Type
                         </p>
-                        <p className="text-sm font-semibold dark:text-gray-200 flex items-center gap-1">
+                        <p className="text-sm font-semibold text-foreground flex items-center gap-1">
                           {c.consultation_type === "plan_included"
                             ? "Plan Session"
                             : "Advice Only"}
@@ -165,9 +165,9 @@ export default function ConsultationsPage() {
                         <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
                           Payment
                         </p>
-                        <p className="text-sm font-semibold dark:text-gray-200 flex items-center gap-1">
+                        <p className="text-sm font-semibold text-foreground flex items-center gap-1">
                           {c.is_free_from_plan ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <span className="text-primary flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Covered
                               by Plan
                             </span>

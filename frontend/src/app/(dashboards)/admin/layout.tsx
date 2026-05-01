@@ -68,9 +68,9 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background dark:bg-[#12161b] w-full">
+      <div className="flex min-h-screen bg-background w-full">
         <SharedSidebar links={adminLinks} role="high_admin" />
-        <SidebarInset className="flex w-full flex-1 flex-col bg-slate-50 dark:bg-[#171c23]">
+        <SidebarInset className="flex w-full flex-1 flex-col bg-background">
           <DashboardHeader role="high_admin" />
           <main className="flex-1 w-full p-4 md:p-8">{children}</main>
         </SidebarInset>
