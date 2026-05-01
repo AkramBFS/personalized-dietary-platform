@@ -1,235 +1,242 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useTheme } from "next-themes";
+import { Logo } from "@/components/layout/logo";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Sun, Moon } from "lucide-react";
 import {
+  Popover,
+  PopoverButton,
+  PopoverGroup,
+  PopoverPanel,
+  Dialog,
+  DialogPanel,
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
 } from "@headlessui/react";
 import {
-  Bars3Icon,
-  BellIcon,
-  XMarkIcon,
   ChevronDownIcon,
+  Bars3Icon,
+  XMarkIcon,
+  CalculatorIcon,
+  UserGroupIcon,
+  SparklesIcon,
+  CalendarIcon,
+  BookOpenIcon,
+  UsersIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
 
-const navigation = [
+const services = [
   {
-    name: "Shop",
-    children: [
-      { name: "Our Plans", href: "/shop/plans" },
-      { name: "Schedule consult", href: "/shop/schedule" },
-    ],
+    name: "AI Calorie Estimation",
+    description: "Get instant nutritional insights from your food photos.",
+    href: "/services#ai-calorie-estimation",
+    icon: CalculatorIcon,
   },
   {
-    name: "Blog",
-    children: [
-      { name: "Recent Posts", href: "/blog" },
-      { name: "Write Your Own", href: "/blog/write" },
-    ],
+    name: "Online Consultation",
+    description: "Connect with certified nutritionists from anywhere.",
+    href: "/services#online-consultation",
+    icon: UserGroupIcon,
   },
   {
-    name: "AI Features",
-    children: [
-      { name: "Chatbot Helper", href: "/ai/chatbot" },
-      { name: "Calorie Estimate", href: "/ai/calories" },
-    ],
+    name: "Personalized Plans",
+    description: "Custom meal and nutrition plans tailored to your goals.",
+    href: "/services#personalized-plans",
+    icon: SparklesIcon,
   },
-  { name: "About", href: "/about" },
+  {
+    name: "Seasonal Programs",
+    description: "Specialized guides for Ramadan and Summer.",
+    href: "/services#seasonal-programs",
+    icon: CalendarIcon,
+  },
 ];
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
+const mainNav = [
+  { name: "Blog", href: "/blog", icon: BookOpenIcon },
+  { name: "Community", href: "/community", icon: UsersIcon },
+  { name: "About", href: "/about", icon: InformationCircleIcon },
+];
 
-export default function Navbar() {
-  const pathname = usePathname();
+export const HeroHeader = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <Disclosure
-      as="nav"
-      className="sticky top-0 z-50 bg-gray-900 border-b border-white/10"
-    >
-      <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-        <div className="relative flex h-16 items-center justify-between">
-          {/* Mobile menu button*/}
-          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-            <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-              <span className="sr-only">Open main menu</span>
-              <Bars3Icon
-                aria-hidden="true"
-                className="block size-6 group-data-[open]:hidden"
-              />
-              <XMarkIcon
-                aria-hidden="true"
-                className="hidden size-6 group-data-[open]:block"
-              />
-            </DisclosureButton>
-          </div>
+    <header>
+      {/* OUTER NAV (CENTERING CONTAINER) */}
+      <nav className="fixed z-50 w-full flex justify-center pointer-events-none">
+        {/* ANIMATED NAVBAR SHELL */}
+        <div
+          className={cn(
+            "pointer-events-auto transition-all duration-500 ease-in-out",
+            "backdrop-blur-md",
+            "flex items-center",
+            isScrolled
+              ? "w-full lg:w-[75vw] rounded-none lg:rounded-full px-6 py-2 shadow-xl bg-white/80 dark:bg-white/10 border border-border/30 dark:border-transparent"
+              : "w-full rounded-none px-6 py-3 border border-transparent bg-transparent",
+          )}
+        >
+          {/* CONTENT WRAPPER */}
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="flex items-center justify-between">
+              {/* LOGO */}
+              <div className="flex lg:flex-1">
+                <Link href="/" className="flex items-center space-x-3">
+                  <Logo />
+                </Link>
+              </div>
 
-          <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-            {/* Logo */}
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <Image
-                alt="Dieton Logo"
-                src="/branding/logo.svg"
-                width={32}
-                height={32}
-                className="h-8 w-auto"
-              />
-              <span className="text-white font-bold text-xl hidden md:block">
-                REgimo
-              </span>
-            </Link>
+              {/* MOBILE MENU BUTTON */}
+              <div className="flex lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(true)}
+                  className=" -m-2.5 inline-flex items-center justify-center
+    rounded-md p-2.5
+    text-foreground dark:text-white
+    hover:text-emerald-500 dark:hover:text-emerald-300
+    focus:outline-none"
+                >
+                  <Bars3Icon className="size-7" />
+                </button>
+              </div>
 
-            {/* Desktop Menu */}
-            <div className="hidden sm:ml-6 sm:block">
-              <div className="flex space-x-4">
-                {navigation.map((item) =>
-                  item.children ? (
-                    <Menu as="div" key={item.name} className="relative">
-                      <MenuButton className="flex items-center gap-x-1 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
-                        {item.name}
-                        <ChevronDownIcon
-                          className="size-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                      </MenuButton>
-                      <MenuItems
-                        transition
-                        className="absolute left-0 z-10 mt-2 w-48 origin-top-left rounded-md bg-white dark:bg-[#1a2027] py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
-                      >
-                        {item.children.map((child) => (
-                          <MenuItem key={child.href}>
-                            <Link
-                              href={child.href}
-                              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
-                            >
-                              {child.name}
+              {/* DESKTOP NAV */}
+              <PopoverGroup className="hidden lg:flex lg:gap-x-8 lg:items-center">
+                <Popover className="relative">
+                  <PopoverButton
+                    className="
+    flex items-center gap-x-1
+    text-sm font-medium uppercase tracking-[0.025em]
+    text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
+    transition-colors
+    outline-none focus:outline-none focus:ring-0
+  "
+                  >
+                    Services
+                    <ChevronDownIcon className="size-4 transition-transform group-data-[open]:rotate-180" />
+                  </PopoverButton>
+
+                  <PopoverPanel
+                    transition
+                    className="absolute -left-8 top-full z-10 mt-3 w-screen max-w-md rounded-3xl bg-popover/90 backdrop-blur-md border border-border-subtle shadow-2xl transition"
+                  >
+                    <div className="p-3">
+                      {services.map((item) => (
+                        <div
+                          key={item.name}
+                          className="flex items-center gap-x-6 rounded-2xl p-4 hover:bg-background transition"
+                        >
+                          <div className="flex size-11 items-center justify-center rounded-lg bg-secondary">
+                            <item.icon className="size-6" />
+                          </div>
+                          <div>
+                            <Link href={item.href} className="font-semibold">
+                              {item.name}
                             </Link>
-                          </MenuItem>
-                        ))}
-                      </MenuItems>
-                    </Menu>
-                  ) : (
-                    <Link
-                      key={item.name}
-                      href={item.href || "#"}
-                      className={classNames(
-                        pathname === item.href
-                          ? "bg-gray-950 text-white"
-                          : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                        "rounded-md px-3 py-2 text-sm font-medium",
-                      )}
+                            <p className="text-sm text-muted-foreground">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverPanel>
+                </Popover>
+
+                {mainNav.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="text-sm font-medium uppercase tracking-[0.025em] text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300"
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </PopoverGroup>
+
+              {/* RIGHT SIDE ACTIONS */}
+              <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+                {/* THEME TOGGLE */}
+                <ThemeToggle />
+
+                {!isScrolled ? (
+                  <>
+                    <Button
+                      key="login-btn"
+                      variant="ghost"
+                      className="animate-in fade-in zoom-in duration-300"
+                      asChild
                     >
-                      {item.name}
-                    </Link>
-                  ),
+                      <Link
+                        href="/login"
+                        className="text-primary dark:text-white hover:text-emerald-400 dark:hover:text-emerald-300"
+                      >
+                        Login
+                      </Link>
+                    </Button>
+                    <Button
+                      key="signup-btn"
+                      asChild
+                      className="animate-in fade-in zoom-in duration-300 shadow-sm"
+                    >
+                      <Link href="/register">Sign Up</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    key="get-started-btn"
+                    className="animate-in fade-in zoom-in duration-300 animate-delay-100"
+                    asChild
+                  >
+                    <Link href="/register">Get Started</Link>
+                  </Button>
                 )}
               </div>
             </div>
           </div>
-
-          {/* Right side: Notifications & Profile */}
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            <button
-              type="button"
-              className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-            >
-              <span className="sr-only">View notifications</span>
-              <BellIcon aria-hidden="true" className="size-6" />
-            </button>
-
-            {/* Profile dropdown */}
-            <Menu as="div" className="relative ml-3">
-              <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white">
-                <Image
-                  alt="User profile"
-                  src="/professionals/pf1.jpg"
-                  width={32}
-                  height={32}
-                  className="size-8 rounded-full"
-                />
-              </MenuButton>
-              <MenuItems
-                transition
-                className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-[#1a2027] py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75"
-              >
-                <MenuItem>
-                  <Link
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
-                  >
-                    Your Profile
-                  </Link>
-                </MenuItem>
-                <MenuItem>
-                  <Link
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
-                  >
-                    Settings
-                  </Link>
-                </MenuItem>
-                <MenuItem>
-                  <Link
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-800"
-                  >
-                    Sign out
-                  </Link>
-                </MenuItem>
-              </MenuItems>
-            </Menu>
-          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile Menu Panel */}
-      <DisclosurePanel className="sm:hidden">
-        <div className="space-y-1 px-2 pb-3 pt-2">
-          {navigation.map((item) => (
-            <div key={item.name}>
-              {item.children ? (
-                <>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {item.name}
-                  </div>
-                  {item.children.map((child) => (
-                    <DisclosureButton
-                      key={child.href}
-                      as={Link}
-                      href={child.href}
-                      className="block rounded-md px-3 py-2 pl-6 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-                    >
-                      {child.name}
-                    </DisclosureButton>
-                  ))}
-                </>
-              ) : (
-                <DisclosureButton
-                  as={Link}
-                  href={item.href || "#"}
-                  className={classNames(
-                    pathname === item.href
-                      ? "bg-gray-950 text-white"
-                      : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                    "block rounded-md px-3 py-2 text-base font-medium",
-                  )}
-                >
-                  {item.name}
-                </DisclosureButton>
-              )}
+      {/* MOBILE DRAWER (UNCHANGED) */}
+      <Dialog
+        open={mobileMenuOpen}
+        onClose={setMobileMenuOpen}
+        className="lg:hidden"
+      >
+        <div className="fixed inset-0 z-50" />
+        <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full bg-background p-6 sm:max-w-sm">
+          <div className="flex items-center justify-between">
+            <Logo />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button onClick={() => setMobileMenuOpen(false)}>
+                <XMarkIcon className="size-7" />
+              </button>
             </div>
-          ))}
-        </div>
-      </DisclosurePanel>
-    </Disclosure>
+          </div>
+        </DialogPanel>
+      </Dialog>
+    </header>
   );
-}
+};

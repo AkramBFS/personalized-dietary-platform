@@ -132,7 +132,7 @@ export default function ClientDashboardPage() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -141,13 +141,13 @@ export default function ClientDashboardPage() {
     <div className="flex flex-col gap-8 pb-10 max-w-7xl mx-auto">
       {/* Header section */}
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight capitalize">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight capitalize">
           Good morning, {profileName}!{" "}
           <span className="inline-block animate-wave">👋</span>
         </h1>
         <Button
           asChild
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-6 rounded-lg"
+          className="font-medium px-6 py-6 rounded-lg"
         >
           <Link href="/client/calorie-tracker">
             <Plus className="w-5 h-5 mr-2" />
@@ -159,20 +159,20 @@ export default function ClientDashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Plan */}
-        <Card className="dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+        <Card className="border-none shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="bg-emerald-600/20 p-3 rounded-xl text-emerald-500 mt-1">
+              <div className="bg-primary/20 p-3 rounded-xl text-primary mt-1">
                 <Star className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Current Plan
                 </p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                <p className="text-lg font-bold text-foreground truncate">
                   {activePlan ? activePlan.plan.title : "No Active Plan"}
                 </p>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                <p className="text-sm text-primary font-medium">
                   {activePlan
                     ? `${activePlan.progress_percent}% Completed`
                     : "Browse Marketplace"}
@@ -183,27 +183,27 @@ export default function ClientDashboardPage() {
         </Card>
 
         {/* Calories Today */}
-        <Card className="dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+        <Card className="border-none shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl text-gray-500 dark:text-gray-400 mt-1">
+              <div className="bg-secondary p-3 rounded-xl text-muted-foreground mt-1">
                 <Flame className="w-6 h-6" />
               </div>
               <div className="w-full space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Calories Today
                 </p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                <p className="text-lg font-bold text-foreground">
                   {todayIntake.toFixed(0)} kcal
                 </p>
                 <div className="w-full flex items-center gap-3 mt-2">
-                  <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${progressPercentage > 100 ? "bg-red-500" : "bg-emerald-500"}`}
+                      className={`h-full ${progressPercentage > 100 ? "bg-destructive" : "bg-primary"}`}
                       style={{ width: `${Math.min(progressPercentage, 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs text-muted-foreground dark:text-gray-400">
+                  <span className="text-xs text-muted-foreground">
                     {progressPercentage.toFixed(0)}%
                   </span>
                 </div>
@@ -213,20 +213,20 @@ export default function ClientDashboardPage() {
         </Card>
 
         {/* Remaining Calories */}
-        <Card className="dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+        <Card className="border-none shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl text-gray-500 dark:text-gray-400 mt-1">
+              <div className="bg-secondary p-3 rounded-xl text-muted-foreground mt-1">
                 <Target className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Remaining
                 </p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                <p className="text-lg font-bold text-foreground">
                   {remainingCalories.toFixed(0)} kcal
                 </p>
-                <p className="text-sm text-muted-foreground dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Daily goal: {dailyTarget} kcal
                 </p>
               </div>
@@ -235,19 +235,19 @@ export default function ClientDashboardPage() {
         </Card>
 
         {/* Next Consultation */}
-        <Card className="dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+        <Card className="border-none shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl text-gray-500 dark:text-gray-400 mt-1">
+              <div className="bg-secondary p-3 rounded-xl text-muted-foreground mt-1">
                 <RotateCw className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Next Consultation
                 </p>
                 {nextConsultation ? (
                   <>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                    <p className="text-lg font-bold text-foreground truncate">
                       {new Date(
                         nextConsultation.appointment_date,
                       ).toLocaleDateString("en-US", {
@@ -266,12 +266,12 @@ export default function ClientDashboardPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    <p className="text-lg font-bold text-foreground">
                       None Scheduled
                     </p>
                     <Link
                       href="/client/consultations"
-                      className="text-sm text-emerald-600 dark:text-emerald-400 font-medium hover:underline"
+                      className="text-sm text-primary font-medium hover:underline"
                     >
                       Book now
                     </Link>
@@ -285,9 +285,9 @@ export default function ClientDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart Area */}
-        <Card className="lg:col-span-2 dark:bg-[#202731] border-none shadow-sm shadow-[#1a2027]/50">
+        <Card className="lg:col-span-2 border-none shadow-sm">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 tracking-wide">
+            <h2 className="text-xl font-bold text-foreground mb-6 tracking-wide">
               Weekly Progress: Intake vs Target
             </h2>
             <div className="w-full h-[350px]">
@@ -299,48 +299,48 @@ export default function ClientDashboardPage() {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#374151"
+                    stroke="var(--border)"
                     className="opacity-30"
                   />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#9ca3af", fontSize: 13 }}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 13 }}
                     dy={10}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     ticks={[0, 600, 1200, 1800, 2400, 3000]}
-                    tick={{ fill: "#9ca3af", fontSize: 13 }}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 13 }}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "none",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
-                      color: "#fff",
+                      color: "var(--card-foreground)",
                     }}
-                    itemStyle={{ color: "#10b981" }}
+                    itemStyle={{ color: "var(--primary)" }}
                   />
                   <ReferenceLine
                     y={dailyTarget}
-                    stroke="#9ca3af"
+                    stroke="var(--muted-foreground)"
                     strokeDasharray="3 3"
                     label={{
                       position: "insideTopLeft",
                       value: "Target",
-                      fill: "#9ca3af",
+                      fill: "var(--muted-foreground)",
                       fontSize: 13,
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="intake"
-                    stroke="#10b981"
+                    stroke="var(--primary)"
                     strokeWidth={3}
-                    dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                    dot={{ fill: "var(--primary)", strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
@@ -349,41 +349,38 @@ export default function ClientDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions (Unchanged) */}
+        {/* Quick Actions */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-wide lg:mb-1 lg:mt-0 mt-4">
+          <h2 className="text-xl font-bold text-foreground mb-2 tracking-wide lg:mb-1 lg:mt-0 mt-4">
             Quick Actions
           </h2>
 
           <Button
-            variant="outline"
             asChild
-            className="w-full h-auto py-6 flex flex-col items-center justify-center gap-3 border-none bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all rounded-xl"
+            className="w-full h-auto py-6 flex flex-col items-center justify-center gap-3 shadow-sm transition-all rounded-xl"
           >
             <Link href="/client/calorie-tracker">
-              <Camera className="w-8 h-8 text-white mb-1" />
+              <Camera className="w-8 h-8 mb-1" />
               <span className="text-base font-semibold">Upload Meal</span>
             </Link>
           </Button>
 
           <Button
-            variant="outline"
             asChild
-            className="w-full h-auto py-6 flex flex-col items-center justify-center gap-3 border-none bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all rounded-xl"
+            className="w-full h-auto py-6 flex flex-col items-center justify-center gap-3 shadow-sm transition-all rounded-xl"
           >
             <Link href="/client/consultations">
-              <Calendar className="w-8 h-8 text-white mb-1" />
+              <Calendar className="w-8 h-8 mb-1" />
               <span className="text-base font-semibold">Book Consultation</span>
             </Link>
           </Button>
 
           <Button
-            variant="outline"
             asChild
-            className="w-full h-auto py-6 flex flex-col items-center justify-center gap-3 border-none bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all rounded-xl"
+            className="w-full h-auto py-6 flex flex-col items-center justify-center gap-3 shadow-sm transition-all rounded-xl"
           >
             <Link href="/client/meal-plans">
-              <ListTodo className="w-8 h-8 text-white mb-1" />
+              <ListTodo className="w-8 h-8 mb-1" />
               <span className="text-base font-semibold">View Digital Plan</span>
             </Link>
           </Button>

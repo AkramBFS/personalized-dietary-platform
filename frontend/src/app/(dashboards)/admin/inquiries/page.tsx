@@ -86,7 +86,7 @@ export default function AdminInquiriesPage() {
                 className={
                   ticket.status === "open"
                     ? "text-amber-600 border-amber-300"
-                    : "text-emerald-600 border-emerald-300"
+                    : "text-primary border-primary/30"
                 }
               >
                 {ticket.status}
@@ -114,7 +114,7 @@ export default function AdminInquiriesPage() {
       {isModalOpen && selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           {/* Modal Container */}
-          <div className="bg-background dark:bg-slate-900 border border-border rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-card border border-border rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             {/* 1. Modal Header */}
             <div className="flex justify-between items-center px-6 py-4 border-b">
               <div>

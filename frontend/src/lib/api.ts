@@ -55,3 +55,45 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// ============================================
+// Marketplace / Nutritionist API Services
+// ============================================
+
+/**
+ * GET /marketplace/nutritionists/{id}/
+ * Fetch a nutritionist's full profile
+ */
+export const getNutritionistProfile = async (id: string) => {
+  const response = await api.get(`marketplace/nutritionists/${id}/`);
+  return response.data;
+};
+
+/**
+ * GET /marketplace/nutritionists/{id}/availability/
+ * Fetch available time slots for a specific date
+ * @param id - Nutritionist ID
+ * @param date - Date in YYYY-MM-DD format
+ */
+export const getNutritionistAvailability = async (id: string, date: string) => {
+  const response = await api.get(`marketplace/nutritionists/${id}/availability/`, {
+    params: { date }
+  });
+  return response.data;
+};
+
+/**
+ * POST /client/consultations/book/
+ * Book a consultation session
+ */
+export const bookConsultation = async (payload: {
+  nutritionist_id: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  consultation_type: "advice_only" | "plan_included";
+  is_free_from_plan: boolean;
+}) => {
+  const response = await api.post("client/consultations/book/", payload);
+  return response.data;
+};

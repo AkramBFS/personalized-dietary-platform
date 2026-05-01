@@ -143,7 +143,7 @@ const faqCategories = [
       },
       {
         q: "Are meal images stored permanently?",
-        a: "Image handling policies depend on system configuration and research requirements. Clear information about data retention is provided within the platform’s privacy policy.",
+        a: "Image handling policies depend on system configuration and research requirements. Clear information about data retention is provided within the platform's privacy policy.",
       },
     ],
   },
@@ -224,15 +224,15 @@ export default function FAQPage() {
   };
 
   return (
-    <main className="pt-24 md:pt-48 pb-32 px-8 md:px-24 max-w-7xl mx-auto selection:bg-[#3DDC97]/30 min-h-screen text-[#cce8e7]">
+    <main className="pt-24 md:pt-48 pb-32 px-8 md:px-24 max-w-7xl mx-auto selection:bg-brand/30 min-h-screen text-card-foreground">
       {/* Header Section */}
       <header className="max-w-4xl mb-32">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-[#3DDC97] uppercase tracking-[0.3em] text-sm mb-6 font-semibold flex items-center gap-3"
+          className="text-brand uppercase tracking-[0.3em] text-sm mb-6 font-semibold flex items-center gap-3"
         >
-          <HelpCircle className="w-4 h-4 text-[#3DDC97]" />
+          <HelpCircle className="w-4 h-4 text-brand" />
           Knowledge Base
         </motion.div>
         <motion.h1
@@ -241,13 +241,13 @@ export default function FAQPage() {
           className="text-6xl md:text-8xl font-bold tracking-tighter leading-tight mb-12 font-headline"
         >
           Frequently Asked <br />
-          <span className="text-[#3DDC97] italic">Questions.</span>
+          <span className="text-brand italic">Questions.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-[#c0c8c8] text-xl md:text-2xl font-light leading-relaxed max-w-2xl border-l border-[#414848] pl-6"
+          className="text-muted-foreground text-xl md:text-2xl font-light leading-relaxed max-w-2xl border-l border-border pl-6"
         >
           Find answers regarding our dietary assessment systems, AI tools,
           consultations, and platform operations.
@@ -257,7 +257,7 @@ export default function FAQPage() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-24">
         {/* Sticky Sidebar Navigation */}
         <aside className="hidden md:block md:col-span-3 sticky top-48 self-start">
-          <nav className="flex flex-col gap-6 text-xs uppercase tracking-widest border-l border-[#414848] pl-6 font-semibold">
+          <nav className="flex flex-col gap-6 text-xs uppercase tracking-widest border-l border-border pl-6 font-semibold">
             {faqCategories.map((category) => (
               <a
                 key={category.id}
@@ -265,8 +265,8 @@ export default function FAQPage() {
                 onClick={(e) => scrollToSection(e, category.id)}
                 className={`transition-all duration-300 ${
                   activeSection === category.id
-                    ? "text-[#3DDC97] font-bold scale-105 origin-left"
-                    : "text-[#c0c8c8]/60 hover:text-[#3DDC97]"
+                    ? "text-brand font-bold scale-105 origin-left"
+                    : "text-muted-foreground hover:text-brand"
                 }`}
               >
                 {category.label}
@@ -284,9 +284,9 @@ export default function FAQPage() {
               id={category.id}
             >
               <div className="flex flex-col gap-8">
-                <div className="text-xs text-[#3DDC97]/60 uppercase tracking-widest font-semibold flex items-center gap-2">
-                  <span className="font-mono text-[#3DDC97]">
-                    0{catIndex + 1} //
+                <div className="text-xs text-brand/60 uppercase tracking-widest font-semibold flex items-center gap-2">
+                  <span className="font-mono text-brand">
+                    0{catIndex + 1} •
                   </span>
                   {category.title}
                 </div>
@@ -301,17 +301,17 @@ export default function FAQPage() {
                     return (
                       <div
                         key={itemIndex}
-                        className="group border border-[#414848] bg-[#15464E] hover:border-[#3DDC97] transition-colors rounded-xl overflow-hidden"
+                        className="group border border-border bg-accent hover:border-brand transition-colors rounded-xl overflow-hidden"
                       >
                         <button
                           onClick={() => toggleItem(category.id, itemIndex)}
                           className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none"
                         >
-                          <span className="text-xl font-medium text-[#cce8e7] pr-8 group-hover:text-[#3DDC97] transition-colors">
+                          <span className="text-xl font-medium text-card-foreground pr-8 group-hover:text-brand transition-colors">
                             {item.q}
                           </span>
                           <Plus
-                            className={`text-[#3DDC97] shrink-0 transition-transform duration-300 ${
+                            className={`text-brand shrink-0 transition-transform duration-300 ${
                               isOpen ? "rotate-45" : "rotate-0"
                             }`}
                             size={24}
@@ -325,7 +325,7 @@ export default function FAQPage() {
                               exit={{ height: 0, opacity: 0 }}
                               className="overflow-hidden"
                             >
-                              <div className="px-6 md:px-8 pb-8 text-[#c0c8c8] text-lg leading-relaxed border-t border-[#414848]/50 pt-6">
+                              <div className="px-6 md:px-8 pb-8 text-muted-foreground text-lg leading-relaxed border-t border-border/50 pt-6">
                                 {item.a.includes("👉 /services") ? (
                                   <>
                                     The platform offers multiple services,
@@ -337,7 +337,7 @@ export default function FAQPage() {
                                     please visit the Services page:{" "}
                                     <a
                                       href="/services"
-                                      className="text-[#3DDC97] hover:underline font-medium"
+                                      className="text-brand hover:underline font-medium"
                                     >
                                       👉 /services
                                     </a>

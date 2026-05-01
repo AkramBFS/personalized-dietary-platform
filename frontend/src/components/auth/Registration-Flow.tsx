@@ -183,7 +183,7 @@ export default function RegistrationFlow() {
           throw new Error("Invalid country or goal selection");
         }
 
-        const healthHistory = formData.medicalConditions
+        const healthHistory = (formData.medicalConditions as string[])
           .filter((cond) => cond !== "None")
           .concat(
             formData.medicalConditionsCustom

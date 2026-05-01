@@ -82,7 +82,7 @@ export default function MealPlansPage() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center p-24 space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
           <p className="text-muted-foreground animate-pulse">
             Loading your nutrition data...
           </p>
@@ -99,7 +99,7 @@ export default function MealPlansPage() {
               with a professional consultation.
             </p>
             <Button
-              className="mt-8 bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+              className="mt-8 px-8"
               asChild
             >
               <Link href="/client/consultations">Book a Consultation</Link>
@@ -111,30 +111,30 @@ export default function MealPlansPage() {
           {plans.map((userPlan) => (
             <Card
               key={userPlan.id}
-              className="group overflow-hidden flex flex-col border-muted-foreground/10 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300"
+              className="group overflow-hidden flex flex-col border-muted-foreground/10 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
             >
               {/* Card Visual Header */}
-              <div className="h-40 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent flex items-center justify-center relative overflow-hidden">
+              <div className="h-40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent flex items-center justify-center relative overflow-hidden">
                 {/* Decorative background element */}
                 <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
                   <ClipboardList className="w-32 h-32" />
                 </div>
 
                 <Badge
-                  className="absolute top-4 right-4 capitalize backdrop-blur-md bg-white/80 dark:bg-gray-950/80 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                  className="absolute top-4 right-4 capitalize backdrop-blur-md bg-card/80 text-primary border-primary/30"
                   variant="outline"
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse" />
                   {userPlan.status}
                 </Badge>
 
-                <div className="bg-background/80 backdrop-blur-sm p-3 rounded-2xl shadow-sm border border-white/20">
-                  <ClipboardList className="w-8 h-8 text-emerald-600" />
+                <div className="bg-background/80 backdrop-blur-sm p-3 rounded-2xl shadow-sm border border-border/20">
+                  <ClipboardList className="w-8 h-8 text-primary" />
                 </div>
               </div>
 
               <CardHeader className="space-y-1">
-                <CardTitle className="text-xl group-hover:text-emerald-600 transition-colors">
+                <CardTitle className="text-xl group-hover:text-primary transition-colors">
                   {userPlan.plan.title}
                 </CardTitle>
                 <CardDescription className="flex items-center gap-1.5">
@@ -157,7 +157,7 @@ export default function MealPlansPage() {
                   </div>
                   <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden border border-inner">
                     <div
-                      className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-700 ease-out"
+                      className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-700 ease-out"
                       style={{ width: `${userPlan.progress_percent}%` }}
                     />
                   </div>
@@ -183,7 +183,7 @@ export default function MealPlansPage() {
               <CardFooter className="bg-muted/30 p-4">
                 <Button
                   asChild
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 group/btn"
+                  className="w-full shadow-lg shadow-primary/20 group/btn"
                 >
                   <Link href={`/client/meal-plans/${userPlan.id}`}>
                     View Daily Schedule
