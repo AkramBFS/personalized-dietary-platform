@@ -10,6 +10,15 @@ import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import {
+  bootstrapLookups,
+  getCountries,
+  getGoals,
+  getLanguages,
+  getActivityLevels,
+  getDiets,
+  LookupItem
+} from "@/lib/lookups";
 
 const StepCountry = dynamic(() => import("../forms/StepCountrySelect"));
 const StepGoal = dynamic(() => import("../forms/StepGoal"));
@@ -27,13 +36,11 @@ export default function RegistrationFlow() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const [countries, setCountries] = useState<{ id: number; name: string }[]>(
-    [],
-  );
-  const [goals, setGoals] = useState<{ id: number; name: string }[]>([]);
-  const [languages, setLanguages] = useState<{ id: number; name: string }[]>(
-    [],
-  );
+  const [countries, setCountries] = useState<LookupItem[]>([]);
+  const [goals, setGoals] = useState<LookupItem[]>([]);
+  const [languages, setLanguages] = useState<LookupItem[]>([]);
+  const [activityLevels, setActivityLevels] = useState<LookupItem[]>([]);
+  const [diets, setDiets] = useState<LookupItem[]>([]);
   const [loadingLookup, setLoadingLookup] = useState(true);
 
   const router = useRouter();
@@ -49,8 +56,6 @@ export default function RegistrationFlow() {
     weight: 70,
     height: 170,
     gender: "",
-    bmi: 24.2,
-    bmr: 1600,
     medicalConditions: [] as string[],
     medicalConditionsCustom: "",
     firstName: "",
@@ -95,44 +100,21 @@ export default function RegistrationFlow() {
   };
 
   useEffect(() => {
-    const fetchLookupData = async () => {
+    const loadLookups = async () => {
       try {
-        const [countriesRes, goalsRes, languagesRes] = await Promise.all([
-          api.get("/lookup/countries/"),
-          api.get("/lookup/goals/"),
-          api.get("/lookup/languages/"),
-        ]);
-        const extractData = (res: any) => {
-          if (Array.isArray(res.data)) return res.data;
-          if (res.data && Array.isArray(res.data.results)) return res.data.results;
-          return [];
-        };
-        setCountries(extractData(countriesRes));
-        setGoals(extractData(goalsRes));
-        setLanguages(extractData(languagesRes));
+        await bootstrapLookups();
+        setCountries(getCountries());
+        setGoals(getGoals());
+        setLanguages(getLanguages());
+        setActivityLevels(getActivityLevels());
+        setDiets(getDiets());
       } catch (error) {
         console.error("Failed to fetch lookup data", error);
-        // Fallback to hardcoded
-        setCountries([
-          { id: 1, name: "United States" },
-          { id: 2, name: "Canada" },
-          { id: 3, name: "Algeria" },
-        ]);
-        setGoals([
-          { id: 1, name: "Weight Loss" },
-          { id: 2, name: "Muscle Gain" },
-          { id: 3, name: "Maintenance" },
-        ]);
-        setLanguages([
-          { id: 1, name: "English" },
-          { id: 2, name: "Arabic" },
-          { id: 3, name: "French" },
-        ]);
       } finally {
         setLoadingLookup(false);
       }
     };
-    fetchLookupData();
+    loadLookups();
   }, []);
 
   useEffect(() => {
@@ -171,9 +153,11 @@ export default function RegistrationFlow() {
           (c) => c.name === formData.country,
         )?.id;
         const goalId = goals.find((g) => g.name === formData.goal)?.id;
+        const activityId = activityLevels.find((a) => a.name === formData.activityLevel)?.id;
+        const dietId = diets.find((d) => d.name === formData.diet)?.id;
 
-        if (!countryId || !goalId) {
-          throw new Error("Invalid country or goal selection");
+        if (!countryId || !goalId || !activityId || !dietId) {
+          throw new Error("Please ensure all fields (Country, Goal, Activity Level, Diet) are selected correctly.");
         }
 
         const healthHistory = (formData.medicalConditions as string[])
@@ -195,6 +179,8 @@ export default function RegistrationFlow() {
         payload.append("gender", formData.gender);
         payload.append("country_id", countryId.toString());
         payload.append("goal_id", goalId.toString());
+        payload.append("activity_level_id", activityId.toString());
+        payload.append("diet_id", dietId.toString());
         if (healthHistory) {
           payload.append("health_history", healthHistory);
         }
@@ -229,9 +215,9 @@ export default function RegistrationFlow() {
       case 2:
         return <StepGoal {...props} goals={goals} />;
       case 3:
-        return <StepActivity {...props} />;
+        return <StepActivity {...props} activityLevels={activityLevels} />;
       case 4:
-        return <StepDiet {...props} />;
+        return <StepDiet {...props} diets={diets} />;
       case 5:
         return <StepAgeWeight {...props} />;
       case 6:

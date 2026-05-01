@@ -208,7 +208,7 @@ export default function MarketplacePlansPage() {
                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">You haven't created any marketplace plans yet.</TableCell>
               </TableRow>
             ) : (
-              plans.map((plan) => (
+              Array.isArray(plans) && plans.map((plan) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-semibold text-foreground">{plan.title}</TableCell>
                   <TableCell className="capitalize">{plan.category}</TableCell>

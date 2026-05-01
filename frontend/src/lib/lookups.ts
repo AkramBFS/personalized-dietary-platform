@@ -10,6 +10,8 @@ let lookupCache: {
   goals?: LookupItem[];
   specializations?: LookupItem[];
   languages?: LookupItem[];
+  activityLevels?: LookupItem[];
+  diets?: LookupItem[];
 } = {};
 
 let bootstrapPromise: Promise<void> | null = null;
@@ -32,11 +34,13 @@ export async function bootstrapLookups(): Promise<void> {
 
   bootstrapPromise = (async () => {
     try {
-      const [countriesRes, goalsRes, specializationsRes, languagesRes] = await Promise.all([
+      const [countriesRes, goalsRes, specializationsRes, languagesRes, activityRes, dietsRes] = await Promise.all([
         api.get("/lookup/countries/").catch(() => ({ data: [] })),
         api.get("/lookup/goals/").catch(() => ({ data: [] })),
         api.get("/lookup/specializations/").catch(() => ({ data: [] })),
         api.get("/lookup/languages/").catch(() => ({ data: [] })),
+        api.get("/lookup/activity-levels/").catch(() => ({ data: [] })),
+        api.get("/lookup/diets/").catch(() => ({ data: [] })),
       ]);
 
       const extractData = (res: any) => {
@@ -50,6 +54,8 @@ export async function bootstrapLookups(): Promise<void> {
         goals: extractData(goalsRes),
         specializations: extractData(specializationsRes),
         languages: extractData(languagesRes),
+        activityLevels: extractData(activityRes),
+        diets: extractData(dietsRes),
       };
     } catch (err) {
       console.error("Failed to bootstrap lookup data", err);
@@ -59,6 +65,8 @@ export async function bootstrapLookups(): Promise<void> {
         goals: [],
         specializations: [],
         languages: [],
+        activityLevels: [],
+        diets: [],
       };
     } finally {
       bootstrapPromise = null;
@@ -94,6 +102,20 @@ export function getSpecializations(): LookupItem[] {
  */
 export function getLanguages(): LookupItem[] {
   return lookupCache.languages || [];
+}
+
+/**
+ * Get cached activity levels list. Call bootstrapLookups() first.
+ */
+export function getActivityLevels(): LookupItem[] {
+  return lookupCache.activityLevels || [];
+}
+
+/**
+ * Get cached diets list. Call bootstrapLookups() first.
+ */
+export function getDiets(): LookupItem[] {
+  return lookupCache.diets || [];
 }
 
 /**

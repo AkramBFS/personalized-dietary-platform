@@ -7,9 +7,10 @@ const DIETS = ["None", "Omnivore", "Vegetarian", "Vegan", "Keto", "Paleo"];
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
+  diets?: any[];
 }
 
-export default function StepDiet({ formData, setFormData }: Props) {
+export default function StepDiet({ formData, setFormData, diets = [] }: Props) {
   const [openDropdown, setOpenDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -102,13 +103,13 @@ export default function StepDiet({ formData, setFormData }: Props) {
 
         {openDropdown && (
           <ul className={dropdownMenuClasses}>
-            {DIETS.map((diet) => (
+            {Array.isArray(diets) && diets.map((diet) => (
               <li
-                key={diet}
-                onClick={() => handleSelect(diet)}
+                key={diet.id}
+                onClick={() => handleSelect(diet.name)}
                 className="px-6 py-3 hover:bg-brand hover:text-primary-foreground cursor-pointer transition-colors text-foreground text-sm font-medium"
               >
-                {diet}
+                {diet.name}
               </li>
             ))}
           </ul>

@@ -11,9 +11,10 @@ const LEVELS = [
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
+  activityLevels?: any[];
 }
 
-export default function StepActivity({ formData, setFormData }: Props) {
+export default function StepActivity({ formData, setFormData, activityLevels = [] }: Props) {
   const cardBaseClasses = `
     w-full flex flex-col items-center justify-center p-6 
     rounded-2xl border transition-all duration-300 
@@ -34,8 +35,8 @@ export default function StepActivity({ formData, setFormData }: Props) {
       </div>
 
       <div className="w-full max-w-md space-y-4">
-        {LEVELS.map((level) => {
-          const isSelected = formData.activityLevel === level.id;
+        {Array.isArray(activityLevels) && activityLevels.map((level) => {
+          const isSelected = formData.activityLevel === level.name;
 
           return (
             <button
@@ -44,7 +45,7 @@ export default function StepActivity({ formData, setFormData }: Props) {
               onClick={() =>
                 setFormData((prev: any) => ({
                   ...prev,
-                  activityLevel: level.id,
+                  activityLevel: level.name,
                 }))
               }
               className={`
@@ -63,16 +64,7 @@ export default function StepActivity({ formData, setFormData }: Props) {
                     : "text-foreground"
                 }`}
               >
-                {level.label}
-              </div>
-              <div
-                className={`text-sm font-medium transition-colors duration-300 ${
-                  isSelected
-                    ? "text-primary-foreground/90"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {level.desc}
+                {level.name}
               </div>
             </button>
           );

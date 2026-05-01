@@ -87,7 +87,13 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error("Login failed", error);
-      if (error.response?.status === 401) {
+      const errorCode = error.response?.data?.code || error.response?.data?.error_code || error.response?.data?.message;
+
+      if (error.response?.status === 403 && (errorCode === "ACCOUNT_PENDING_APPROVAL" || errorCode === "Your account is pending approval.")) {
+        alert("Your account is pending approval. Please wait for admin confirmation.");
+      } else if (error.response?.status === 403 && errorCode === "ACCOUNT_REJECTED") {
+        alert("Your account application was rejected. Please contact support for details.");
+      } else if (error.response?.status === 401) {
         setErrors({ email: "Invalid credentials" });
       } else if (error.response?.data?.message) {
         alert(error.response.data.message);

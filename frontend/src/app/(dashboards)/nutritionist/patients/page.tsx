@@ -187,7 +187,7 @@ export default function ConsultationsAndPlansPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {patients.map((patient) => (
+            {Array.isArray(patients) && patients.map((patient) => (
               <TableRow key={patient.client_id} className="group hover:bg-muted/50 transition-colors">
                 <TableCell className="font-medium">
                   <div 
