@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import type { LookupItem } from "@/lib/lookups";
 
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
-  countries?: { id: number; name: string }[];
-  languages?: { id: number; name: string }[];
+  countries?: LookupItem[];
+  languages?: LookupItem[];
 }
 
+const LANGUAGES_FALLBACK = ["English"];
 const COUNTRIES_FALLBACK = ["United States"];
 
 export default function StepCountrySelect({
@@ -18,12 +20,12 @@ export default function StepCountrySelect({
 }: Props) {
   const countriesList =
     Array.isArray(countries) && countries.length > 0
-      ? countries.map((c) => c.name)
+      ? countries.map((c) => c.name ?? "").filter(Boolean)
       : COUNTRIES_FALLBACK;
 
   const languagesList =
     Array.isArray(languages) && languages.length > 0
-      ? languages.map((l) => l.name)
+      ? languages.map((l) => l.name ?? "").filter(Boolean)
       : ["English"]; // Fallback
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,7 +65,8 @@ export default function StepCountrySelect({
     shadow-2xl rounded-2xl overflow-hidden py-2
     animate-in fade-in slide-in-from-top-2 duration-200
   `;
-
+  console.log("Languages Prop:", languages);
+  console.log("Countries Prop:", countries);
   return (
     <div
       className="flex flex-col items-center w-full space-y-10"
@@ -91,11 +94,7 @@ export default function StepCountrySelect({
             }
             className={selectClasses}
           >
-            <span
-              className={
-                !formData.country ? "text-muted-foreground" : ""
-              }
-            >
+            <span className={!formData.country ? "text-muted-foreground" : ""}>
               {formData.country || "Select country"}
             </span>
             <svg
@@ -139,11 +138,7 @@ export default function StepCountrySelect({
             }
             className={selectClasses}
           >
-            <span
-              className={
-                !formData.language ? "text-muted-foreground" : ""
-              }
-            >
+            <span className={!formData.language ? "text-muted-foreground" : ""}>
               {formData.language || "Select preferred language"}
             </span>
             <svg

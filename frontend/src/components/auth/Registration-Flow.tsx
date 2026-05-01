@@ -17,7 +17,7 @@ import {
   getLanguages,
   getActivityLevels,
   getDiets,
-  LookupItem
+  LookupItem,
 } from "@/lib/lookups";
 
 const StepCountry = dynamic(() => import("../forms/StepCountrySelect"));
@@ -70,14 +70,14 @@ export default function RegistrationFlow() {
   const cardVariants: Variants = {
     initial: (step: number) => {
       // Step 10: Simple fade in
-      if (step === 10) return { opacity: 0, y: 10 }; 
-      
+      if (step === 10) return { opacity: 0, y: 10 };
+
       // Group 1 (Steps 3, 6, 9): Fade in while going from small to big
       if ([3, 6, 9].includes(step)) return { scale: 0.95, opacity: 0, x: 0 };
-      
+
       // Group 2 (Steps 2, 5, 8): Fade in while sliding in from the left
       if ([2, 5, 8].includes(step)) return { x: -40, opacity: 0 };
-      
+
       // Default (Steps 1, 4, 7): Fade in while sliding in from the right
       return { x: 40, opacity: 0 };
     },
@@ -128,6 +128,19 @@ export default function RegistrationFlow() {
     return schema?.safeParse(formData).success ?? false;
   }, [currentStep, formData]);
 
+  const healthMetrics = useMemo(() => {
+    const { weight, height, age, gender } = formData;
+    if (!weight || !height || !age || !gender) return null;
+
+    const bmi = weight / (height / 100) ** 2;
+
+    // Mifflin-St Jeor Formula
+    const bmr =
+      10 * weight + 6.25 * height - 5 * age + (gender === "male" ? 5 : -161);
+
+    return { bmi: bmi.toFixed(1), bmr: Math.round(bmr) };
+  }, [formData.weight, formData.height, formData.age, formData.gender]);
+
   //lock check + lock set for next and back
   const nextStep = () => {
     if (currentStep < 10 && isStepValid && !isAnimating) {
@@ -148,16 +161,52 @@ export default function RegistrationFlow() {
     setIsAnimating(true);
     startTransition(async () => {
       try {
-        // Map form data to API payload
+        // Map form data to API payload with case-insensitive and trim-safe matching
         const countryId = countries.find(
-          (c) => c.name === formData.country,
+          (c) =>
+            (c.name || "").toLowerCase().trim() ===
+            (formData.country || "").toLowerCase().trim(),
         )?.id;
-        const goalId = goals.find((g) => g.name === formData.goal)?.id;
-        const activityId = activityLevels.find((a) => a.name === formData.activityLevel)?.id;
-        const dietId = diets.find((d) => d.name === formData.diet)?.id;
+        const goalId = goals.find(
+          (g) =>
+            (g.name || "").toLowerCase().trim() ===
+            (formData.goal || "").toLowerCase().trim(),
+        )?.id;
+        const activityId = activityLevels.find((a) => {
+          const activityValue = (a.value ?? a.name ?? a.label ?? "")
+            .toLowerCase()
+            .trim();
+          return (
+            activityValue ===
+            (formData.activityLevel || "").toLowerCase().trim()
+          );
+        })?.value;
+        const dietId = diets.find(
+          (d) =>
+            (d.label || "").toLowerCase().trim() ===
+            (formData.diet || "").toLowerCase().trim(),
+        )?.value;
 
         if (!countryId || !goalId || !activityId || !dietId) {
-          throw new Error("Please ensure all fields (Country, Goal, Activity Level, Diet) are selected correctly.");
+          console.error("Lookup Mapping Debug:", {
+            countryId,
+            goalId,
+            activityId,
+            dietId,
+            formDataCountry: formData.country,
+            formDataGoal: formData.goal,
+            formDataActivityLevel: formData.activityLevel,
+            formDataDiet: formData.diet,
+            availableCountries: countries.map((c) => c.name),
+            availableGoals: goals.map((g) => g.name),
+            availableActivityLevels: activityLevels.map(
+              (a) => a.value ?? a.name ?? a.label,
+            ),
+            availableDiets: diets.map((d) => d.label),
+          });
+          throw new Error(
+            "Please ensure all fields (Country, Goal, Activity Level, Diet) are selected correctly.",
+          );
         }
 
         const healthHistory = (formData.medicalConditions as string[])
@@ -179,8 +228,8 @@ export default function RegistrationFlow() {
         payload.append("gender", formData.gender);
         payload.append("country_id", countryId.toString());
         payload.append("goal_id", goalId.toString());
-        payload.append("activity_level_id", activityId.toString());
-        payload.append("diet_id", dietId.toString());
+        payload.append("activity_level", activityId);
+        payload.append("diet", dietId);
         if (healthHistory) {
           payload.append("health_history", healthHistory);
         }
@@ -223,7 +272,7 @@ export default function RegistrationFlow() {
       case 6:
         return <StepHeight {...props} />;
       case 7:
-        return <StepBMI {...props} />;
+        return <StepBMI {...props} metrics={healthMetrics} />;
       case 8:
         return <StepMedical {...props} />;
       case 9:
@@ -234,7 +283,7 @@ export default function RegistrationFlow() {
         return null;
     }
   };
-
+  console.log(formData);
   return (
     <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-background">
       <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
