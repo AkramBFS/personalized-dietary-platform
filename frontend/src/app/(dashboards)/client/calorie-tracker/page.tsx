@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Camera, Plus, Loader2, Salad, Image as ImageIcon, Send, Target, Clock, History, X, Crown, ArrowUpRight, Sparkles } from "lucide-react";
+import imageCompression from 'browser-image-compression';
 
 interface EditablePrediction {
   id: string;
@@ -17,7 +18,7 @@ interface EditablePrediction {
 
 export default function CalorieTrackerPage() {
   const [activeTab, setActiveTab] = useState<"ai" | "manual">("manual");
-  const isPremium = false;
+  const [isPremium, setIsPremium] = useState(false);
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [aiPreview, setAiPreview] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -32,29 +33,87 @@ export default function CalorieTrackerPage() {
   const [ingredients, setIngredients] = useState<{name: string, mass_grams: number}[]>([]);
   const [manualSubmitting, setManualSubmitting] = useState(false);
 
-  const handleAiUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const checkPremium = async () => {
+      try {
+        const subs = await api.get("/client/subscriptions/");
+        const data = Array.isArray(subs.data) ? subs.data : subs.data.results || [];
+        const activePremium = data.some((s: any) => s.status === "active" && s.is_premium);
+        setIsPremium(activePremium);
+      } catch (err) {
+        console.error("Failed to fetch subscriptions:", err);
+      }
+    };
+    checkPremium();
+  }, []);
+
+  const handleAiUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+      let file = e.target.files[0];
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Image must be under 10MB.");
+        e.target.value = "";
+        return;
+      }
+
+      try {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        file = await imageCompression(file, options);
+      } catch (error) {
+        console.error("Image compression error:", error);
+      }
+
       setAiFile(file);
       setAiPreview(URL.createObjectURL(file));
       setAiResult(null);
     }
   };
 
-  const submitAiAnalysis = () => {
+  const submitAiAnalysis = async () => {
     if (!aiFile) return;
     setAiLoading(true);
-    setTimeout(() => {
-      setAiLoading(false);
-      const prediction = [
+
+    try {
+      const formData = new FormData();
+      formData.append("date", new Date().toISOString().split("T")[0]);
+      formData.append("meal_type", mealType);
+      formData.append("image", aiFile);
+
+      const response = await api.post("/client/calorie-tracker/ai/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const prediction = response.data.detected_foods || [];
+      const formattedItems = prediction.map((p: any, idx: number) => ({
+        id: `opt-${idx}`,
+        label: p.name,
+        mass_grams: p.mass || 100,
+        calories: p.calories || 100
+      }));
+
+      setAiResult(response.data);
+      setEditableItems(formattedItems.length ? formattedItems : [
           { id: "opt-1", label: "Chicken Breast", mass_grams: 150, calories: 247 },
           { id: "opt-2", label: "Broccoli", mass_grams: 80, calories: 44 },
           { id: "opt-3", label: "White Rice", mass_grams: 100, calories: 130 }
-      ];
-      setAiResult({ status: "pending_user_review", segmented_image_url: aiPreview, ai_raw_prediction: prediction });
-      setEditableItems(prediction);
+      ]);
       setIsModalOpen(true);
-    }, 3000);
+    } catch (error: any) {
+      console.error("AI Analysis failed:", error);
+      if (error.response?.status === 403 && error.response?.data?.code === "NOT_PREMIUM") {
+        setIsPremium(false);
+        alert("This feature requires a premium subscription.");
+      } else {
+        alert("Failed to analyze image. Please try again.");
+      }
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const simulateBackendRecalculation = (newItems: EditablePrediction[]) => {
