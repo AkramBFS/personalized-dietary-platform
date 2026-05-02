@@ -159,56 +159,35 @@ export default function RegistrationFlow() {
   const handleSubmit = () => {
     if (isAnimating || isPending || loadingLookup) return;
     setIsAnimating(true);
+
     startTransition(async () => {
       try {
-        // Map form data to API payload with case-insensitive and trim-safe matching
+        // 1. Map readable names to their respective IDs from lookup cache
         const countryId = countries.find(
           (c) =>
-            (c.name || "").toLowerCase().trim() ===
-            (formData.country || "").toLowerCase().trim(),
+            c.name?.toLowerCase().trim() ===
+            formData.country.toLowerCase().trim(),
         )?.id;
+
         const goalId = goals.find(
           (g) =>
-            (g.name || "").toLowerCase().trim() ===
-            (formData.goal || "").toLowerCase().trim(),
+            g.name?.toLowerCase().trim() === formData.goal.toLowerCase().trim(),
         )?.id;
-        const activityId = activityLevels.find((a) => {
-          const activityValue = (a.value ?? a.name ?? a.label ?? "")
-            .toLowerCase()
-            .trim();
-          return (
-            activityValue ===
-            (formData.activityLevel || "").toLowerCase().trim()
-          );
-        })?.value;
-        const dietId = diets.find(
-          (d) =>
-            (d.label || "").toLowerCase().trim() ===
-            (formData.diet || "").toLowerCase().trim(),
-        )?.value;
 
-        if (!countryId || !goalId || !activityId || !dietId) {
-          console.error("Lookup Mapping Debug:", {
-            countryId,
-            goalId,
-            activityId,
-            dietId,
-            formDataCountry: formData.country,
-            formDataGoal: formData.goal,
-            formDataActivityLevel: formData.activityLevel,
-            formDataDiet: formData.diet,
-            availableCountries: countries.map((c) => c.name),
-            availableGoals: goals.map((g) => g.name),
-            availableActivityLevels: activityLevels.map(
-              (a) => a.value ?? a.name ?? a.label,
-            ),
-            availableDiets: diets.map((d) => d.label),
-          });
+        const languageId = languages.find(
+          (l) =>
+            l.name?.toLowerCase().trim() ===
+            formData.language.toLowerCase().trim(),
+        )?.id;
+        console.log("Mapped IDs:", { countryId, goalId, languageId });
+        // Validate that we found all required Foreign Keys
+        if (!countryId || !goalId || !languageId) {
           throw new Error(
-            "Please ensure all fields (Country, Goal, Activity Level, Diet) are selected correctly.",
+            "Mapping failed: Please ensure Country, Goal, and Language are selected correctly.",
           );
         }
 
+        // 2. Process Health History
         const healthHistory = (formData.medicalConditions as string[])
           .filter((cond) => cond !== "None")
           .concat(
@@ -218,36 +197,51 @@ export default function RegistrationFlow() {
           )
           .join(", ");
 
+        // 3. Construct the Payload - strictly including only API-expected fields
         const payload = new FormData();
-        payload.append("username", formData.email); // Use email as username
+
+        // Basic Info[cite: 2]
+        payload.append("username", formData.email); // Using email as username per original logic[cite: 1]
         payload.append("email", formData.email);
         payload.append("password", formData.password);
+
+        // Metrics (No BMI included here)[cite: 2]
         payload.append("age", formData.age.toString());
         payload.append("weight", formData.weight.toString());
         payload.append("height", formData.height.toString());
         payload.append("gender", formData.gender);
+
+        // Foreign Keys[cite: 1, 2]
         payload.append("country_id", countryId.toString());
         payload.append("goal_id", goalId.toString());
-        payload.append("activity_level", activityId);
-        payload.append("diet", dietId);
+        payload.append("language_id", languageId.toString());
+
+        // Lifestyle & History[cite: 2]
+        payload.append(
+          "activity_level",
+          formData.activityLevel.toLowerCase().trim(),
+        );
+        payload.append("Diet", formData.diet); // Casing matches API doc snippet[cite: 2]
+
         if (healthHistory) {
           payload.append("health_history", healthHistory);
         }
 
+        console.log("Payload:", payload);
+        // 4. API Request[cite: 1]
         await api.post("/auth/register/client/", payload, {
           headers: {
-            "Content-Type": undefined,
+            "Content-Type": "multipart/form-data",
           },
         });
+
         alert("Registration Successful! Please log in.");
         router.push("/login");
       } catch (err: any) {
         console.error("Registration failed", err);
-        if (err.response?.data?.message) {
-          alert(err.response.data.message);
-        } else {
-          alert("Error submitting form");
-        }
+        const errorMsg =
+          err.response?.data?.message || err.message || "Error submitting form";
+        alert(errorMsg);
       } finally {
         setIsAnimating(false);
       }

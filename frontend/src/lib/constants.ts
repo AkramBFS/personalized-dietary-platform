@@ -27,7 +27,7 @@ export const stepSchemas = [
     }),
   }),                                                 // Step 5
   z.object({ height: z.number().min(120).max(250) }),   // Step 6
-  z.object({ bmi: z.number().min(10).max(60) }),        // Step 7
+  z.object({}), // Step 7 - BMI display only, no validation needed
   z.object({
     medicalConditions: z
       .array(z.string())

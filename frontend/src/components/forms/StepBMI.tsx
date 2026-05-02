@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 
 interface Props {
   formData: any;
@@ -10,19 +10,6 @@ interface Props {
 
 export default function StepBMI({ formData, setFormData, metrics }: Props) {
   const cardClasses = `w-full bg-card/40 backdrop-blur-md border border-border rounded-2xl p-8 shadow-sm text-center`;
-
-  // Auto-sync calculated BMI into formData
-  useEffect(() => {
-    if (metrics?.bmi) {
-      const bmiNumber = parseFloat(metrics.bmi);
-      if (!isNaN(bmiNumber)) {
-        setFormData((prev: any) => ({
-          ...prev,
-          bmi: bmiNumber,
-        }));
-      }
-    }
-  }, [metrics?.bmi, setFormData]);
 
   return (
     <div className="flex flex-col items-center w-full space-y-10">
