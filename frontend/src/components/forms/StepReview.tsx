@@ -8,6 +8,18 @@ interface Props {
 }
 
 export default function StepReview({ formData, setFormData }: Props) {
+  // Calculate health metrics on-the-fly
+  const healthMetrics = (() => {
+    const { weight, height, age, gender } = formData;
+    if (!weight || !height || !age || !gender) return null;
+
+    const bmi = weight / (height / 100) ** 2;
+    const bmr =
+      10 * weight + 6.25 * height - 5 * age + (gender === "male" ? 5 : -161);
+
+    return { bmi: bmi.toFixed(1), bmr: Math.round(bmr) };
+  })();
+
   const summary = [
     { label: "Location", value: formData.country },
     { label: "Language", value: formData.language },
@@ -25,11 +37,11 @@ export default function StepReview({ formData, setFormData }: Props) {
     },
     {
       label: "BMI",
-      value: typeof formData.bmi === "number" ? formData.bmi.toFixed(1) : null,
+      value: healthMetrics?.bmi ?? null,
     },
     {
       label: "BMR",
-      value: typeof formData.bmr === "number" ? `${formData.bmr} kcal` : null,
+      value: healthMetrics?.bmr ? `${healthMetrics.bmr} kcal` : null,
     },
     {
       label: "Medical",
