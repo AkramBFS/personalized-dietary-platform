@@ -20,6 +20,27 @@ import {
   LookupItem,
 } from "@/lib/lookups";
 
+type RegistrationFormData = {
+  country: string;
+  language: string;
+  goal: string;
+  goalCustom: string;
+  activityLevel: string;
+  diet: string;
+  age: number;
+  weight: number;
+  height: number;
+  gender: string;
+  medicalConditions: string[];
+  medicalConditionsCustom: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  profilePhoto: File | null;
+  agreedToTerms: boolean;
+};
+
 const StepCountry = dynamic(() => import("../forms/StepCountrySelect"));
 const StepGoal = dynamic(() => import("../forms/StepGoal"));
 const StepActivity = dynamic(() => import("../forms/StepActivity"));
@@ -45,7 +66,7 @@ export default function RegistrationFlow() {
 
   const router = useRouter();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegistrationFormData>({
     country: "",
     language: "",
     goal: "",
@@ -62,6 +83,7 @@ export default function RegistrationFlow() {
     lastName: "",
     email: "",
     password: "",
+    profilePhoto: null,
     agreedToTerms: false,
   });
 
@@ -123,10 +145,23 @@ export default function RegistrationFlow() {
     }
   }, [currentStep]);
 
-  const isStepValid = useMemo(() => {
+  const stepValidation = useMemo(() => {
     const schema = stepSchemas[currentStep - 1];
-    return schema?.safeParse(formData).success ?? false;
+    return schema?.safeParse(formData) ?? null;
   }, [currentStep, formData]);
+
+  const isStepValid = stepValidation?.success ?? false;
+
+  const currentStepErrors = useMemo(() => {
+    if (!stepValidation || stepValidation.success) return {};
+
+    const fieldErrors = stepValidation.error.flatten().fieldErrors;
+    return Object.fromEntries(
+      Object.entries(fieldErrors)
+        .filter(([, value]) => value?.[0])
+        .map(([key, value]) => [key, value?.[0] ?? "Invalid value"]),
+    );
+  }, [stepValidation]);
 
   const healthMetrics = useMemo(() => {
     const { weight, height, age, gender } = formData;
@@ -139,7 +174,7 @@ export default function RegistrationFlow() {
       10 * weight + 6.25 * height - 5 * age + (gender === "male" ? 5 : -161);
 
     return { bmi: bmi.toFixed(1), bmr: Math.round(bmr) };
-  }, [formData.weight, formData.height, formData.age, formData.gender]);
+  }, [formData]);
 
   //lock check + lock set for next and back
   const nextStep = () => {
@@ -188,7 +223,7 @@ export default function RegistrationFlow() {
         }
 
         // 2. Process Health History
-        const healthHistory = (formData.medicalConditions as string[])
+        const healthHistory = formData.medicalConditions
           .filter((cond) => cond !== "None")
           .concat(
             formData.medicalConditionsCustom
@@ -227,6 +262,10 @@ export default function RegistrationFlow() {
           payload.append("health_history", healthHistory);
         }
 
+        if (formData.profilePhoto) {
+          payload.append("profile_photo", formData.profilePhoto);
+        }
+
         console.log("Payload:", payload);
         // 4. API Request[cite: 1]
         await api.post("/auth/register/client/", payload, {
@@ -237,10 +276,17 @@ export default function RegistrationFlow() {
 
         alert("Registration Successful! Please log in.");
         router.push("/login");
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Registration failed", err);
+        const responseMessage =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { message?: string } } }).response
+                ?.data?.message
+            : undefined;
         const errorMsg =
-          err.response?.data?.message || err.message || "Error submitting form";
+          responseMessage ||
+          (err instanceof Error ? err.message : undefined) ||
+          "Error submitting form";
         alert(errorMsg);
       } finally {
         setIsAnimating(false);
@@ -270,7 +316,7 @@ export default function RegistrationFlow() {
       case 8:
         return <StepMedical {...props} />;
       case 9:
-        return <StepSignUp {...props} />;
+        return <StepSignUp {...props} errors={currentStepErrors} />;
       case 10:
         return <StepReview {...props} />;
       default:

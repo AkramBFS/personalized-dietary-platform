@@ -8,7 +8,7 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Logo } from "../layout/logo";
 import { loginSchema } from "@/lib/constants";
 import api from "@/lib/api";
-import { setAccessToken, setRefreshToken } from "@/lib/auth";
+import { setAccessToken, setRefreshToken, setSessionUser } from "@/lib/auth";
 import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";
@@ -74,6 +74,12 @@ export default function LoginPage() {
       // Store tokens
       setAccessToken(tokens.access);
       setRefreshToken(tokens.refresh);
+      setSessionUser({
+        id: user.id,
+        role: user.role,
+        username: user.username,
+        email: user.email,
+      });
 
       // Redirect based on role
       if (user.role === "client") {

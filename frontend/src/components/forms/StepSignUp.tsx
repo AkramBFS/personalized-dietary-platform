@@ -2,16 +2,72 @@
 
 import React from "react";
 import { Input } from "@/components/ui/Input";
+import { MAX_PROFILE_PHOTO_BYTES } from "@/lib/constants";
+
+type RegistrationFormData = {
+  country: string;
+  language: string;
+  goal: string;
+  goalCustom: string;
+  activityLevel: string;
+  diet: string;
+  age: number;
+  weight: number;
+  height: number;
+  gender: string;
+  medicalConditions: string[];
+  medicalConditionsCustom: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  profilePhoto: File | null;
+  agreedToTerms: boolean;
+};
 
 interface Props {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: RegistrationFormData;
+  setFormData: React.Dispatch<React.SetStateAction<RegistrationFormData>>;
+  errors?: Record<string, string>;
 }
 
-export default function StepSignUp({ formData, setFormData }: Props) {
+const formatFileSize = (bytes: number) => {
+  const megabytes = bytes / (1024 * 1024);
+  return `${megabytes.toFixed(1)} MB`;
+};
+
+export default function StepSignUp({
+  formData,
+  setFormData,
+  errors = {},
+}: Props) {
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+
+    if (!file) {
+      setFormData((prev) => ({ ...prev, profilePhoto: null }));
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, profilePhoto: file }));
+
+    if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+      e.target.value = "";
+    }
+  };
+
+  const clearPhoto = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setFormData((prev) => ({ ...prev, profilePhoto: null }));
   };
 
   // Glassmorphic input styles matching StepCountrySelect and StepMedicalHistory
@@ -26,6 +82,7 @@ export default function StepSignUp({ formData, setFormData }: Props) {
 
   const labelStyles =
     "text-sm font-bold text-foreground ml-1";
+  const errorStyles = "text-sm font-semibold text-red-500 dark:text-red-400";
   const preferenceItems = [
     { label: "Country", value: formData.country },
     { label: "Language", value: formData.language },
@@ -78,7 +135,11 @@ export default function StepSignUp({ formData, setFormData }: Props) {
               placeholder="John"
               value={formData.firstName || ""}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.firstName)}
             />
+            {errors.firstName ? (
+              <p className={errorStyles}>{errors.firstName}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className={labelStyles}>Last Name</label>
@@ -89,7 +150,11 @@ export default function StepSignUp({ formData, setFormData }: Props) {
               placeholder="Doe"
               value={formData.lastName || ""}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.lastName)}
             />
+            {errors.lastName ? (
+              <p className={errorStyles}>{errors.lastName}</p>
+            ) : null}
           </div>
         </div>
 
@@ -103,7 +168,9 @@ export default function StepSignUp({ formData, setFormData }: Props) {
             placeholder="john@example.com"
             value={formData.email || ""}
             onChange={handleChange}
+            aria-invalid={Boolean(errors.email)}
           />
+          {errors.email ? <p className={errorStyles}>{errors.email}</p> : null}
         </div>
 
         {/* Password */}
@@ -113,10 +180,52 @@ export default function StepSignUp({ formData, setFormData }: Props) {
             name="password"
             className={inputStyles}
             type="password"
-            placeholder="••••••••"
+            placeholder="Password"
             value={formData.password || ""}
             onChange={handleChange}
+            aria-invalid={Boolean(errors.password)}
           />
+          {errors.password ? (
+            <p className={errorStyles}>{errors.password}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <label className={labelStyles}>Profile Photo</label>
+          <div className="rounded-2xl border border-border bg-card/40 p-4 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+            <Input
+              ref={fileInputRef}
+              name="profilePhoto"
+              className={`${inputStyles} file:mr-4 file:rounded-lg file:bg-button-primary file:px-4 file:py-2 file:text-button-primary-foreground`}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              aria-invalid={Boolean(errors.profilePhoto)}
+            />
+
+            {formData.profilePhoto ? (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-foreground">
+                    {formData.profilePhoto.name}
+                  </p>
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    {formatFileSize(formData.profilePhoto.size)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground transition hover:bg-accent"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : null}
+          </div>
+          {errors.profilePhoto ? (
+            <p className={errorStyles}>{errors.profilePhoto}</p>
+          ) : null}
         </div>
       </div>
     </div>
