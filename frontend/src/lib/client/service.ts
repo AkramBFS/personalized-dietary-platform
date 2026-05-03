@@ -1,66 +1,196 @@
-import api from "@/lib/api";
+import api, { ApiEnvelope, unwrapResponse } from "@/lib/api";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
+export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+
+export type MealType = (typeof MEAL_TYPES)[number];
 
 export interface ClientProfile {
   client_id: number;
-  user?: {
-    username?: string;
-    email?: string;
-  };
+  username: string;
+  email: string;
   age?: number;
-  weight: number;
-  height: number;
+  weight?: number;
+  height?: number;
   gender?: string;
-  bmi: number;
-  bmr: number;
-  goal_name?: string;
+  bmi?: number;
+  bmr?: number;
   health_history?: string;
+  profile_photo_url?: string | null;
+  goal_id?: number | null;
+  goal_name?: string;
+  country_id?: number | null;
+  country_name?: string;
+  target_calories?: number | null;
+  target_protein?: number | null;
+  target_carbs?: number | null;
+  target_fats?: number | null;
+  activity_level?: string | null;
+  diet?: string | null;
+}
+
+export interface ClientProfilePatchPayload {
+  age?: number;
+  weight?: number;
+  height?: number;
+  health_history?: string;
+  goal_id?: number;
+  country_id?: number;
+  activity_level?: string | null;
+  diet?: string | null;
+  profile_photo?: File;
 }
 
 export interface ClientSubscription {
   id: number;
-  status: "active" | "expired" | "cancelled";
-  is_premium: boolean;
+  plan_type?: "monthly" | "yearly" | string;
+  amount_paid?: number;
+  transaction_number?: string;
+  start_date?: string;
   end_date?: string;
-  plan_type?: string;
+  status: "active" | "expired" | "cancelled" | string;
+}
+
+export interface ClientSubscriptionStatus {
+  is_premium: boolean;
+  subscription: ClientSubscription | null;
+}
+
+export interface CalorieLogIngredient {
+  name?: string;
+  label?: string;
+  mass_grams?: number;
 }
 
 export interface CalorieLog {
   id: number;
-  date: string;
-  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
-  food_items: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  created_at: string;
+  meal_type: MealType;
+  entry_type: "ai_vision" | "manual_input" | string;
+  user_final_log: CalorieLogIngredient[] | null;
+  total_calories: number | null;
+  total_protein: number | null;
+  total_carbs: number | null;
+  total_fats: number | null;
+  status: "processing" | "pending_user_review" | "saved" | "failed" | "discarded" | string;
+  logged_at: string;
+}
+
+export interface ManualIngredientPayload {
+  name: string;
+  mass_grams: number;
+}
+
+export interface ManualCalorieLogPayload {
+  meal_type: MealType;
+  ingredients: ManualIngredientPayload[];
+}
+
+export interface ManualCalorieLogResult {
+  log_id: number;
+  meal_type: MealType;
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fats: number;
+  daily_progress: ClientProgress;
+}
+
+export interface AIPrediction {
+  label?: string;
+  name?: string;
+  class?: string;
+  mass_grams?: number;
+  mass?: number;
+  calories?: number;
+  confidence?: number;
+}
+
+export interface AINutritionPreview {
+  total_calories?: number;
+  total_protein?: number;
+  total_carbs?: number;
+  total_fats?: number;
+}
+
+export interface AICalorieSubmitPayload {
+  meal_type: MealType;
+  image: File;
+}
+
+export interface AICalorieLog {
+  log_id: number;
+  status: "processing" | "pending_user_review" | "saved" | "failed" | string;
+  meal_type: MealType;
+  segmented_image_url?: string | null;
+  predictions?: AIPrediction[];
+  ai_raw_prediction?: { predictions?: AIPrediction[] } | AIPrediction[] | null;
+  nutrition_preview?: AINutritionPreview;
+  logged_at?: string;
+}
+
+export interface AICalorieConfirmPayload {
+  meal_type: MealType;
+  user_final_log: Array<{
+    label: string;
+    mass_grams: number;
+  }>;
+}
+
+export interface AICalorieConfirmResult {
+  log_id: number;
+  status: "saved" | string;
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fats: number;
+  daily_progress: ClientProgress;
 }
 
 export interface ClientProgress {
-  date: string;
-  intake_calories: number;
-  target_calories: number;
-  protein?: number;
-  carbs?: number;
-  fat?: number;
-  weight?: number;
+  id: number;
+  log_date: string;
+  total_calories_consumed: number;
+  total_protein_consumed: number;
+  total_carbs_consumed: number;
+  total_fats_consumed: number;
+  target_calories: number | null;
+  target_protein: number | null;
+  target_carbs: number | null;
+  target_fats: number | null;
+  is_goal_achieved: boolean;
+  notes?: string | null;
 }
 
 export interface ClientConsultation {
   id: number;
   nutritionist_id?: number;
+  nutritionist_username?: string;
   nutritionist_name?: string;
   appointment_date: string;
   start_time?: string;
   end_time?: string;
-  status: "scheduled" | "finished" | "cancelled";
+  status: "scheduled" | "finished" | "cancelled" | string;
   consultation_type?: string;
   zoom_link?: string | null;
   created_at?: string;
+}
+
+export interface ClientUserPlan {
+  id: number;
+  plan_id?: number;
+  plan_title?: string;
+  plan_cover?: string | null;
+  plan_duration?: number;
+  current_day_index?: number;
+  progress_percent?: number;
+  status: "active" | "completed" | string;
+  free_consultations_used?: number;
+  purchased_at?: string;
+  plan?: {
+    id?: number;
+    title?: string;
+    cover_image_url?: string | null;
+    duration_days?: number;
+  };
 }
 
 export interface CommunityPost {
@@ -73,126 +203,133 @@ export interface CommunityPost {
   updated_at?: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Client Profile
-// ─────────────────────────────────────────────────────────────────────────────
+function unwrapList<T>(payload: ApiEnvelope<T[]> | T[] | { results?: T[] }): T[] {
+  const data = unwrapResponse(payload as ApiEnvelope<T[]> | T[] | { results?: T[] });
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object" && "results" in data && Array.isArray(data.results)) {
+    return data.results;
+  }
+  return [];
+}
+
+export function getIngredientName(ingredient: CalorieLogIngredient): string {
+  return ingredient.name || ingredient.label || "Ingredient";
+}
+
+export function formatDateParam(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export async function getClientProfile(): Promise<ClientProfile> {
-  const response = await api.get("/client/profile/");
-  return response.data;
+  const response = await api.get<ApiEnvelope<ClientProfile> | ClientProfile>("/client/profile/");
+  return unwrapResponse(response.data);
 }
 
-export async function patchClientProfile(payload: Partial<ClientProfile>): Promise<ClientProfile> {
-  const response = await api.patch("/client/profile/", payload);
-  return response.data;
+export async function patchClientProfile(payload: ClientProfilePatchPayload): Promise<ClientProfile> {
+  if (payload.profile_photo) {
+    const formData = new FormData();
+    if (payload.age !== undefined) formData.append("age", String(payload.age));
+    if (payload.weight !== undefined) formData.append("weight", String(payload.weight));
+    if (payload.height !== undefined) formData.append("height", String(payload.height));
+    if (payload.health_history !== undefined) formData.append("health_history", payload.health_history);
+    if (payload.goal_id !== undefined) formData.append("goal_id", String(payload.goal_id));
+    if (payload.country_id !== undefined) formData.append("country_id", String(payload.country_id));
+    if (payload.activity_level !== undefined && payload.activity_level !== null) formData.append("activity_level", payload.activity_level);
+    if (payload.diet !== undefined && payload.diet !== null) formData.append("diet", payload.diet);
+    formData.append("profile_photo", payload.profile_photo);
+
+    const response = await api.patch<ApiEnvelope<ClientProfile> | ClientProfile>("/client/profile/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return unwrapResponse(response.data);
+  }
+
+  const jsonPayload: Omit<ClientProfilePatchPayload, "profile_photo"> = {};
+  if (payload.age !== undefined) jsonPayload.age = payload.age;
+  if (payload.weight !== undefined) jsonPayload.weight = payload.weight;
+  if (payload.height !== undefined) jsonPayload.height = payload.height;
+  if (payload.health_history !== undefined) jsonPayload.health_history = payload.health_history;
+  if (payload.goal_id !== undefined) jsonPayload.goal_id = payload.goal_id;
+  if (payload.country_id !== undefined) jsonPayload.country_id = payload.country_id;
+  if (payload.activity_level !== undefined) jsonPayload.activity_level = payload.activity_level;
+  if (payload.diet !== undefined) jsonPayload.diet = payload.diet;
+
+  const response = await api.patch<ApiEnvelope<ClientProfile> | ClientProfile>("/client/profile/", jsonPayload);
+  return unwrapResponse(response.data);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Subscriptions
-// ─────────────────────────────────────────────────────────────────────────────
+export async function getClientSubscriptionStatus(): Promise<ClientSubscriptionStatus> {
+  const response = await api.get<ApiEnvelope<ClientSubscriptionStatus> | ClientSubscriptionStatus>(
+    "/lookup/client/subscriptions/",
+  );
+  return unwrapResponse(response.data);
+}
 
 export async function getClientSubscriptions(): Promise<ClientSubscription[]> {
-  const response = await api.get("/client/subscriptions/");
-  const data = response.data;
-  return Array.isArray(data) ? data : data.results || [];
+  const status = await getClientSubscriptionStatus();
+  return status.subscription ? [status.subscription] : [];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Calorie Tracker - Manual
-// ─────────────────────────────────────────────────────────────────────────────
-
-export async function getCalorieLogs(date: string): Promise<CalorieLog[]> {
-  const response = await api.get("/client/calorie-tracker/logs/", {
-    params: { date },
+export async function getCalorieLogs(date: string, entryType?: "ai_vision" | "manual_input"): Promise<CalorieLog[]> {
+  const response = await api.get<ApiEnvelope<CalorieLog[]> | CalorieLog[]>("/client/calorie-tracker/logs/", {
+    params: { date, ...(entryType ? { entry_type: entryType } : {}) },
   });
-  const data = response.data;
-  return Array.isArray(data) ? data : data.results || [];
+  return unwrapList(response.data);
 }
 
-export interface ManualCalorieLogPayload {
-  date: string;
-  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
-  food_items: string;
+export async function postManualCalorieLog(payload: ManualCalorieLogPayload): Promise<ManualCalorieLogResult> {
+  const response = await api.post<ApiEnvelope<ManualCalorieLogResult> | ManualCalorieLogResult>(
+    "/client/calorie-tracker/manual/",
+    payload,
+  );
+  return unwrapResponse(response.data);
 }
 
-export async function postManualCalorieLog(payload: ManualCalorieLogPayload): Promise<CalorieLog> {
-  const response = await api.post("/client/calorie-tracker/manual/", payload);
-  return response.data;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Calorie Tracker - AI (Premium)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface AICalorieLogPayload {
-  date: string;
-  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
-  image: File;
-}
-
-export interface AICalorieLog {
-  id: number;
-  date: string;
-  meal_type: string;
-  status: "pending_processing" | "pending_user_review" | "confirmed" | "rejected";
-  segmented_image_url?: string;
-  detected_foods?: Array<{
-    name: string;
-    mass: number;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  }>;
-  created_at: string;
-}
-
-export async function postAICalorieLog(payload: AICalorieLogPayload): Promise<AICalorieLog> {
+export async function postAICalorieLog(payload: AICalorieSubmitPayload): Promise<AICalorieLog> {
   const formData = new FormData();
-  formData.append("date", payload.date);
   formData.append("meal_type", payload.meal_type);
   formData.append("image", payload.image);
 
-  const response = await api.post("/client/calorie-tracker/ai/", formData, {
+  const response = await api.post<ApiEnvelope<AICalorieLog> | AICalorieLog>("/client/calorie-tracker/ai/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return response.data;
+  return unwrapResponse(response.data);
 }
 
 export async function getAICalorieLog(logId: number): Promise<AICalorieLog> {
-  const response = await api.get(`/client/calorie-tracker/ai/${logId}/`);
-  return response.data;
+  const response = await api.get<ApiEnvelope<AICalorieLog> | AICalorieLog>(`/client/calorie-tracker/ai/${logId}/`);
+  return unwrapResponse(response.data);
 }
 
-export async function confirmAICalorieLog(logId: number): Promise<void> {
-  await api.patch(`/client/calorie-tracker/ai/${logId}/confirm/`);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Progress (Daily summary)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface ProgressResponse {
-  summary: ClientProgress[];
+export async function confirmAICalorieLog(
+  logId: number,
+  payload: AICalorieConfirmPayload,
+): Promise<AICalorieConfirmResult> {
+  const response = await api.patch<ApiEnvelope<AICalorieConfirmResult> | AICalorieConfirmResult>(
+    `/client/calorie-tracker/ai/${logId}/confirm/`,
+    payload,
+  );
+  return unwrapResponse(response.data);
 }
 
 export async function getClientProgress(startDate: string, endDate: string): Promise<ClientProgress[]> {
-  const response = await api.get("/client/progress/", {
+  const response = await api.get<ApiEnvelope<ClientProgress[]> | ClientProgress[]>("/client/progress/", {
     params: { start_date: startDate, end_date: endDate },
   });
-  const data = response.data;
-  if (data.summary) return data.summary;
-  return Array.isArray(data) ? data : [];
+  return unwrapList(response.data);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Consultations
-// ─────────────────────────────────────────────────────────────────────────────
-
 export async function getClientConsultations(): Promise<ClientConsultation[]> {
-  const response = await api.get("/client/consultations/");
-  const data = response.data;
-  return Array.isArray(data) ? data : data.results || [];
+  const response = await api.get<ApiEnvelope<ClientConsultation[]> | ClientConsultation[]>("/client/consultations/");
+  return unwrapList(response.data);
+}
+
+export async function getClientUserPlans(): Promise<ClientUserPlan[]> {
+  const response = await api.get<ApiEnvelope<ClientUserPlan[]> | ClientUserPlan[]>("/client/user-plans/");
+  return unwrapList(response.data);
 }
 
 export interface BookConsultationPayload {
@@ -203,27 +340,26 @@ export interface BookConsultationPayload {
 }
 
 export async function postBookConsultation(payload: BookConsultationPayload): Promise<ClientConsultation> {
-  const response = await api.post("/client/consultations/book/", payload);
-  return response.data;
+  const response = await api.post<ApiEnvelope<ClientConsultation> | ClientConsultation>(
+    "/client/consultations/book/",
+    payload,
+  );
+  return unwrapResponse(response.data);
 }
 
-export async function getNutritionistAvailability(nutritionistId: number, date: string): Promise<any> {
+export async function getNutritionistAvailability(nutritionistId: number, date: string): Promise<unknown> {
   const response = await api.get(`/marketplace/nutritionists/${nutritionistId}/availability/`, {
     params: { date },
   });
-  return response.data;
+  return unwrapResponse(response.data);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Community Posts
-// ─────────────────────────────────────────────────────────────────────────────
-
 export async function getCommunityPosts(page?: number): Promise<CommunityPost[]> {
-  const response = await api.get("/posts/", {
-    params: page ? { page } : undefined,
-  });
-  const data = response.data;
-  return Array.isArray(data) ? data : data.results || [];
+  const response = await api.get<ApiEnvelope<CommunityPost[]> | CommunityPost[] | { results?: CommunityPost[] }>(
+    "/posts/",
+    { params: page ? { page } : undefined },
+  );
+  return unwrapList(response.data);
 }
 
 export interface CreatePostPayload {
@@ -233,16 +369,16 @@ export interface CreatePostPayload {
 }
 
 export async function postCreateCommunityPost(payload: CreatePostPayload): Promise<CommunityPost> {
-  const response = await api.post("/client/posts/", payload);
-  return response.data;
+  const response = await api.post<ApiEnvelope<CommunityPost> | CommunityPost>("/client/posts/", payload);
+  return unwrapResponse(response.data);
 }
 
 export async function getClientOwnPosts(page?: number): Promise<CommunityPost[]> {
-  const response = await api.get("/client/posts/mine/", {
-    params: page ? { page } : undefined,
-  });
-  const data = response.data;
-  return Array.isArray(data) ? data : data.results || [];
+  const response = await api.get<ApiEnvelope<CommunityPost[]> | CommunityPost[] | { results?: CommunityPost[] }>(
+    "/client/posts/mine/",
+    { params: page ? { page } : undefined },
+  );
+  return unwrapList(response.data);
 }
 
 export async function deleteClientPost(postId: number): Promise<void> {

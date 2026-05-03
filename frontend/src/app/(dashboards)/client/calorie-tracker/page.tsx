@@ -1,319 +1,584 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import api from "@/lib/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
+import imageCompression from "browser-image-compression";
+import { isAxiosError } from "axios";
+import {
+  ArrowUpRight,
+  Camera,
+  Clock,
+  Crown,
+  History,
+  Image as ImageIcon,
+  Loader2,
+  Plus,
+  Salad,
+  Send,
+  Sparkles,
+  Target,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Camera, Plus, Loader2, Salad, Image as ImageIcon, Send, Target, Clock, History, X, Crown, ArrowUpRight, Sparkles } from "lucide-react";
-import imageCompression from 'browser-image-compression';
+import { resolveApiUrl } from "@/lib/api";
+import {
+  AICalorieLog,
+  AIPrediction,
+  CalorieLog,
+  MEAL_TYPES,
+  MealType,
+  formatDateParam,
+  getAICalorieLog,
+  getCalorieLogs,
+  getClientProgress,
+  getClientSubscriptionStatus,
+  getIngredientName,
+  postAICalorieLog,
+  postManualCalorieLog,
+  confirmAICalorieLog,
+} from "@/lib/client";
 
 interface EditablePrediction {
   id: string;
   label: string;
-  mass_grams: number | string;
-  calories: number;
+  mass_grams: string;
+  calories?: number;
+}
+
+const MEAL_LABELS: Record<MealType, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function getToday(): string {
+  return formatDateParam(new Date());
+}
+
+function extractPredictions(log: AICalorieLog): AIPrediction[] {
+  if (Array.isArray(log.predictions)) return log.predictions;
+  if (Array.isArray(log.ai_raw_prediction)) return log.ai_raw_prediction;
+  if (log.ai_raw_prediction && Array.isArray(log.ai_raw_prediction.predictions)) {
+    return log.ai_raw_prediction.predictions;
+  }
+  return [];
+}
+
+function predictionLabel(prediction: AIPrediction): string {
+  return prediction.label || prediction.name || prediction.class || "Food item";
+}
+
+function predictionMass(prediction: AIPrediction): number {
+  return prediction.mass_grams ?? prediction.mass ?? 100;
+}
+
+function errorCode(error: unknown): string | undefined {
+  if (!isAxiosError(error)) return undefined;
+  const data = error.response?.data;
+  return typeof data === "object" && data !== null && "code" in data ? String(data.code) : undefined;
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (!isAxiosError(error)) return fallback;
+  const data = error.response?.data;
+  if (typeof data === "object" && data !== null && "message" in data) {
+    return String(data.message);
+  }
+  return fallback;
+}
+
+function mealSummary(logs: CalorieLog[], mealType: MealType): CalorieLog[] {
+  return logs.filter((log) => log.meal_type === mealType && log.status === "saved");
 }
 
 export default function CalorieTrackerPage() {
   const [activeTab, setActiveTab] = useState<"ai" | "manual">("manual");
   const [isPremium, setIsPremium] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [todayLogs, setTodayLogs] = useState<CalorieLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+  const [dailyTarget, setDailyTarget] = useState<number | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [aiPreview, setAiPreview] = useState<string | null>(null);
+  const [segmentedImageUrl, setSegmentedImageUrl] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<any | null>(null);
+  const [aiStatusText, setAiStatusText] = useState<string | null>(null);
+  const [aiLogId, setAiLogId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableItems, setEditableItems] = useState<EditablePrediction[]>([]);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-  const [recalcTimeout, setRecalcTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [mealType, setMealType] = useState("lunch");
+  const [confirmingAi, setConfirmingAi] = useState(false);
+
+  const [mealType, setMealType] = useState<MealType>("lunch");
   const [ingredientName, setIngredientName] = useState("");
   const [ingredientMass, setIngredientMass] = useState("");
-  const [ingredients, setIngredients] = useState<{name: string, mass_grams: number}[]>([]);
+  const [ingredients, setIngredients] = useState<{ name: string; mass_grams: number }[]>([]);
   const [manualSubmitting, setManualSubmitting] = useState(false);
 
-  useEffect(() => {
-    const checkPremium = async () => {
-      try {
-        const subs = await api.get("/client/subscriptions/");
-        const data = Array.isArray(subs.data) ? subs.data : subs.data.results || [];
-        const activePremium = data.some((s: any) => s.status === "active" && s.is_premium);
-        setIsPremium(activePremium);
-      } catch (err) {
-        console.error("Failed to fetch subscriptions:", err);
-      }
-    };
-    checkPremium();
+  const loadToday = useCallback(async () => {
+    const today = getToday();
+    setLogsLoading(true);
+    try {
+      const [logs, progress] = await Promise.all([
+        getCalorieLogs(today),
+        getClientProgress(today, today).catch(() => []),
+      ]);
+      setTodayLogs(logs);
+      const todayProgress = progress.find((entry) => entry.log_date === today);
+      setDailyTarget(todayProgress?.target_calories ?? null);
+    } catch (loadError) {
+      console.error("Failed to load calorie logs", loadError);
+      setError("Could not load today's calorie log.");
+    } finally {
+      setLogsLoading(false);
+    }
   }, []);
 
-  const handleAiUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      let file = e.target.files[0];
+  useEffect(() => {
+    let isMounted = true;
 
-      if (file.size > 10 * 1024 * 1024) {
-        alert("Image must be under 10MB.");
-        e.target.value = "";
-        return;
-      }
-
+    const loadSubscription = async () => {
       try {
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        file = await imageCompression(file, options);
-      } catch (error) {
-        console.error("Image compression error:", error);
+        const status = await getClientSubscriptionStatus();
+        if (isMounted) setIsPremium(status.is_premium);
+      } catch (subscriptionError) {
+        console.error("Failed to fetch subscription status", subscriptionError);
+        if (isMounted) setIsPremium(false);
+      } finally {
+        if (isMounted) setSubscriptionLoading(false);
       }
+    };
 
-      setAiFile(file);
-      setAiPreview(URL.createObjectURL(file));
-      setAiResult(null);
+    void loadSubscription();
+    void loadToday();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadToday]);
+
+  useEffect(() => {
+    return () => {
+      if (aiPreview) URL.revokeObjectURL(aiPreview);
+    };
+  }, [aiPreview]);
+
+  const totalToday = useMemo(
+    () => todayLogs.reduce((sum, log) => sum + (log.status === "saved" ? log.total_calories ?? 0 : 0), 0),
+    [todayLogs],
+  );
+
+  const handleAiUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError("Image must be under 10MB.");
+      event.target.value = "";
+      return;
     }
+
+    try {
+      const compressedFile = await imageCompression(selectedFile, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      });
+      if (aiPreview) URL.revokeObjectURL(aiPreview);
+      setAiFile(compressedFile);
+      setAiPreview(URL.createObjectURL(compressedFile));
+      setSegmentedImageUrl(null);
+      setError(null);
+      setMessage(null);
+    } catch (compressionError) {
+      console.error("Image compression error", compressionError);
+      setAiFile(selectedFile);
+      setAiPreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const openReviewModal = (log: AICalorieLog) => {
+    const predictions = extractPredictions(log);
+    setAiLogId(log.log_id);
+    setSegmentedImageUrl(resolveApiUrl(log.segmented_image_url) ?? null);
+    setEditableItems(
+      predictions.map((prediction, index) => ({
+        id: `${log.log_id}-${index}`,
+        label: predictionLabel(prediction),
+        mass_grams: String(predictionMass(prediction)),
+        calories: prediction.calories,
+      })),
+    );
+    setIsModalOpen(true);
   };
 
   const submitAiAnalysis = async () => {
     if (!aiFile) return;
+
     setAiLoading(true);
+    setAiStatusText("AI is analyzing your meal...");
+    setError(null);
+    setMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append("date", new Date().toISOString().split("T")[0]);
-      formData.append("meal_type", mealType);
-      formData.append("image", aiFile);
+      let log = await postAICalorieLog({ meal_type: mealType, image: aiFile });
 
-      const response = await api.post("/client/calorie-tracker/ai/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      for (let attempt = 0; attempt < 30 && log.status === "processing"; attempt += 1) {
+        setAiStatusText("AI is still analyzing your meal...");
+        await delay(3000);
+        log = await getAICalorieLog(log.log_id);
+      }
 
-      const prediction = response.data.detected_foods || [];
-      const formattedItems = prediction.map((p: any, idx: number) => ({
-        id: `opt-${idx}`,
-        label: p.name,
-        mass_grams: p.mass || 100,
-        calories: p.calories || 100
-      }));
-
-      setAiResult(response.data);
-      setEditableItems(formattedItems.length ? formattedItems : [
-          { id: "opt-1", label: "Chicken Breast", mass_grams: 150, calories: 247 },
-          { id: "opt-2", label: "Broccoli", mass_grams: 80, calories: 44 },
-          { id: "opt-3", label: "White Rice", mass_grams: 100, calories: 130 }
-      ]);
-      setIsModalOpen(true);
-    } catch (error: any) {
-      console.error("AI Analysis failed:", error);
-      if (error.response?.status === 403 && error.response?.data?.code === "NOT_PREMIUM") {
-        setIsPremium(false);
-        alert("This feature requires a premium subscription.");
+      if (log.status === "pending_user_review") {
+        openReviewModal(log);
+      } else if (log.status === "failed") {
+        setError("AI analysis failed. Please try another image or use manual entry.");
+      } else if (log.status === "processing") {
+        setError("AI analysis is taking longer than expected. Please try again shortly.");
       } else {
-        alert("Failed to analyze image. Please try again.");
+        setError("AI returned an unexpected status. Please try again.");
+      }
+    } catch (submitError) {
+      console.error("AI analysis failed", submitError);
+      if (isAxiosError(submitError) && submitError.response?.status === 403) {
+        setIsPremium(false);
+        setError(
+          errorCode(submitError) === "NOT_PREMIUM"
+            ? "This feature requires a premium subscription."
+            : "This feature is only available to premium clients.",
+        );
+      } else {
+        setError(errorMessage(submitError, "Failed to analyze image. Please try again."));
       }
     } finally {
       setAiLoading(false);
+      setAiStatusText(null);
     }
   };
 
-  const simulateBackendRecalculation = (newItems: EditablePrediction[]) => {
-    setIsRecalculating(true);
-    if (recalcTimeout) clearTimeout(recalcTimeout);
-    const timeout = setTimeout(() => {
-      const recalculated = newItems.map(item => {
-        const mass = Number(item.mass_grams) || 0;
-        let cals = 0;
-        const name = item.label.toLowerCase();
-        if (name.includes("chicken")) cals = mass * 1.65;
-        else if (name.includes("broccoli")) cals = mass * 0.55;
-        else if (name.includes("rice")) cals = mass * 1.30;
-        else if (name.includes("egg")) cals = mass * 1.43;
-        else if (name.includes("avocado")) cals = mass * 1.60;
-        else if (name.includes("beef")) cals = mass * 2.50;
-        else if (name.includes("salmon")) cals = mass * 2.08;
-        else if (name.includes("potato")) cals = mass * 0.86;
-        else cals = mass * 1.0;
-        return { ...item, calories: Math.round(cals) };
-      });
-      setEditableItems(recalculated);
-      setIsRecalculating(false);
-    }, 800);
-    setRecalcTimeout(timeout);
-  };
-
-  const handleItemChange = (id: string, field: keyof EditablePrediction, value: string) => {
-    const newItems = editableItems.map(item => item.id === id ? { ...item, [field]: value } : item);
-    setEditableItems(newItems);
-    simulateBackendRecalculation(newItems);
+  const handleItemChange = (id: string, field: "label" | "mass_grams", value: string) => {
+    setEditableItems((items) => items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
   const handleAddItem = () => {
-    const newItem: EditablePrediction = { id: `opt-${Date.now()}`, label: "New Ingredient", mass_grams: 100, calories: 100 };
-    const newItems = [...editableItems, newItem];
-    setEditableItems(newItems);
-    simulateBackendRecalculation(newItems);
+    setEditableItems((items) => [
+      ...items,
+      { id: `manual-${Date.now()}`, label: "New ingredient", mass_grams: "100" },
+    ]);
   };
 
   const handleRemoveItem = (id: string) => {
-    const newItems = editableItems.filter(item => item.id !== id);
-    setEditableItems(newItems);
-    simulateBackendRecalculation(newItems);
+    setEditableItems((items) => items.filter((item) => item.id !== id));
   };
 
-  const handleSaveMeal = () => {
-    setIsModalOpen(false);
-    alert("Meal correctly saved to tracker!");
-    setAiResult(null); setAiFile(null); setAiPreview(null);
+  const handleSaveMeal = async () => {
+    if (!aiLogId) return;
+
+    const userFinalLog = editableItems
+      .map((item) => ({
+        label: item.label.trim(),
+        mass_grams: Number(item.mass_grams),
+      }))
+      .filter((item) => item.label && Number.isFinite(item.mass_grams) && item.mass_grams > 0);
+
+    if (userFinalLog.length === 0) {
+      setError("Please keep at least one valid ingredient before saving.");
+      return;
+    }
+
+    setConfirmingAi(true);
+    setError(null);
+    try {
+      await confirmAICalorieLog(aiLogId, { meal_type: mealType, user_final_log: userFinalLog });
+      setIsModalOpen(false);
+      setAiLogId(null);
+      setAiFile(null);
+      setAiPreview(null);
+      setSegmentedImageUrl(null);
+      setEditableItems([]);
+      setMessage("Meal saved to your tracker.");
+      await loadToday();
+    } catch (confirmError) {
+      console.error("Failed to confirm AI meal", confirmError);
+      setError(errorMessage(confirmError, "Could not save the AI meal. Please review the ingredients and try again."));
+    } finally {
+      setConfirmingAi(false);
+    }
   };
 
   const addManualIngredient = () => {
-    if (!ingredientName || !ingredientMass) return;
-    setIngredients([...ingredients, { name: ingredientName, mass_grams: Number(ingredientMass) }]);
-    setIngredientName(""); setIngredientMass("");
+    const mass = Number(ingredientMass);
+    if (!ingredientName.trim() || !Number.isFinite(mass) || mass <= 0) {
+      setError("Enter an ingredient name and a mass greater than 0g.");
+      return;
+    }
+
+    setIngredients((items) => [...items, { name: ingredientName.trim(), mass_grams: mass }]);
+    setIngredientName("");
+    setIngredientMass("");
+    setError(null);
   };
 
-  const submitManualLog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (ingredients.length === 0) { alert("Please add at least one ingredient"); return; }
+  const removeManualIngredient = (indexToRemove: number) => {
+    setIngredients((items) => items.filter((_, index) => index !== indexToRemove));
+  };
+
+  const submitManualLog = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (ingredients.length === 0) {
+      setError("Please add at least one ingredient.");
+      return;
+    }
+
     setManualSubmitting(true);
+    setError(null);
+    setMessage(null);
     try {
-      await api.post("/client/calorie-tracker/manual/", { meal_type: mealType, ingredients });
-      alert("Meal logged successfully!"); setIngredients([]);
-    } catch (err) {
-      console.error("Failed to log manual meal", err);
-      alert("Meal manually logged (Mock)!"); setIngredients([]);
-    } finally { setManualSubmitting(false); }
+      await postManualCalorieLog({ meal_type: mealType, ingredients });
+      setIngredients([]);
+      setMessage("Meal logged successfully.");
+      await loadToday();
+    } catch (submitError) {
+      console.error("Failed to log manual meal", submitError);
+      setError(errorMessage(submitError, "Could not log this meal. Please try again."));
+    } finally {
+      setManualSubmitting(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* AI Estimations Editing Modal */}
+    <div className="mx-auto max-w-4xl space-y-6">
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-6 border-b border-border shrink-0">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary" /> Confirm Meal Details
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-border p-6">
+              <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
+                <Target className="h-5 w-5 text-primary" />
+                Confirm Meal Details
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                 <X className="w-6 h-6" />
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Close review"
+              >
+                <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1 bg-background custom-scrollbar">
-               <div className="space-y-4">
-                 <div className="flex justify-between items-center px-1">
-                   <p className="text-sm font-medium text-muted-foreground">Review AI Estimates. You can edit ingredients or portions below.</p>
-                   {isRecalculating && <span className="text-xs text-primary flex items-center gap-1.5 font-semibold bg-primary/10 px-2 py-1 rounded-full"><Loader2 className="w-3 h-3 animate-spin"/> Recalculating...</span>}
-                 </div>
-                 {editableItems.map(item => (
-                   <div key={item.id} className="flex flex-wrap md:flex-nowrap gap-4 items-start md:items-center bg-card p-4 rounded-xl border border-border shadow-sm transition-all hover:border-primary/30">
-                     <div className="flex-1 min-w-[200px]">
-                       <label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1.5 block">Food Type</label>
-                       <Input value={item.label} onChange={(e) => handleItemChange(item.id, 'label', e.target.value)} className="bg-background border-border font-medium" />
-                     </div>
-                     <div className="w-28">
-                       <label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1.5 block">Mass (g)</label>
-                       <Input type="number" min="0" value={item.mass_grams} onChange={(e) => handleItemChange(item.id, 'mass_grams', e.target.value)} className="bg-background border-border" />
-                     </div>
-                     <div className="w-24 text-right pt-6 shrink-0">
-                       <span className={`font-bold text-lg text-foreground ${isRecalculating ? 'opacity-40' : 'opacity-100'} transition-opacity`}>{item.calories} <span className="text-xs font-normal text-muted-foreground">kcal</span></span>
-                     </div>
-                     <button onClick={() => handleRemoveItem(item.id)} className="pt-6 shrink-0 text-destructive hover:text-destructive/80 p-2 transition-colors" title="Remove Ingredient">
-                       <X className="w-5 h-5 mx-auto" />
-                     </button>
-                   </div>
-                 ))}
-                 <Button onClick={handleAddItem} variant="outline" className="w-full border-dashed border-2 py-6 transition-all">
-                   <Plus className="w-4 h-4 mr-2" /> Add Extra Ingredient
-                 </Button>
-               </div>
+
+            <div className="flex-1 space-y-5 overflow-y-auto bg-background p-6">
+              {segmentedImageUrl && (
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={segmentedImageUrl} alt="AI segmented meal" className="max-h-72 w-full object-contain" />
+                </div>
+              )}
+
+              <p className="text-sm font-medium text-muted-foreground">
+                Review the AI estimates before saving. The server recalculates nutrition from your final ingredient list.
+              </p>
+
+              {editableItems.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                  No AI items were returned. Add ingredients manually before saving.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {editableItems.map((item) => (
+                    <div key={item.id} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4">
+                      <div className="min-w-[200px] flex-1">
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Food Type
+                        </label>
+                        <Input value={item.label} onChange={(event) => handleItemChange(item.id, "label", event.target.value)} />
+                      </div>
+                      <div className="w-32">
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Mass (g)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.mass_grams}
+                          onChange={(event) => handleItemChange(item.id, "mass_grams", event.target.value)}
+                        />
+                      </div>
+                      {item.calories !== undefined && (
+                        <div className="pb-2 text-right text-sm font-semibold text-foreground">{item.calories} kcal</div>
+                      )}
+                      <Button type="button" variant="ghost" onClick={() => handleRemoveItem(item.id)} className="px-3">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button type="button" onClick={handleAddItem} variant="outline" className="w-full border-dashed py-6">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Ingredient
+              </Button>
             </div>
-            <div className="p-6 border-t border-border bg-card flex items-center justify-between shrink-0">
-               <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Total Estimation</p>
-                  <p className={`text-3xl font-extrabold text-primary flex justify-start items-center gap-2 ${isRecalculating ? 'opacity-40 scale-95' : 'opacity-100 scale-100'} transition-all duration-300`}>
-                    {editableItems.reduce((a, b) => a + b.calories, 0)} <span className="text-sm font-medium text-primary/70">kcal</span>
-                  </p>
-               </div>
-               <div className="flex items-center gap-3">
-                 <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                 <Button onClick={handleSaveMeal} disabled={isRecalculating} className="shadow-md px-6">
-                   {isRecalculating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                   Save Meal to Tracker
-                 </Button>
-               </div>
+
+            <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-card p-6">
+              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={confirmingAi}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSaveMeal} disabled={confirmingAi}>
+                {confirmingAi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                Save Meal to Tracker
+              </Button>
             </div>
           </div>
         </div>
       )}
 
       <div>
-        <h1 className="text-3xl font-bold text-foreground tracking-tight">Calorie Tracker</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Calorie Tracker</h1>
         <p className="text-muted-foreground">Log your meals manually or use premium AI tracking.</p>
       </div>
 
-      <div className="flex bg-card p-1 rounded-xl w-fit border border-border">
-        <button onClick={() => setActiveTab("manual")} className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "manual" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <Salad className="w-4 h-4" /> Manual Entry
+      {(message || error) && (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            error ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-primary/30 bg-primary/10 text-primary"
+          }`}
+        >
+          {error ?? message}
+        </div>
+      )}
+
+      <div className="flex w-fit rounded-xl border border-border bg-card p-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("manual")}
+          className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === "manual" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Salad className="h-4 w-4" /> Manual Entry
         </button>
-        <button onClick={() => setActiveTab("ai")} className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "ai" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <Camera className="w-4 h-4" /> AI Tracking (Premium)
+        <button
+          type="button"
+          onClick={() => setActiveTab("ai")}
+          className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === "ai" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Camera className="h-4 w-4" /> AI Tracking
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Today's Log */}
-        <div className="space-y-6 order-2 lg:order-1">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="order-2 space-y-6 lg:order-1">
           <Card className="shadow-sm">
-            <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg text-card-foreground flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" /> Today's Log
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg text-card-foreground">
+                <Clock className="h-5 w-5 text-primary" />
+                Today&apos;s Log
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="space-y-4">
-                <div className="flex justify-between items-start border-b border-border pb-3">
-                  <div><h4 className="font-semibold text-sm text-foreground">Breakfast</h4><p className="text-xs text-muted-foreground mt-0.5">Avocado Toast, Egg</p></div>
-                  <span className="text-sm font-bold text-primary bg-accent px-2 py-0.5 rounded">450 kcal</span>
+              {logsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-                <div className="flex justify-between items-start border-b border-border pb-3">
-                  <div><h4 className="font-semibold text-sm text-foreground">Lunch</h4><p className="text-xs text-muted-foreground mt-0.5">Grilled Chicken Salad</p></div>
-                  <span className="text-sm font-bold text-primary bg-accent px-2 py-0.5 rounded">520 kcal</span>
+              ) : (
+                <div className="space-y-4">
+                  {MEAL_TYPES.map((type) => {
+                    const logs = mealSummary(todayLogs, type);
+                    const calories = logs.reduce((sum, log) => sum + (log.total_calories ?? 0), 0);
+                    return (
+                      <div key={type} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                        <div className="mb-1 flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground">{MEAL_LABELS[type]}</h4>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {logs.length > 0
+                                ? logs
+                                    .flatMap((log) => log.user_final_log ?? [])
+                                    .map(getIngredientName)
+                                    .join(", ")
+                                : `No ${MEAL_LABELS[type].toLowerCase()} logged`}
+                            </p>
+                          </div>
+                          {logs.length > 0 && (
+                            <span className="rounded bg-accent px-2 py-0.5 text-sm font-bold text-primary">
+                              {calories.toFixed(0)} kcal
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-between pt-2 text-sm">
+                    <span className="font-medium text-muted-foreground">Total Today</span>
+                    <span className="font-bold text-foreground">
+                      {totalToday.toFixed(0)}
+                      {dailyTarget ? (
+                        <span className="text-xs font-normal text-muted-foreground"> / {dailyTarget.toFixed(0)} kcal</span>
+                      ) : (
+                        <span className="text-xs font-normal text-muted-foreground"> kcal</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <div className="pt-2 flex justify-between items-center text-sm">
-                  <span className="font-medium text-muted-foreground">Total Today</span>
-                  <span className="font-bold text-foreground">970 <span className="text-muted-foreground text-xs font-normal">/ 2000 kcal</span></span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
-          <Button variant="outline" asChild className="w-full flex items-center justify-center py-6 gap-2 shadow-sm">
-            <Link href="/client/calorie-tracker/history"><History className="w-5 h-5" /> View Full History</Link>
+
+          <Button variant="outline" asChild className="flex w-full items-center justify-center gap-2 py-6 shadow-sm">
+            <Link href="/client/calorie-tracker/history">
+              <History className="h-5 w-5" /> View Full History
+            </Link>
           </Button>
         </div>
 
-        {/* Tracker Forms */}
-        <Card className="lg:col-span-2 order-1 lg:order-2">
+        <Card className="order-1 lg:order-2 lg:col-span-2">
           {activeTab === "ai" ? (
             <>
-              {!isPremium ? (
+              {subscriptionLoading ? (
+                <CardContent className="flex justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </CardContent>
+              ) : !isPremium ? (
                 <>
                   <CardHeader>
-                    <CardTitle className="text-card-foreground flex items-center gap-2"><Crown className="w-5 h-5 text-amber-500" /> AI Vision Tracker</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-card-foreground">
+                      <Crown className="h-5 w-5 text-amber-500" /> AI Vision Tracker
+                    </CardTitle>
                     <CardDescription>This feature requires a premium subscription.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
+                    <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
                       <div className="relative">
-                        <div className="bg-amber-500/10 w-20 h-20 rounded-2xl flex items-center justify-center"><Sparkles className="w-10 h-10 text-amber-500" /></div>
-                        <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Premium</div>
+                        <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-amber-500/10">
+                          <Sparkles className="h-10 w-10 text-amber-500" />
+                        </div>
+                        <div className="absolute -right-1 -top-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                          Premium
+                        </div>
                       </div>
-                      <div className="space-y-2 max-w-sm">
+                      <div className="max-w-sm space-y-2">
                         <h3 className="text-xl font-bold text-foreground">Unlock AI-Powered Tracking</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">Simply snap a photo of your meal and our AI will automatically identify ingredients, estimate portions, and calculate calories for you.</p>
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                          Snap a photo of your meal, review the detected ingredients, and save the corrected log.
+                        </p>
                       </div>
-                      <Button asChild className="px-8 py-6 rounded-xl shadow-sm text-base">
-                        <Link href="/client/subscription"><ArrowUpRight className="w-5 h-5 mr-2" /> Upgrade to Premium</Link>
+                      <Button asChild className="rounded-xl px-8 py-6 text-base shadow-sm">
+                        <Link href="/client/subscription">
+                          <ArrowUpRight className="mr-2 h-5 w-5" /> Upgrade to Premium
+                        </Link>
                       </Button>
                     </div>
                   </CardContent>
@@ -322,27 +587,46 @@ export default function CalorieTrackerPage() {
                 <>
                   <CardHeader>
                     <CardTitle className="text-card-foreground">AI Vision Tracker</CardTitle>
-                    <CardDescription>Upload a photo of your meal and our AI will automatically segment and extract components.</CardDescription>
+                    <CardDescription>Upload a photo and review AI results before saving to your tracker.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-col gap-6">
-                      <div className="flex-1 flex flex-col gap-4">
-                        <label className={`border-2 border-dashed ${aiPreview ? 'border-primary/50' : 'border-border'} rounded-2xl flex flex-col items-center justify-center h-72 overflow-hidden relative cursor-pointer hover:bg-accent transition-colors`}>
-                          {aiPreview ? (
-                            <><img src={aiPreview} alt="Meal preview" className="w-full h-full object-cover opacity-80" /><div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><span className="text-white font-medium bg-black/50 px-4 py-2 rounded-lg">Change Image</span></div></>
-                          ) : (
-                            <div className="text-center p-6 space-y-2">
-                              <div className="bg-primary/10 text-primary w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"><ImageIcon className="w-6 h-6" /></div>
-                              <p className="font-medium text-foreground">Click to upload a meal photo</p>
-                              <p className="text-sm text-muted-foreground">JPG or PNG, max 10MB</p>
+                    <div className="flex flex-col gap-4">
+                      <label
+                        className={`relative flex h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors hover:bg-accent ${
+                          aiPreview ? "border-primary/50" : "border-border"
+                        }`}
+                      >
+                        {aiPreview ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={aiPreview} alt="Meal preview" className="h-full w-full object-cover opacity-80" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                              <span className="rounded-lg bg-black/50 px-4 py-2 font-medium text-white">Change Image</span>
                             </div>
-                          )}
-                          <input type="file" accept="image/*" className="hidden" onChange={handleAiUpload} />
-                        </label>
-                        <Button onClick={submitAiAnalysis} disabled={!aiFile || aiLoading} className="w-full py-6 rounded-xl text-lg shadow-sm">
-                          {aiLoading ? (<><Loader2 className="w-5 h-5 mr-3 animate-spin" /> Analyzing meal with AI...</>) : (<><Camera className="w-5 h-5 mr-3" /> Analyze Image</>)}
-                        </Button>
-                      </div>
+                          </>
+                        ) : (
+                          <div className="space-y-2 p-6 text-center">
+                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                            <p className="font-medium text-foreground">Click to upload a meal photo</p>
+                            <p className="text-sm text-muted-foreground">JPG or PNG, max 10MB</p>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" className="hidden" onChange={handleAiUpload} />
+                      </label>
+                      <Button onClick={submitAiAnalysis} disabled={!aiFile || aiLoading} className="w-full rounded-xl py-6 text-lg shadow-sm">
+                        {aiLoading ? (
+                          <>
+                            <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                            {aiStatusText ?? "Analyzing meal with AI..."}
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="mr-3 h-5 w-5" /> Analyze Image
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </>
@@ -352,40 +636,68 @@ export default function CalorieTrackerPage() {
             <>
               <CardHeader>
                 <CardTitle className="text-card-foreground">Manual Entry</CardTitle>
-                <CardDescription>Search and log individual components of your meal.</CardDescription>
+                <CardDescription>Add each ingredient and let the server calculate nutrition.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={submitManualLog} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Meal Type</label>
-                    <select value={mealType} onChange={e => setMealType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-foreground">
-                      <option value="breakfast">Breakfast</option>
-                      <option value="lunch">Lunch</option>
-                      <option value="dinner">Dinner</option>
-                      <option value="snack">Snack</option>
+                    <select
+                      value={mealType}
+                      onChange={(event) => setMealType(event.target.value as MealType)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {MEAL_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {MEAL_LABELS[type]}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <div className="space-y-3 p-4 bg-background rounded-xl border border-border">
+
+                  <div className="space-y-3 rounded-xl border border-border bg-background p-4">
                     <label className="text-sm font-medium text-foreground">Add Ingredient</label>
                     <div className="flex gap-2">
-                      <Input placeholder="e.g. Avocado" value={ingredientName} onChange={e => setIngredientName(e.target.value)} className="flex-1" />
-                      <Input type="number" placeholder="Grams (g)" value={ingredientMass} onChange={e => setIngredientMass(e.target.value)} className="w-28" />
-                      <Button type="button" variant="secondary" onClick={addManualIngredient}><Plus className="w-4 h-4" /></Button>
+                      <Input
+                        placeholder="e.g. Avocado"
+                        value={ingredientName}
+                        onChange={(event) => setIngredientName(event.target.value)}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="Grams"
+                        value={ingredientMass}
+                        onChange={(event) => setIngredientMass(event.target.value)}
+                        className="w-28"
+                      />
+                      <Button type="button" variant="secondary" onClick={addManualIngredient} aria-label="Add ingredient">
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
+
                     {ingredients.length > 0 && (
                       <ul className="mt-4 space-y-2">
-                        {ingredients.map((ing, idx) => (
-                          <li key={idx} className="flex justify-between text-sm py-2 px-3 bg-card rounded-lg border border-border">
-                            <span className="font-medium text-foreground">{ing.name}</span>
-                            <span className="text-muted-foreground">{ing.mass_grams}g</span>
+                        {ingredients.map((ingredient, index) => (
+                          <li key={`${ingredient.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                            <span className="font-medium text-foreground">{ingredient.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">{ingredient.mass_grams}g</span>
+                              <Button type="button" variant="ghost" onClick={() => removeManualIngredient(index)} className="h-8 px-2">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
-                  <Button type="submit" disabled={manualSubmitting || ingredients.length === 0} className="w-full py-6 rounded-xl">
-                    {manualSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                    Log {mealType}
+
+                  <Button type="submit" disabled={manualSubmitting || ingredients.length === 0} className="w-full rounded-xl py-6">
+                    {manualSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Log {MEAL_LABELS[mealType]}
                   </Button>
                 </form>
               </CardContent>

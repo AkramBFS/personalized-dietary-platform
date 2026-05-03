@@ -1,12 +1,6 @@
-import api from "@/lib/api";
+import api, { ApiEnvelope, unwrapResponse } from "@/lib/api";
 
-const useBackendMocks = process.env.NEXT_PUBLIC_USE_BACKEND_MOCKS !== "false";
-
-interface ApiEnvelope<T> {
-  status: "success" | "error";
-  data: T;
-  message?: string;
-}
+const useBackendMocks = process.env.NEXT_PUBLIC_USE_BACKEND_MOCKS === "true";
 
 export interface NutritionistProfile {
   nutritionist_id: number;
@@ -334,13 +328,6 @@ const mockEarnings: NutritionistEarningsSummary = {
   ],
 };
 
-function unwrapResponse<T>(payload: ApiEnvelope<T> | T): T {
-  if (payload && typeof payload === "object" && "data" in payload) {
-    return (payload as ApiEnvelope<T>).data;
-  }
-  return payload as T;
-}
-
 function hasNetworkError(error: unknown): boolean {
   return error instanceof Error;
 }
@@ -571,4 +558,3 @@ export async function getNutritionistEarnings(): Promise<NutritionistEarningsSum
     throw error;
   }
 }
-

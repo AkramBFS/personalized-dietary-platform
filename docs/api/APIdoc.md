@@ -106,6 +106,7 @@ Diet string
 activity_level string sedentary, moderate, very active
 profile_photo file No Profile image upload (multipart) not required
 
+
 **Response --- 201 Created**
 
 **Field** **Type** **Description**
@@ -119,12 +120,31 @@ user.role string Always client
 tokens.access string JWT access token (60 min)
 tokens.refresh string JWT refresh token (7 days)
 client.client_id integer Client profile ID
-client.bmi float Calculated BMI (weight / height²)
-client.bmr float Calculated BMR using Mifflin-St Jeor formula
+client.bmi float Calculated BMI (weight / height²) -to be ignored / do nothing with this
+client.bmr float Calculated BMR using Mifflin-St Jeor formula -to be ignored / do nothing with this
 
-> **ℹ** _BMI and BMR are calculated server-side from the submitted
-> weight, height, age, and gender. Do not compute these on the
-> frontend._
+example:
+{
+    "status": "success",
+    "data": {
+        "user": {
+            "id": 15,
+            "username": "johndone",
+            "email": "johndone@example.com",
+            "role": "client"
+        },
+        "tokens": {
+            "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc3ODI1MzI4LCJpYXQiOjE3Nzc4MjE3MzAsImp0aSI6ImU2ODI0MjMxZGNkZTRjZTg5MzI0ZmU2NmI2OTcyNzgwIiwidXNlcl9pZCI6IjE1In0.ceG26Mt6ss--qpbbC5po9XlTCJmzCo7g2S7P1WBhZ1E",
+            "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3ODQyNjUyOCwiaWF0IjoxNzc3ODIxNzI4LCJqdGkiOiI2MGVkYzkxYjIzMmM0M2YyYTc4MTIyOWFhMWFhYjg2OCIsInVzZXJfaWQiOiIxNSJ9.Eua4pAHyB5qjG5tbjZ8K2YITeM12F3HeYV0ZVKrkNfo"
+        },
+        "client": {
+            "client_id": 9,
+            "bmi": 25.06,
+            "bmr": 1852.5
+        }
+    }
+}
+
 
 ## **2.2 Register --- Nutritionist**
 
@@ -288,6 +308,33 @@ name string Human-readable label
 
 **GET /client/profile/** --- Get authenticated client\'s full profile
 --- Client Auth
+response form example:
+{
+    "status": "success",
+    "data": {
+        "client_id": 4,
+        "username": "john",
+        "email": "john@example.com",
+        "age": 28,
+        "weight": 80.0,
+        "height": 180.0,
+        "gender": "male",
+        "bmi": 24.69,
+        "bmr": 1790.0,
+        "health_history": "none",
+        "profile_photo_url": "profiles/clients/10_tobias-reich-WtvfDmEqoNM-unsplash.jpg",
+        "goal_id": 2,
+        "goal_name": "Muscle Gain",
+        "country_id": 1,
+        "country_name": "Algeria",
+        "target_calories": null,
+        "target_protein": null,
+        "target_carbs": null,
+        "target_fats": null,
+        "activity_level": null,
+        "diet": null
+    }
+}
 
 **PATCH /client/profile/** --- Update client profile fields --- Client
 Auth
@@ -432,6 +479,29 @@ entries --- Client Auth
 date date No Specific date (YYYY-MM-DD). Default: today
 entry_type string No ai_vision or manual_input
 
+**Response --- 200 OK**
+
+Returns the saved calorie tracker entries for the requested date.
+
+**Field** **Type** **Description**
+
+---
+
+id integer Calorie log ID
+meal_type string breakfast, lunch, dinner, or snack
+entry_type string ai_vision or manual_input
+user_final_log array Final ingredient list saved for the log
+total_calories float Total calories for this log
+total_protein float Total protein in grams
+total_carbs float Total carbohydrates in grams
+total_fats float Total fats in grams
+status string processing, pending_user_review, saved, discarded, or failed
+logged_at timestamp When this log was created
+
+Manual tracker logs store `user_final_log` items as `{name, mass_grams}`.
+AI confirmation sends corrected items as `{label, mass_grams}` and saved
+AI logs may therefore expose labels in `user_final_log`.
+
 ## **4.5 My Meal Plans**
 
 **GET /client/user-plans/** --- List subscribed plans with progress ---
@@ -514,8 +584,16 @@ zoom_link string \| null null until nutritionist adds it before the call
 
 ## **4.7 Premium Subscriptions**
 
-**GET /client/subscriptions/** --- Get current subscription status ---
+**GET lookup/client/subscriptions/** --- Get current subscription status ---
 Client Auth
+reponse form:
+{
+    "status": "success",
+    "data": {
+        "is_premium": false,
+        "subscription": null
+    }
+}
 
 **POST /client/subscriptions/purchase/** --- Purchase premium
 subscription (simulated) --- Client Auth

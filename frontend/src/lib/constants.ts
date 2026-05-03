@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const MAX_PROFILE_PHOTO_BYTES = 10 * 1024 * 1024;
+export const MAX_PROFILE_PHOTO_MB = 10;
+
+const isFile = (value: unknown): value is File =>
+  typeof File !== "undefined" && value instanceof File;
+
 export const stepSchemas = [
   z.object({
     country: z.string().min(1, "Please select a country"),
@@ -50,7 +56,21 @@ export const stepSchemas = [
     firstName: z.string().min(1, "First name is required").min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(1, "Last name is required").min(2, "Last name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .refine((password) => !/^\d+$/.test(password), {
+        message: "Password cannot contain only numbers",
+      }),
+    profilePhoto: z
+      .custom<File | null | undefined>(
+        (value) => value == null || isFile(value),
+        "Profile photo must be an image file",
+      )
+      .refine((file) => !file || file.size <= MAX_PROFILE_PHOTO_BYTES, {
+        message: `Profile photo must be ${MAX_PROFILE_PHOTO_MB}MB or smaller`,
+      })
+      .optional(),
   }), // Step 9
   z.object({ agreedToTerms: z.literal(true) }),         // Step 10
 ];
