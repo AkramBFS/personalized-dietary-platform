@@ -13,6 +13,8 @@ import {
   getSpecializations,
   LookupItem,
 } from "@/lib/lookups";
+import GenericDropdown from "../ui/GenericDropdown";
+import { ThemeToggle } from "../ui/theme-toggle";
 
 type FormState = {
   username: string;
@@ -152,29 +154,7 @@ export default function NutritionistRegistrationForm() {
             Back to home
           </Link>
 
-          <button
-            type="button"
-            onClick={() =>
-              setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
-            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition shadow-sm ${
-              resolvedTheme === "dark"
-                ? "bg-white text-gray-900 border-gray-200 hover:bg-gray-100"
-                : "bg-[#1a2027] text-white border-gray-700 hover:bg-[#222a33]"
-            }`}
-          >
-            {resolvedTheme === "dark" ? (
-              <>
-                <Sun className="h-4 w-4 text-orange-500" />
-                Light mode
-              </>
-            ) : (
-              <>
-                <Moon className="h-4 w-4 text-blue-400" />
-                Dark mode
-              </>
-            )}
-          </button>
+          <ThemeToggle />
         </div>
 
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-[#2a3038] dark:bg-[#1a2027] md:p-8">
@@ -229,51 +209,37 @@ export default function NutritionistRegistrationForm() {
               <FieldError name="password" />
             </label>
 
-            <label className="block">
-              <span className="text-sm font-medium">Country</span>
-              <select
+            <div className="block">
+              <GenericDropdown
+                label="Country"
                 value={formData.country_id}
-                onChange={(e) =>
+                options={countries.map((c) => ({ label: c.name || "", value: String(c.id) }))}
+                onChange={(val) =>
                   setFormData((prev) => ({
                     ...prev,
-                    country_id: e.target.value,
+                    country_id: val,
                   }))
                 }
-                disabled={isLoadingLookups}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
-              >
-                <option value="">Select a country</option>
-                {Array.isArray(countries) && countries.map((country) => (
-                  <option key={country.id} value={country.id}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="Select a country"
+              />
               <FieldError name="country_id" />
-            </label>
+            </div>
 
-            <label className="block">
-              <span className="text-sm font-medium">Specialization</span>
-              <select
+            <div className="block">
+              <GenericDropdown
+                label="Specialization"
                 value={formData.specialization_id}
-                onChange={(e) =>
+                options={specializations.map((s) => ({ label: s.name || "", value: String(s.id) }))}
+                onChange={(val) =>
                   setFormData((prev) => ({
                     ...prev,
-                    specialization_id: e.target.value,
+                    specialization_id: val,
                   }))
                 }
-                disabled={isLoadingLookups}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
-              >
-                <option value="">Select a specialization</option>
-                {Array.isArray(specializations) && specializations.map((spec) => (
-                  <option key={spec.id} value={spec.id}>
-                    {spec.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="Select a specialization"
+              />
               <FieldError name="specialization_id" />
-            </label>
+            </div>
 
             <label className="block">
               <span className="text-sm font-medium">Years of experience</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +18,8 @@ import {
   PlanCategory,
   updateNutritionistPlan,
 } from "@/lib/nutritionist";
+import GenericDropdown from "@/components/ui/GenericDropdown";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function MarketplacePlansPage() {
   const [plans, setPlans] = useState<NutritionistPlan[]>([]);
@@ -25,6 +27,15 @@ export default function MarketplacePlansPage() {
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  const filteredPlans = useMemo(() => {
+    return plans.filter((plan) =>
+      plan.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      plan.description.toLowerCase().includes(debouncedSearch.toLowerCase())
+    );
+  }, [plans, debouncedSearch]);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -177,7 +188,13 @@ export default function MarketplacePlansPage() {
         <div className="flex items-center space-x-3">
           <div className="relative w-full md:w-64 hidden sm:block">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search plans..." className="pl-8 bg-background border-border" />
+            <Input
+              type="search"
+              placeholder="Search plans..."
+              className="pl-8 bg-background border-border"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <Button onClick={() => setIsDesigning(true)} className="shadow-sm whitespace-nowrap">
             <FileText className="w-4 h-4 mr-2" />
@@ -203,12 +220,12 @@ export default function MarketplacePlansPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {plans.length === 0 ? (
+            {filteredPlans.length === 0 ? (
               <TableRow>
-                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">You haven't created any marketplace plans yet.</TableCell>
+                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No plans found matching your search.</TableCell>
               </TableRow>
             ) : (
-              Array.isArray(plans) && plans.map((plan) => (
+              Array.isArray(filteredPlans) && filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-semibold text-foreground">{plan.title}</TableCell>
                   <TableCell className="capitalize">{plan.category}</TableCell>
@@ -304,16 +321,17 @@ export default function MarketplacePlansPage() {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Plan Category</Label>
-                  <Select value={planData.category} onValueChange={(value) => setPlanData({ ...planData, category: value as PlanCategory })}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="predefined">Predefined</SelectItem>
-                      <SelectItem value="personalized">Personalized</SelectItem>
-                      <SelectItem value="seasonal">Seasonal</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <GenericDropdown
+                    value={planData.category}
+                    onChange={(value) => setPlanData({ ...planData, category: value as PlanCategory })}
+                    options={[
+                      { label: "Predefined", value: "predefined" },
+                      { label: "Personalized", value: "personalized" },
+                      { label: "Seasonal", value: "seasonal" },
+                    ]}
+                    placeholder="Select a category"
+                    className="h-11 py-2 px-4"
+                  />
                 </div>
               </div>
 

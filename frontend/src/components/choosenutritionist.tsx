@@ -10,6 +10,45 @@ import {
   UtensilsCrossed,
   ChevronDown,
 } from "lucide-react";
+import GenericDropdown from "./ui/GenericDropdown";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useMemo } from "react";
+
+const NUTRITIONISTS = [
+  {
+    id: "101",
+    name: "Dr. Sarah Jenkins",
+    certs: "MS, RDN, CDCES",
+    tags: ["Hormonal Health", "PCOS"],
+    price: "$150/mo",
+    desc: "Evidence-based approach focusing on endocrine balance through sustainable dietary adjustments.",
+    specialty: "Hormonal Health",
+    focus: "Clinical",
+    language: "English",
+  },
+  {
+    id: "102",
+    name: "Michael Chen",
+    certs: "MPH, RDN",
+    tags: ["Weight Loss", "Sports Nutrition"],
+    price: "$130/mo",
+    desc: "Specializes in body composition changes through metabolic optimization and practical meal prep.",
+    specialty: "Weight Loss",
+    focus: "Holistic",
+    language: "English",
+  },
+  {
+    id: "103",
+    name: "Elena Rodriguez",
+    certs: "MS, RDN, CNSC",
+    tags: ["Gut Health", "Autoimmune"],
+    price: "$175/mo",
+    desc: "Integrative approach focusing on microbiome health and identifying food sensitivities.",
+    specialty: "Metabolic Disorders",
+    focus: "Clinical",
+    language: "Spanish",
+  },
+];
 
 export default function ChooseNutritionist() {
   // State for search and dropdown selections
@@ -21,27 +60,31 @@ export default function ChooseNutritionist() {
     availability: "",
   });
 
-  // State to track which dropdown is currently open
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const debouncedSearch = useDebounce(search, 300);
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const filteredNutritionists = useMemo(() => {
+    return NUTRITIONISTS.filter((nutri) => {
+      const matchesSearch =
+        nutri.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        nutri.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        nutri.tags.some((tag) =>
+          tag.toLowerCase().includes(debouncedSearch.toLowerCase()),
+        );
+
+      const matchesSpecialty =
+        !filters.specialty || nutri.specialty === filters.specialty;
+      const matchesFocus = !filters.focus || nutri.focus === filters.focus;
+      const matchesLanguage =
+        !filters.language || nutri.language === filters.language;
+
+      return (
+        matchesSearch && matchesSpecialty && matchesFocus && matchesLanguage
+      );
+    });
+  }, [debouncedSearch, filters]);
 
   const handleSelect = (field: string, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
-    setOpenDropdown(null);
   };
 
   // Reusable classes from your custom component
@@ -64,10 +107,7 @@ export default function ChooseNutritionist() {
   `;
 
   return (
-    <main
-      className="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full"
-      ref={containerRef}
-    >
+    <main className="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full">
       {/* Hero Section */}
       <section className="mb-20 max-w-3xl">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-primary mb-6">
@@ -121,191 +161,54 @@ export default function ChooseNutritionist() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Specialty Dropdown */}
-            <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-foreground ml-1">
-                Specialty
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "specialty" ? null : "specialty",
-                  )
-                }
-                className={selectClasses}
-              >
-                <span>{filters.specialty || "All Specialties"}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${openDropdown === "specialty" ? "rotate-180" : ""}`}
-                />
-              </button>
-              {openDropdown === "specialty" && (
-                <ul className={dropdownMenuClasses}>
-                  {[
-                    "All Specialties",
-                    "Hormonal Health",
-                    "Weight Loss",
-                    "Metabolic Disorders",
-                  ].map((opt) => (
-                    <li
-                      key={opt}
-                      onClick={() =>
-                        handleSelect(
-                          "specialty",
-                          opt === "All Specialties" ? "" : opt,
-                        )
-                      }
-                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                    >
-                      {opt}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <GenericDropdown
+              label="Specialty"
+              value={filters.specialty}
+              options={[
+                "All Specialties",
+                "Hormonal Health",
+                "Weight Loss",
+                "Metabolic Disorders",
+              ]}
+              onChange={(val) =>
+                handleSelect("specialty", val === "All Specialties" ? "" : val)
+              }
+              placeholder="All Specialties"
+            />
 
-            {/* Focus Dropdown */}
-            <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-foreground ml-1">
-                Focus
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenDropdown(openDropdown === "focus" ? null : "focus")
-                }
-                className={selectClasses}
-              >
-                <span>{filters.focus || "All Focus Areas"}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${openDropdown === "focus" ? "rotate-180" : ""}`}
-                />
-              </button>
-              {openDropdown === "focus" && (
-                <ul className={dropdownMenuClasses}>
-                  {["All Focus Areas", "Clinical", "Holistic"].map((opt) => (
-                    <li
-                      key={opt}
-                      onClick={() =>
-                        handleSelect(
-                          "focus",
-                          opt === "All Focus Areas" ? "" : opt,
-                        )
-                      }
-                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                    >
-                      {opt}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <GenericDropdown
+              label="Focus"
+              value={filters.focus}
+              options={["All Focus Areas", "Clinical", "Holistic"]}
+              onChange={(val) =>
+                handleSelect("focus", val === "All Focus Areas" ? "" : val)
+              }
+              placeholder="All Focus Areas"
+            />
 
-            {/* Language Dropdown */}
-            <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-foreground ml-1">
-                Language
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "language" ? null : "language",
-                  )
-                }
-                className={selectClasses}
-              >
-                <span>{filters.language}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${openDropdown === "language" ? "rotate-180" : ""}`}
-                />
-              </button>
-              {openDropdown === "language" && (
-                <ul className={dropdownMenuClasses}>
-                  {["English", "Spanish", "Mandarin"].map((opt) => (
-                    <li
-                      key={opt}
-                      onClick={() => handleSelect("language", opt)}
-                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                    >
-                      {opt}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <GenericDropdown
+              label="Language"
+              value={filters.language}
+              options={["English", "Spanish", "Mandarin"]}
+              onChange={(val) => handleSelect("language", val)}
+              placeholder="Language"
+            />
 
-            {/* Availability Dropdown */}
-            <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-foreground ml-1">
-                Availability
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "availability" ? null : "availability",
-                  )
-                }
-                className={selectClasses}
-              >
-                <span>{filters.availability || "Any Time"}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${openDropdown === "availability" ? "rotate-180" : ""}`}
-                />
-              </button>
-              {openDropdown === "availability" && (
-                <ul className={dropdownMenuClasses}>
-                  {["Any Time", "This Week", "Next Week"].map((opt) => (
-                    <li
-                      key={opt}
-                      onClick={() =>
-                        handleSelect(
-                          "availability",
-                          opt === "Any Time" ? "" : opt,
-                        )
-                      }
-                      className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                    >
-                      {opt}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <GenericDropdown
+              label="Availability"
+              value={filters.availability}
+              options={["Any Time", "This Week", "Next Week"]}
+              onChange={(val) =>
+                handleSelect("availability", val === "Any Time" ? "" : val)
+              }
+              placeholder="Any Time"
+            />
           </div>
         </div>
       </div>
 
-      {/* Nutritionist Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          {
-            id: "101",
-            name: "Dr. Sarah Jenkins",
-            certs: "MS, RDN, CDCES",
-            tags: ["Hormonal Health", "PCOS"],
-            price: "$150/mo",
-            desc: "Evidence-based approach focusing on endocrine balance through sustainable dietary adjustments.",
-          },
-          {
-            id: "102",
-            name: "Michael Chen",
-            certs: "MPH, RDN",
-            tags: ["Weight Loss", "Sports Nutrition"],
-            price: "$130/mo",
-            desc: "Specializes in body composition changes through metabolic optimization and practical meal prep.",
-          },
-          {
-            id: "103",
-            name: "Elena Rodriguez",
-            certs: "MS, RDN, CNSC",
-            tags: ["Gut Health", "Autoimmune"],
-            price: "$175/mo",
-            desc: "Integrative approach focusing on microbiome health and identifying food sensitivities.",
-          },
-        ].map((nutri, idx) => (
+        {filteredNutritionists.map((nutri, idx) => (
           <div
             key={idx}
             className="bg-card rounded-2xl p-8 shadow-sm border border-border flex flex-col h-full hover:shadow-md transition-all duration-300"

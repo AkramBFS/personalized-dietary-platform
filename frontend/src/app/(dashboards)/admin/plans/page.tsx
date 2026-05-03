@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/Input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -80,6 +83,23 @@ export default function AdminPlansPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  const filteredPending = useMemo(() => 
+    pendingPlans.filter(p => p.title.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [pendingPlans, debouncedSearch]
+  );
+  
+  const filteredLive = useMemo(() => 
+    livePlans.filter(p => p.title.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [livePlans, debouncedSearch]
+  );
+  
+  const filteredSeasonal = useMemo(() => 
+    seasonalPlans.filter(p => p.title.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [seasonalPlans, debouncedSearch]
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -170,12 +190,24 @@ export default function AdminPlansPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Plan Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Review pending plans, manage live marketplace plans, and oversee
-          seasonal offerings.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Plan Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Review pending plans, manage live marketplace plans, and oversee
+            seasonal offerings.
+          </p>
+        </div>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search plans..."
+            className="pl-8 bg-background border-border"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
@@ -210,7 +242,7 @@ export default function AdminPlansPage() {
                           </TableCell>
                         </TableRow>
                       ))
-                    : pendingPlans.map((plan) => (
+                    : filteredPending.map((plan) => (
                         <TableRow key={plan.id}>
                           <TableCell className="font-medium">
                             {plan.title}
@@ -259,7 +291,7 @@ export default function AdminPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {livePlans.map((plan) => (
+                  {filteredLive.map((plan) => (
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">
                         {plan.title}
@@ -320,7 +352,7 @@ export default function AdminPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {seasonalPlans.map((plan) => (
+                  {filteredSeasonal.map((plan) => (
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">
                         {plan.title}
