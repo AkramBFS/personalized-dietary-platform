@@ -24,6 +24,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   AreaChart,
   Area,
@@ -41,6 +42,9 @@ export default function Dashboard() {
   const [greeting, setGreeting] = useState("Hello");
 
   // --- DATA STATE ---
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
   const [dailyGoal] = useState(2000);
   const [meals, setMeals] = useState([
     {
@@ -185,6 +189,8 @@ export default function Dashboard() {
                 type="text"
                 placeholder="Search..."
                 className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#2ECC71] w-64 outline-none"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>
@@ -368,9 +374,20 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <div className="space-y-4">
-                    {meals.map((meal, index) => (
-                      <MealItem key={index} {...meal} />
-                    ))}
+                    {meals
+                      .filter((meal) =>
+                        meal.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+                      )
+                      .map((meal, index) => (
+                        <MealItem key={index} {...meal} />
+                      ))}
+                    {meals.filter((meal) =>
+                      meal.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="text-center text-sm text-muted-foreground py-4">
+                        No meals found matching your search.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
