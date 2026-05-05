@@ -45,7 +45,7 @@ export default function AdminApprovalsPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      const data = await getNutritionistDetail(item.id);
+      const data = await getNutritionistDetail(item.nutritionist_id);
       setSelected(data);
     } catch (error) {
       console.error("Failed to fetch nutritionist details", error);
@@ -66,14 +66,14 @@ export default function AdminApprovalsPage() {
     void load();
   }, []);
 
-  const refreshAfterAction = (id: number) =>
-    setRecords((prev) => prev.filter((item) => item.id !== id));
+  const refreshAfterAction = (nutritionist_id: number) =>
+    setRecords((prev) => prev.filter((item) => item.nutritionist_id !== nutritionist_id));
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (nutritionist_id: number) => {
     setSubmitting(true);
     try {
-      await approveNutritionist(id);
-      refreshAfterAction(id);
+      await approveNutritionist(nutritionist_id);
+      refreshAfterAction(nutritionist_id);
       setSelected(null);
       setIsModalOpen(false);
       toast.success("Nutritionist approved successfully.");
@@ -84,15 +84,15 @@ export default function AdminApprovalsPage() {
     }
   };
 
-  const handleReject = async (id: number) => {
+  const handleReject = async (nutritionist_id: number) => {
     if (!rejectionReason.trim()) {
       toast.error("Rejection reason is required.");
       return;
     }
     setSubmitting(true);
     try {
-      await rejectNutritionist(id, rejectionReason.trim());
-      refreshAfterAction(id);
+      await rejectNutritionist(nutritionist_id, rejectionReason.trim());
+      refreshAfterAction(nutritionist_id);
       setSelected(null);
       setRejectionReason("");
       setIsModalOpen(false);
@@ -184,43 +184,85 @@ export default function AdminApprovalsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="rounded-lg border p-4 space-y-2">
-                    <p className="text-sm">
-                      <span className="font-semibold">Username:</span>{" "}
-                      {selected.username}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Email:</span> {selected.email}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Bio:</span>{" "}
-                      {selected.bio ?? "N/A"}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Specialization:</span>{" "}
-                      {selected.specialization_name ?? "N/A"}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Experience:</span>{" "}
-                      {selected.years_experience ?? "N/A"} years
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Certification Ref:</span>{" "}
-                      {selected.certification_ref ?? "N/A"}
-                    </p>
-                    {selected.cert_image_url ? (
-                      <a
-                        href={selected.cert_image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-primary underline"
-                      >
-                        View Certificate
-                      </a>
-                    ) : null}
+                  <div className="rounded-lg border p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Username:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.username}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Email:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.email}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Country:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.country_name ?? "N/A"}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Languages:</span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.languages?.length ? selected.languages.join(", ") : "N/A"}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Specialization:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.specialization_name ?? "N/A"}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Experience:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.years_experience ?? "N/A"} years</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Consultation Price:</span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.consultation_price !== undefined ? `$${selected.consultation_price}` : "N/A"}
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Status:</span>{" "}
+                        <span className="block mt-1 font-medium capitalize">{selected.approval_status}</span>
+                      </p>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Bio:</span>{" "}
+                        <span className="block mt-1 whitespace-pre-wrap">{selected.bio ?? "N/A"}</span>
+                      </p>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
+                      <p className="text-sm flex justify-between items-center">
+                        <span className="font-semibold text-muted-foreground">Certification Reference:</span>
+                        <span className="font-medium bg-muted px-2 py-1 rounded">{selected.certification_ref ?? "N/A"}</span>
+                      </p>
+                      
+                      {selected.cert_image_url && (
+                        <div className="mt-4 flex flex-col gap-2">
+                          <span className="text-sm font-semibold text-muted-foreground">Certification Document:</span>
+                          <a
+                            href={selected.cert_image_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-primary underline block truncate hover:text-primary/80 transition-colors"
+                          >
+                            View Document
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Registered: {new Date(selected.created_at).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-4">
                     <label className="text-sm font-medium">
                       Reason for Rejection
                     </label>
@@ -231,17 +273,19 @@ export default function AdminApprovalsPage() {
                     />
                   </div>
 
-                  <div className="flex gap-3 justify-end">
+                  <div className="flex gap-3 justify-end pt-4">
                     <Button
                       disabled={submitting}
                       variant="outline"
-                      onClick={() => handleReject(selected.id)}
+                      onClick={() => handleReject(selected.nutritionist_id)}
+                      className="text-destructive border-destructive hover:bg-destructive/10"
                     >
                       Reject
                     </Button>
                     <Button
                       disabled={submitting}
-                      onClick={() => handleApprove(selected.id)}
+                      onClick={() => handleApprove(selected.nutritionist_id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       Approve
                     </Button>

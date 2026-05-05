@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, ShieldAlert, DollarSign } from "lucide-react";
 
-import { getDashboardStats } from "@/lib/admin";
+import { getDashboardStats, type DashboardStats } from "@/lib/admin";
 
 export default function AdminOverviewPage() {
-  const [resolved, setResolved] = React.useState<any>(null);
+  const [resolved, setResolved] = React.useState<DashboardStats | null>(null);
 
   React.useEffect(() => {
     const loadStats = async () => {
