@@ -1,6 +1,7 @@
 "use server";
 
 import { nutritionistRegistrationSchema } from "@/lib/constants";
+import { API_BASE_URL } from "@/lib/api";
 
 type NutritionistPayload = {
   username: string;
@@ -16,8 +17,6 @@ type NutritionistPayload = {
   language_ids: Array<number | string>;
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.nutriplatform.com/api/v1";
 
 const normalizeErrorMessage = (errorBody: unknown): string => {
   if (!errorBody || typeof errorBody !== "object") {
@@ -63,7 +62,7 @@ export async function submitNutritionistRegistration(rawData: NutritionistPayloa
     body.append("language_ids", String(languageId));
   });
 
-  const response = await fetch(`${API_BASE_URL}/auth/register/nutritionist/`, {
+  const response = await fetch(`${API_BASE_URL}auth/register/nutritionist/`, {
     method: "POST",
     body,
   });

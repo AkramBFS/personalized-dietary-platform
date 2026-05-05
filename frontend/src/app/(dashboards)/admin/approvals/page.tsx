@@ -29,37 +29,8 @@ import {
   type PendingNutritionist,
 } from "@/lib/admin";
 
-const mockPendingNutritionists: PendingNutritionist[] = [
-  {
-    id: 101,
-    username: "dr_nour",
-    email: "nour@example.com",
-    bio: "Sports nutrition specialist with client-centered meal planning.",
-    nutritionist: {
-      specialization: { name: "Sports Nutrition" },
-      years_experience: 6,
-      certification_ref: "SN-44820",
-      cert_image_url: "https://example.com/certs/sn-44820.jpg",
-    },
-  },
-  {
-    id: 102,
-    username: "dr_lina",
-    email: "lina@example.com",
-    bio: "Clinical dietitian focused on diabetes and metabolic health.",
-    nutritionist: {
-      specialization: { name: "Clinical Nutrition" },
-      years_experience: 8,
-      certification_ref: "CL-99011",
-      cert_image_url: "https://example.com/certs/cl-99011.jpg",
-    },
-  },
-];
-
 export default function AdminApprovalsPage() {
-  const [records, setRecords] = useState<PendingNutritionist[]>(
-    mockPendingNutritionists,
-  );
+  const [records, setRecords] = useState<PendingNutritionist[]>([]);
   const [selected, setSelected] = useState<PendingNutritionist | null>(null);
   const [loading, setLoading] = useState(true);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -69,7 +40,8 @@ export default function AdminApprovalsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        await getPendingNutritionists();
+        const data = await getPendingNutritionists();
+        setRecords(data);
       } finally {
         setLoading(false);
       }

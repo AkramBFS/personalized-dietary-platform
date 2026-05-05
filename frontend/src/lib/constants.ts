@@ -123,7 +123,9 @@ export const nutritionistRegistrationSchema = z.object({
   cert_image: z.custom<File>(
     (value) => value instanceof File && value.size > 0,
     "Certification image is required"
-  ),
+  ).refine((file) => file.size <= 5 * 1024 * 1024, {
+    message: "Certification image must be 5MB or smaller",
+  }),
   language_ids: z
     .array(z.coerce.number().int().positive("Language ID must be positive"))
     .min(1, "Please add at least one language ID"),

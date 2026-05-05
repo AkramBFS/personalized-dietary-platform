@@ -969,7 +969,7 @@ transactions\[\].created_at timestamp Transaction date
 
 ## **7.1 User Account Management**
 
-**GET /admin/users/** --- List all users --- Admin Auth
+**GET /lookup/admin/users/** --- List all users --- Admin Auth
 
 **Field** **Type** **Required** **Description**
 
@@ -979,9 +979,9 @@ role string No Filter by role: client, nutritionist, high_admin
 is_active boolean No Filter active/banned users
 search string No Search by username or email
 
-**GET /admin/users/{id}/** --- Get full user detail --- Admin Auth
+**GET /lookup/admin/users/{id}/** --- Get full user detail --- Admin Auth
 
-**PATCH /admin/users/{id}/ban/** --- Ban or unban a user --- Admin Auth
+**PATCH /lookup/admin/users/{id}/ban/** --- Ban or unban a user --- Admin Auth
 
 **Field** **Type** **Required** **Description**
 
@@ -989,7 +989,7 @@ search string No Search by username or email
 
 is_banned boolean Yes True to ban, false to unban (sets is_active on users table)
 
-**DELETE /admin/users/{id}/** --- Permanently delete user account ---
+**DELETE /lookup/admin/users/{id}/** --- Permanently delete user account ---
 Admin Auth
 
 > **⚠** _This is irreversible. All associated data (plans,
@@ -1003,7 +1003,7 @@ Admin Auth
 > certification and either approve or reject the account before they can
 > access the platform._
 
-**GET /admin/nutritionists/pending/** --- List all nutritionists pending
+**GET /lookup/admin/nutritionists/pending/** --- List all nutritionists pending
 approval --- Admin Auth
 
 **Field** **Type** **Description**
@@ -1021,13 +1021,13 @@ nutritionist.cert_image_url string URL to uploaded certification document
 nutritionist.approval_status string Always pending in this list
 created_at timestamp Registration date
 
-**GET /admin/nutritionists/{id}/** --- Get full nutritionist detail for
+**GET /lookup/admin/nutritionists/{id}/** --- Get full nutritionist detail for
 review --- Admin Auth
 
 Returns the same fields as the pending list plus the full profile
 including bio, languages, country, and consultation_price.
 
-**POST /admin/nutritionists/{id}/approve/** --- Approve a nutritionist
+**POST /lookup/admin/nutritionists/{id}/approve/** --- Approve a nutritionist
 account --- Admin Auth
 
 No request body required.
@@ -1047,7 +1047,7 @@ message string Confirmation message
 > notification to the nutritionist informing them their account is
 > approved and they can now log in._
 
-**POST /admin/nutritionists/{id}/reject/** --- Reject a nutritionist
+**POST /lookup/admin/nutritionists/{id}/reject/** --- Reject a nutritionist
 account --- Admin Auth
 
 **Field** **Type** **Required** **Description**
@@ -1075,7 +1075,7 @@ message string Confirmation message
 > **⚠** _A rejected nutritionist cannot log in. They may re-register
 > with a new account or contact admin support._
 
-**POST /admin/nutritionists/{id}/re-review/** --- Move a rejected
+**POST /lookup/admin/nutritionists/{id}/re-review/** --- Move a rejected
 nutritionist back to pending --- Admin Auth
 
 No request body required. Allows admin to reconsider a previously
@@ -1090,7 +1090,7 @@ message string Confirmation message
 
 ## **7.3 Plan Moderation**
 
-**GET /admin/plans/** --- List all plans pending moderation --- Admin
+**GET /lookup/admin/plans/** --- List all plans pending moderation --- Admin
 Auth
 
 **Field** **Type** **Required** **Description**
@@ -1099,12 +1099,12 @@ Auth
 
 status string No Filter: pending, approved, rejected, deleted
 
-**GET /admin/plans/{id}/** --- Get plan detail for review --- Admin Auth
+**GET /lookup/admin/plans/{id}/** --- Get plan detail for review --- Admin Auth
 
-**POST /admin/plans/{id}/approve/** --- Approve a plan for marketplace
+**POST /lookup/admin/plans/{id}/approve/** --- Approve a plan for marketplace
 --- Admin Auth
 
-**POST /admin/plans/{id}/reject/** --- Reject a plan with reason ---
+**POST /lookup/admin/plans/{id}/reject/** --- Reject a plan with reason ---
 Admin Auth
 
 **Field** **Type** **Required** **Description**
@@ -1113,7 +1113,7 @@ Admin Auth
 
 rejection_reason string Yes Clear explanation for the nutritionist
 
-**POST /admin/plans/{id}/archive/** --- Soft-delete / archive a plan ---
+**POST /lookup/admin/plans/{id}/archive/** --- Soft-delete / archive a plan ---
 Admin Auth
 
 > **ℹ** _All moderation actions create a plan_moderation_logs entry and
@@ -1121,15 +1121,15 @@ Admin Auth
 
 ## **7.4 Post Moderation**
 
-**GET /admin/posts/** --- List posts pending approval --- Admin Auth
+**GET /lookup/admin/posts/** --- List posts pending approval --- Admin Auth
 
-**PATCH /admin/posts/{id}/approve/** --- Approve a post (sets
+**PATCH /lookup/admin/posts/{id}/approve/** --- Approve a post (sets
 is_approved=true) --- Admin Auth
 
-**PATCH /admin/posts/{id}/reject/** --- Reject and hide a post --- Admin
+**PATCH /lookup/admin/posts/{id}/reject/** --- Reject and hide a post --- Admin
 Auth
 
-**DELETE /admin/posts/{id}/** --- Delete a post permanently --- Admin
+**DELETE /lookup/admin/posts/{id}/** --- Delete a post permanently --- Admin
 Auth
 
 ## **7.5 Blog Management**
@@ -1138,7 +1138,7 @@ Auth
 
 **GET /blog/{id}/** --- Get single blog article --- No Auth required
 
-**POST /admin/blog/** --- Create a new blog article --- Admin Auth
+**POST /lookup/admin/blog/** --- Create a new blog article --- Admin Auth
 
 **Field** **Type** **Required** **Description**
 
@@ -1147,13 +1147,13 @@ Auth
 title string Yes Article title
 content string Yes Full article body (HTML or Markdown)
 
-**PATCH /admin/blog/{id}/** --- Edit an existing article --- Admin Auth
+**PATCH /lookup/admin/blog/{id}/** --- Edit an existing article --- Admin Auth
 
-**DELETE /admin/blog/{id}/** --- Delete a blog article --- Admin Auth
+**DELETE /lookup/admin/blog/{id}/** --- Delete a blog article --- Admin Auth
 
 ## **7.6 User Inquiries (Support Tickets)**
 
-**GET /admin/inquiries/** --- List all feedback tickets --- Admin Auth
+**GET /lookup/admin/inquiries/** --- List all feedback tickets --- Admin Auth
 
 **Field** **Type** **Required** **Description**
 
@@ -1161,9 +1161,9 @@ content string Yes Full article body (HTML or Markdown)
 
 status string No Filter: open or resolved
 
-**GET /admin/inquiries/{id}/** --- Get inquiry detail --- Admin Auth
+**GET /lookup/admin/inquiries/{id}/** --- Get inquiry detail --- Admin Auth
 
-**PATCH /admin/inquiries/{id}/respond/** --- Submit admin response and
+**PATCH /lookup/admin/inquiries/{id}/respond/** --- Submit admin response and
 mark resolved --- Admin Auth
 
 **Field** **Type** **Required** **Description**

@@ -13,28 +13,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { X } from "lucide-react";
-import { getAdminInquiries, type InquiryTicket } from "@/lib/admin";
-
-const mockInquiries: InquiryTicket[] = [
-  {
-    id: 201,
-    subject: "Payment issue after renewal",
-    message: "My subscription renewed but dashboard still shows expired.",
-    status: "open",
-    created_at: "2026-04-09T00:00:00Z",
-  },
-  {
-    id: 202,
-    subject: "Need custom meal plan clarification",
-    message: "Could you explain how to request a custom diabetic meal plan?",
-    status: "resolved",
-    admin_response: "Please open a request from the meal plans tab.",
-    created_at: "2026-04-08T00:00:00Z",
-  },
-];
+import { getAdminInquiries, respondToInquiry, type InquiryTicket } from "@/lib/admin";
+import { toast } from "sonner";
 
 export default function AdminInquiriesPage() {
-  const [tickets, setTickets] = useState<InquiryTicket[]>(mockInquiries);
+  const [tickets, setTickets] = useState<InquiryTicket[]>([]);
   const [selected, setSelected] = useState<InquiryTicket | null>(null);
   const [adminResponse, setAdminResponse] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,29 +25,36 @@ export default function AdminInquiriesPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        await getAdminInquiries();
-      } catch {
-        // Intentionally ignored for now: UI uses static mock data.
+        const data = await getAdminInquiries();
+        setTickets(data);
+      } catch (error) {
+        toast.error("Failed to fetch inquiries");
       }
     };
     void load();
   }, []);
 
-  const markResolved = (id: number) => {
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === id
-          ? {
-              ...ticket,
-              status: "resolved",
-              admin_response: adminResponse || ticket.admin_response,
-            }
-          : ticket,
-      ),
-    );
-    setSelected(null);
-    setAdminResponse("");
-    setIsModalOpen(false);
+  const markResolved = async (id: number) => {
+    try {
+      await respondToInquiry(id, adminResponse);
+      setTickets((prev) =>
+        prev.map((ticket) =>
+          ticket.id === id
+            ? {
+                ...ticket,
+                status: "resolved",
+                admin_response: adminResponse || ticket.admin_response,
+              }
+            : ticket,
+        ),
+      );
+      toast.success("Inquiry marked as resolved");
+      setSelected(null);
+      setAdminResponse("");
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to resolve inquiry");
+    }
   };
 
   return (

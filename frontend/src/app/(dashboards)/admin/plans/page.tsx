@@ -22,61 +22,10 @@ import { Eye, Check, X, Archive, Edit, Trash2 } from "lucide-react";
 import { getModerationPlans, type ModerationPlan } from "@/lib/admin";
 import api from "@/lib/api";
 
-const mockPendingPlans: ModerationPlan[] = [
-  {
-    id: 1,
-    title: "PCOS Reset Plan",
-    plan_type: "public-predefined",
-    status: "pending",
-    price: 29.99,
-    created_at: "2026-03-10T00:00:00Z",
-  },
-  {
-    id: 2,
-    title: "Lean Bulk 12-Week",
-    plan_type: "private-custom",
-    status: "pending",
-    price: 49.0,
-    created_at: "2026-03-22T00:00:00Z",
-  },
-];
-
-const mockLivePlans: ModerationPlan[] = [
-  {
-    id: 3,
-    title: "Summer Detox Plan",
-    plan_type: "public-predefined",
-    status: "approved",
-    price: 39.99,
-    created_at: "2026-02-15T00:00:00Z",
-  },
-  {
-    id: 4,
-    title: "Weight Loss Accelerator",
-    plan_type: "public-predefined",
-    status: "approved",
-    price: 59.99,
-    created_at: "2026-01-20T00:00:00Z",
-  },
-];
-
-const mockSeasonalPlans: ModerationPlan[] = [
-  {
-    id: 5,
-    title: "Holiday Wellness Plan",
-    plan_type: "public-predefined",
-    status: "approved",
-    price: 34.99,
-    created_at: "2026-03-01T00:00:00Z",
-  },
-];
-
 export default function AdminPlansPage() {
-  const [pendingPlans, setPendingPlans] =
-    useState<ModerationPlan[]>(mockPendingPlans);
-  const [livePlans, setLivePlans] = useState<ModerationPlan[]>(mockLivePlans);
-  const [seasonalPlans, setSeasonalPlans] =
-    useState<ModerationPlan[]>(mockSeasonalPlans);
+  const [pendingPlans, setPendingPlans] = useState<ModerationPlan[]>([]);
+  const [livePlans, setLivePlans] = useState<ModerationPlan[]>([]);
+  const [seasonalPlans, setSeasonalPlans] = useState<ModerationPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<ModerationPlan | null>(null);
   const [planDetails, setPlanDetails] = useState<any>(null);
@@ -104,10 +53,12 @@ export default function AdminPlansPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        // In a real implementation, you'd fetch different plan types
-        await getModerationPlans();
-      } catch {
-        // Using mock data
+        const plans = await getModerationPlans();
+        setPendingPlans(plans.filter((p) => p.status === "pending"));
+        setLivePlans(plans.filter((p) => p.status === "approved" && !p.title.toLowerCase().includes("seasonal") && !p.title.toLowerCase().includes("holiday")));
+        setSeasonalPlans(plans.filter((p) => p.status === "approved" && (p.title.toLowerCase().includes("seasonal") || p.title.toLowerCase().includes("holiday"))));
+      } catch (error) {
+        toast.error("Failed to fetch plans");
       } finally {
         setLoading(false);
       }
@@ -120,21 +71,8 @@ export default function AdminPlansPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      // In a real implementation, fetch plan details
-      // const response = await api.get(`/admin/plans/${plan.id}/`);
-      // setPlanDetails(response.data);
-
-      // Mock plan details
-      setPlanDetails({
-        id: plan.id,
-        title: plan.title,
-        description: `Detailed description for ${plan.title}. This plan includes comprehensive meal planning, nutritional guidance, and progress tracking.`,
-        plan_type: plan.plan_type,
-        price: plan.price,
-        created_at: plan.created_at,
-        creator: "Dr. Nutritionist",
-        content: "Full plan content would be displayed here...",
-      });
+      const response = await api.get(`/lookup/admin/plans/${plan.id}/`);
+      setPlanDetails(response.data);
     } catch (error) {
       console.error("Failed to fetch plan details", error);
       setPlanDetails(null);
@@ -146,7 +84,7 @@ export default function AdminPlansPage() {
   const handleApprovePlan = async (planId: number) => {
     setSubmitting(true);
     try {
-      await api.post(`/admin/plans/${planId}/approve/`);
+      await api.post(`/lookup/admin/plans/${planId}/approve/`);
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
       setIsModalOpen(false);
       setSelectedPlan(null);
@@ -162,7 +100,7 @@ export default function AdminPlansPage() {
   const handleRejectPlan = async (planId: number, reason: string) => {
     setSubmitting(true);
     try {
-      await api.post(`/admin/plans/${planId}/reject/`, {
+      await api.post(`/lookup/admin/plans/${planId}/reject/`, {
         rejection_reason: reason,
       });
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
@@ -179,7 +117,7 @@ export default function AdminPlansPage() {
 
   const handleArchivePlan = async (planId: number) => {
     try {
-      await api.post(`/admin/plans/${planId}/archive/`);
+      await api.post(`/lookup/admin/plans/${planId}/archive/`);
       setLivePlans((prev) => prev.filter((p) => p.id !== planId));
       toast.success("Plan archived successfully.");
     } catch (error) {
