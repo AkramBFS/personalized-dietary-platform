@@ -20,12 +20,17 @@ export interface PendingNutritionist {
   id: number;
   username: string;
   email: string;
-  bio?: string;
+  nutritionist_id: number;
   specialization_name?: string;
+  country_name?: string;
   years_experience?: number;
+  consultation_price?: number;
+  bio?: string;
   certification_ref?: string;
   cert_image_url?: string;
   approval_status: string;
+  rejection_reason?: string | null;
+  languages?: string[];
   created_at: string;
 }
 
@@ -66,6 +71,33 @@ export interface InquiryTicket {
   created_at?: string;
 }
 
+export interface DashboardStats {
+  total_users: number;
+  active_nutritionists: number;
+  pending_approvals: number;
+  total_revenue: number;
+  monthly_growth: { month: string; value: number }[];
+  recent_activity: { id: number; text: string; created_at: string }[];
+}
+
+export interface AdminUserDetail extends AdminUser {
+  client?: {
+    age: number;
+    weight: number;
+    height: number;
+    bmi: number;
+    bmr: number;
+    goal?: { name: string };
+    health_history?: string;
+  };
+  nutritionist?: {
+    bio: string;
+    years_experience: number;
+    consultation_price: number;
+    specialization?: { name: string };
+  };
+}
+
 const unwrapEnvelope = <T>(payload: ApiEnvelope<T> | T): T => {
   if (payload && typeof payload === "object" && "status" in (payload as ApiEnvelope<T>)) {
     return (payload as ApiEnvelope<T>).data;
@@ -79,7 +111,7 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   return Array.isArray(data) ? data : data.results ?? [];
 }
 
-export async function getAdminUserDetail(id: number): Promise<any> {
+export async function getAdminUserDetail(id: number): Promise<AdminUserDetail> {
   const response = await api.get(`/lookup/admin/users/${id}/`);
   return unwrapEnvelope(response.data);
 }
@@ -94,7 +126,7 @@ export async function getPendingNutritionists(): Promise<PendingNutritionist[]> 
   return Array.isArray(data) ? data : data.results ?? [];
 }
 
-export async function getNutritionistDetail(id: number): Promise<any> {
+export async function getNutritionistDetail(id: number): Promise<PendingNutritionist> {
   const response = await api.get(`/lookup/nutritionists/${id}/`);
   return unwrapEnvelope(response.data);
 }
@@ -194,7 +226,7 @@ export async function respondToInquiry(id: number, admin_response: string, statu
   await api.patch(`/lookup/admin/inquiries/${id}/respond/`, { admin_response, status });
 }
 
-export async function getDashboardStats(): Promise<any> {
+export async function getDashboardStats(): Promise<DashboardStats> {
   // Using mocks for dashboard stats as a special case per requirements
   return {
     total_users: 1284,
