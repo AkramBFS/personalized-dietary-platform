@@ -16,7 +16,7 @@ import {
   Legend,
 } from "recharts";
 import { Wallet, TrendingUp, BadgePercent, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
-import { getNutritionistEarnings, NutritionistEarningsSummary } from "@/lib/nutritionist";
+import { getNutritionistEarnings, NutritionistEarningsSummary, groupTransactionsByMonth } from "@/lib/nutritionist";
 import { toast } from "sonner";
 
 // ── Interfaces ──────────────────────────────────────────────────────────
@@ -31,15 +31,7 @@ interface Payout {
   paidAt: string | null;
 }
 
-// ── Mock Data ───────────────────────────────────────────────────────────
-const monthlyIncome = [
-  { month: "Nov 2025", gross: 820, net: 697 },
-  { month: "Dec 2025", gross: 1450, net: 1232 },
-  { month: "Jan 2026", gross: 1120, net: 952 },
-  { month: "Feb 2026", gross: 1780, net: 1513 },
-  { month: "Mar 2026", gross: 2340, net: 1989 },
-  { month: "Apr 2026", gross: 1650, net: 1402 },
-];
+
 
 const mockPayouts: Payout[] = [
   { id: 1, periodStart: "2026-03-16", periodEnd: "2026-03-31", grossAmount: 1280.00, commission: 192.00, netAmount: 1088.00, status: "completed", paidAt: "2026-04-02" },
@@ -108,6 +100,11 @@ export default function EarningsPage() {
   const availableBalance = useMemo(() => {
     if (!earnings) return 0;
     return earnings.total_net;
+  }, [earnings]);
+
+  const monthlyIncome = useMemo(() => {
+    if (!earnings?.transactions) return [];
+    return groupTransactionsByMonth(earnings.transactions);
   }, [earnings]);
 
   if (isLoading) {

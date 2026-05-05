@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -26,7 +26,18 @@ import {
   CheckCircle,
   AlertCircle,
   X,
+  Loader2,
 } from "lucide-react";
+import {
+  getNutritionistSchedule,
+  getNutritionistConsultations,
+  putNutritionistAvailability,
+  addNutritionistHoliday,
+  deleteNutritionistHoliday,
+  patchConsultationZoomLink,
+  patchConsultationStatus,
+  AvailabilitySlotPayload,
+} from "@/lib/nutritionist";
 
 interface Consultation {
   id: number;
@@ -57,53 +68,65 @@ const getDayDate = (dayOffset: number) => {
   return new Date(d.setDate(diff)).toISOString().split("T")[0];
 };
 
-const mockConsultations: Consultation[] = [
-  {
-    id: 1,
-    patientName: "Alex Johnson",
-    date: getDayDate(1), // Monday
-    startTime: "10:00",
-    endTime: "11:00",
-    status: "scheduled",
-    zoomLink: null,
-  },
-  {
-    id: 2,
-    patientName: "Sarah Smith",
-    date: getDayDate(2), // Tuesday
-    startTime: "14:00",
-    endTime: "15:00",
-    status: "notified",
-    zoomLink: "https://zoom.us/j/1234567890",
-  },
-  {
-    id: 3,
-    patientName: "Marcus Cole",
-    date: getDayDate(4), // Thursday
-    startTime: "09:00",
-    endTime: "10:00",
-    status: "finished",
-    zoomLink: "https://zoom.us/j/0987654321",
-  },
-];
-
-const mockAvailability: AvailabilitySlot[] = [
-  { dayOfWeek: 0, startTime: "10:00", endTime: "14:00" }, // Sun
-  { dayOfWeek: 1, startTime: "09:00", endTime: "17:00" }, // Mon
-  { dayOfWeek: 2, startTime: "09:00", endTime: "17:00" }, // Tue
-  { dayOfWeek: 3, startTime: "09:00", endTime: "17:00" }, // Wed
-  { dayOfWeek: 4, startTime: "09:00", endTime: "14:00" }, // Thu
-];
-
 export default function SchedulePage() {
   const [activeTab, setActiveTab] = useState("calendar");
-  const [consultations, setConsultations] =
-    useState<Consultation[]>(mockConsultations);
-  const [availability, setAvailability] =
-    useState<AvailabilitySlot[]>(mockAvailability);
-  const [holidays, setHolidays] = useState<Holiday[]>([
-    { id: 1, date: getDayDate(3) },
-  ]); // Wed is a holiday
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ── Data Fetching ──────────────────────────────────────────────────
+  useEffect(() => {
+    const loadScheduleData = async () => {
+      try {
+        const [scheduleData, consultationsData] = await Promise.all([
+          getNutritionistSchedule(),
+          getNutritionistConsultations(),
+        ]);
+
+        // Map API availability (snake_case) to frontend AvailabilitySlot (camelCase)
+        setAvailability(
+          Array.isArray(scheduleData.availability)
+            ? scheduleData.availability.map((slot) => ({
+                dayOfWeek: slot.day_of_week,
+                startTime: slot.start_time,
+                endTime: slot.end_time,
+              }))
+            : [],
+        );
+
+        // Map API holidays to frontend Holiday
+        setHolidays(
+          Array.isArray(scheduleData.holidays)
+            ? scheduleData.holidays.map((h) => ({
+                id: h.id,
+                date: h.holiday_date,
+              }))
+            : [],
+        );
+
+        // Map API consultations to frontend Consultation
+        setConsultations(
+          Array.isArray(consultationsData)
+            ? consultationsData.map((c) => ({
+                id: c.id,
+                patientName: c.client_name,
+                date: c.appointment_date,
+                startTime: c.start_time,
+                endTime: c.end_time,
+                status: c.status === "cancelled" ? "finished" : c.status,
+                zoomLink: c.zoom_link,
+              }))
+            : [],
+        );
+      } catch {
+        toast.error("Failed to load schedule data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void loadScheduleData();
+  }, []);
 
   // Modal states
   const [selectedConsultation, setSelectedConsultation] =
@@ -137,36 +160,53 @@ export default function SchedulePage() {
     e.preventDefault();
     if (!selectedConsultation) return;
 
-    // PATCH /nutritionist/consultations/{id}/zoom-link/
-    setConsultations((prev) =>
-      prev.map((c) =>
-        c.id === selectedConsultation.id
-          ? {
-              ...c,
-              zoomLink: zoomLinkInput,
-              status: c.status === "scheduled" ? "notified" : c.status,
-            }
-          : c,
-      ),
-    );
+    try {
+      await patchConsultationZoomLink(selectedConsultation.id, zoomLinkInput);
+      // Also update status to "notified" if currently "scheduled"
+      if (selectedConsultation.status === "scheduled") {
+        await patchConsultationStatus(selectedConsultation.id, "notified");
+      }
 
-    toast.success("Zoom link updated. Client has been notified.");
+      setConsultations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConsultation.id
+            ? {
+                ...c,
+                zoomLink: zoomLinkInput,
+                status: c.status === "scheduled" ? "notified" : c.status,
+              }
+            : c,
+        ),
+      );
+      toast.success("Zoom link updated. Client has been notified.");
+    } catch {
+      toast.error("Failed to update zoom link.");
+    }
     setSelectedConsultation(null);
   };
 
-  const handleAddHoliday = (e: React.FormEvent) => {
+  const handleAddHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!holidayDateInput) return;
 
-    // POST /nutritionist/schedule/holidays/
-    setHolidays([...holidays, { id: Date.now(), date: holidayDateInput }]);
-    toast.success("Holiday successfully added and blocked in your calendar.");
-    setHolidayDateInput("");
+    try {
+      const created = await addNutritionistHoliday(holidayDateInput);
+      setHolidays([...holidays, { id: created.id, date: created.holiday_date }]);
+      toast.success("Holiday successfully added and blocked in your calendar.");
+      setHolidayDateInput("");
+    } catch {
+      toast.error("Failed to add holiday.");
+    }
   };
 
-  const handleRemoveHoliday = (id: number) => {
-    setHolidays(holidays.filter((h) => h.id !== id));
-    toast.success("Holiday removed successfully.");
+  const handleRemoveHoliday = async (id: number) => {
+    try {
+      await deleteNutritionistHoliday(id);
+      setHolidays(holidays.filter((h) => h.id !== id));
+      toast.success("Holiday removed successfully.");
+    } catch {
+      toast.error("Failed to remove holiday.");
+    }
   };
 
   // Handlers for modifying availability
@@ -199,10 +239,19 @@ export default function SchedulePage() {
     });
   };
 
-  const handleSaveAvailability = () => {
-    // PUT /nutritionist/schedule/availability/
-    // passing the current `availability` state payload
-    toast.success("Availability preferences saved.");
+  const handleSaveAvailability = async () => {
+    try {
+      // Transform camelCase frontend state → snake_case API payload
+      const payload: AvailabilitySlotPayload[] = availability.map((slot) => ({
+        day_of_week: slot.dayOfWeek,
+        start_time: slot.startTime,
+        end_time: slot.endTime,
+      }));
+      await putNutritionistAvailability(payload);
+      toast.success("Availability preferences saved.");
+    } catch {
+      toast.error("Failed to save availability.");
+    }
   };
 
   const getStatusColor = (status: Consultation["status"]) => {
@@ -215,7 +264,12 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500 max-w-[1400px]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {isLoading && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+      {!isLoading && (<><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
             Schedule Management
@@ -553,9 +607,9 @@ export default function SchedulePage() {
           </div>
         </TabsContent>
       </Tabs>
+      </>)}
 
-      {/* Slide-over custom mock Dialog for consultation clicking */}
-      {selectedConsultation && (
+    {!isLoading && selectedConsultation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="w-full max-w-md shadow-2xl border-0 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-4 border-b border-border bg-muted/50 rounded-t-xl">

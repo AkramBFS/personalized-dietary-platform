@@ -93,12 +93,24 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error("Login failed", error);
-      const errorCode = error.response?.data?.code || error.response?.data?.error_code || error.response?.data?.message;
+      const errorCode =
+        error.response?.data?.code ||
+        error.response?.data?.error_code ||
+        error.response?.data?.message;
 
-      if (error.response?.status === 403 && (errorCode === "ACCOUNT_PENDING_APPROVAL" || errorCode === "Your account is pending approval.")) {
+      if (
+        error.response?.status === 403 &&
+        (errorCode === "ACCOUNT_PENDING_APPROVAL" ||
+          errorCode === "Your account is pending approval.")
+      ) {
         router.push("/register/pending");
-      } else if (error.response?.status === 403 && errorCode === "ACCOUNT_REJECTED") {
-        alert("Your account application was rejected. Please contact support for details.");
+      } else if (
+        error.response?.status === 403 &&
+        errorCode === "ACCOUNT_REJECTED"
+      ) {
+        alert(
+          "Your account application was rejected. Please contact support for details.",
+        );
       } else if (error.response?.status === 401) {
         setErrors({ email: "Invalid credentials" });
       } else if (error.response?.data?.message) {
@@ -224,7 +236,7 @@ export default function LoginPage() {
                   repeatType: "reverse",
                 }}
               >
-                <Logo forceDark />
+                <Logo />
               </motion.div>
             </div>
 
@@ -256,7 +268,9 @@ export default function LoginPage() {
                     }`}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.email}
+                  </p>
                 )}
               </motion.div>
 
@@ -278,7 +292,9 @@ export default function LoginPage() {
                     }`}
                 />
                 {errors.password && (
-                  <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.password}
+                  </p>
                 )}
               </motion.div>
 

@@ -53,9 +53,11 @@ export interface NutritionistConsultation {
 }
 
 export interface NutritionistPatientSummary {
+  id: number;
   client_id: number;
   username: string;
   patient_type: string;
+  first_consultation_date?: string;
 }
 
 export interface PatientProgressSnapshot {
@@ -106,12 +108,26 @@ export type PlanType = "private-custom" | "public-predefined";
 export type PlanStatus = "pending" | "approved" | "rejected" | "deleted";
 export type PlanCategory = "predefined" | "personalized" | "seasonal";
 
+// ── Structured Meal Content (matches API content_json schema) ───────────
+export interface MealIngredient {
+  name: string;
+  amount: string;
+  unit: string;
+}
+
+export interface MealContent {
+  name: string;
+  ingredients: MealIngredient[];
+  calories: number;
+  notes: string;
+}
+
 export interface DailyMealContent {
   day_index: number;
-  breakfast: string;
-  lunch: string;
-  dinner: string;
-  snacks: string;
+  breakfast: MealContent;
+  lunch: MealContent;
+  dinner: MealContent;
+  snacks: MealContent;
   instructions: string;
 }
 
@@ -124,6 +140,7 @@ export interface NutritionistPlan {
   status: PlanStatus;
   price: number;
   duration_days: number;
+  rating_avg?: number;
   created_at: string;
   target_client_id?: number;
   content_json: DailyMealContent[];
@@ -133,10 +150,11 @@ export interface CreatePlanPayload {
   title: string;
   description: string;
   plan_type: PlanType;
+  category?: PlanCategory;
   target_client_id?: number;
   price: number;
   duration_days: number;
-  category: PlanCategory;
+  free_consultations_per_week?: number;
   content_json: DailyMealContent[];
 }
 
@@ -156,6 +174,8 @@ export interface NutritionistEarningsSummary {
   total_net: number;
   transactions: NutritionistEarningsTransaction[];
 }
+
+// ── Mock data (only used when useBackendMocks=true) ─────────────────────
 
 const mockProfile: NutritionistProfile = {
   nutritionist_id: 44,
@@ -208,8 +228,8 @@ const mockConsultations: NutritionistConsultation[] = [
 ];
 
 const mockPatients: NutritionistPatientSummary[] = [
-  { client_id: 101, username: "Alex Johnson", patient_type: "custom plan" },
-  { client_id: 102, username: "Sarah Smith", patient_type: "free consultation" },
+  { id: 1, client_id: 101, username: "Alex Johnson", patient_type: "custom plan" },
+  { id: 2, client_id: 102, username: "Sarah Smith", patient_type: "free consultation" },
 ];
 
 const mockPatientProfile: NutritionistPatientProfile = {
@@ -252,18 +272,18 @@ const mockPatientPlans: NutritionistPatientAssignedPlan[] = [
     content_json: [
       {
         day_index: 0,
-        breakfast: "Greek yogurt, oats, and berries",
-        lunch: "Chicken quinoa bowl",
-        dinner: "Salmon, sweet potato, and spinach",
-        snacks: "Mixed nuts and one fruit",
+        breakfast: { name: "Greek yogurt, oats, and berries", ingredients: [], calories: 0, notes: "" },
+        lunch: { name: "Chicken quinoa bowl", ingredients: [], calories: 0, notes: "" },
+        dinner: { name: "Salmon, sweet potato, and spinach", ingredients: [], calories: 0, notes: "" },
+        snacks: { name: "Mixed nuts and one fruit", ingredients: [], calories: 0, notes: "" },
         instructions: "Drink at least 2.5L water and avoid sugary drinks.",
       },
       {
         day_index: 4,
-        breakfast: "Egg omelette with vegetables",
-        lunch: "Lentil salad with grilled chicken",
-        dinner: "Lean beef with roasted vegetables",
-        snacks: "Hummus with cucumber slices",
+        breakfast: { name: "Egg omelette with vegetables", ingredients: [], calories: 0, notes: "" },
+        lunch: { name: "Lentil salad with grilled chicken", ingredients: [], calories: 0, notes: "" },
+        dinner: { name: "Lean beef with roasted vegetables", ingredients: [], calories: 0, notes: "" },
+        snacks: { name: "Hummus with cucumber slices", ingredients: [], calories: 0, notes: "" },
         instructions: "Keep sodium moderate and split meals evenly.",
       },
     ],
@@ -284,10 +304,10 @@ const mockPlans: NutritionistPlan[] = [
     content_json: [
       {
         day_index: 0,
-        breakfast: "Egg omelette + avocado",
-        lunch: "Grilled chicken salad",
-        dinner: "Baked salmon + broccoli",
-        snacks: "Nuts + yogurt",
+        breakfast: { name: "Egg omelette + avocado", ingredients: [], calories: 0, notes: "" },
+        lunch: { name: "Grilled chicken salad", ingredients: [], calories: 0, notes: "" },
+        dinner: { name: "Baked salmon + broccoli", ingredients: [], calories: 0, notes: "" },
+        snacks: { name: "Nuts + yogurt", ingredients: [], calories: 0, notes: "" },
         instructions: "Hydrate well and avoid sugary drinks.",
       },
     ],
@@ -331,6 +351,65 @@ const mockEarnings: NutritionistEarningsSummary = {
 function hasNetworkError(error: unknown): boolean {
   return error instanceof Error;
 }
+
+// ── Helper: create an empty MealContent ──────────────────────────────────
+export function createEmptyMeal(): MealContent {
+  return { name: "", ingredients: [], calories: 0, notes: "" };
+}
+
+// ── Helper: create an empty DailyMealContent for a given day index ───────
+export function createEmptyDay(dayIndex: number): DailyMealContent {
+  return {
+    day_index: dayIndex,
+    breakfast: createEmptyMeal(),
+    lunch: createEmptyMeal(),
+    dinner: createEmptyMeal(),
+    snacks: createEmptyMeal(),
+    instructions: "",
+  };
+}
+
+// ── Earnings helpers: group transactions by day / month ──────────────────
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function groupTransactionsByDayOfWeek(
+  transactions: NutritionistEarningsTransaction[],
+): { name: string; amount: number }[] {
+  const totals = new Map<string, number>();
+  DAY_NAMES.forEach((d) => totals.set(d, 0));
+
+  for (const tx of transactions) {
+    const dayName = DAY_NAMES[new Date(tx.created_at).getDay()];
+    totals.set(dayName, (totals.get(dayName) ?? 0) + tx.net_earnings);
+  }
+
+  return DAY_NAMES.map((name) => ({ name, amount: totals.get(name) ?? 0 }));
+}
+
+export function groupTransactionsByMonth(
+  transactions: NutritionistEarningsTransaction[],
+): { month: string; gross: number; net: number }[] {
+  const monthMap = new Map<string, { gross: number; net: number }>();
+
+  for (const tx of transactions) {
+    const d = new Date(tx.created_at);
+    const label = `${d.toLocaleString("en-US", { month: "short" })} ${d.getFullYear()}`;
+    const entry = monthMap.get(label) ?? { gross: 0, net: 0 };
+    entry.gross += tx.total_paid;
+    entry.net += tx.net_earnings;
+    monthMap.set(label, entry);
+  }
+
+  return Array.from(monthMap.entries())
+    .sort((a, b) => {
+      // Parse back to a rough date for ordering
+      const parseLabel = (l: string) => new Date(`01 ${l}`);
+      return parseLabel(a[0]).getTime() - parseLabel(b[0]).getTime();
+    })
+    .map(([month, vals]) => ({ month, ...vals }));
+}
+
+// ── API Functions ────────────────────────────────────────────────────────
 
 export async function getNutritionistProfile(): Promise<NutritionistProfile> {
   if (useBackendMocks) return mockProfile;
@@ -434,11 +513,32 @@ export async function patchConsultationZoomLink(consultationId: number, zoom_lin
   }
 }
 
+export async function patchConsultationStatus(
+  consultationId: number,
+  status: "notified" | "finished" | "cancelled",
+): Promise<void> {
+  if (useBackendMocks) return;
+  try {
+    await api.patch(`/nutritionist/consultations/${consultationId}/status/`, { status });
+  } catch (error) {
+    if (hasNetworkError(error)) return;
+    throw error;
+  }
+}
+
 export async function getNutritionistPatients(): Promise<NutritionistPatientSummary[]> {
   if (useBackendMocks) return mockPatients;
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientSummary[]> | NutritionistPatientSummary[]>("/nutritionist/patients/");
-    return unwrapResponse(response.data);
+    const data = unwrapResponse(response.data) as any;
+    // Normalize API response: extract nested client data if present
+    return (Array.isArray(data) ? data : []).map((p: any) => ({
+      id: p.id ?? p.client_id,
+      client_id: p.client?.client_id ?? p.client_id,
+      username: p.client?.user?.username ?? p.username ?? "Unknown",
+      patient_type: p.patient_type ?? "unknown",
+      first_consultation_date: p.first_consultation_date,
+    }));
   } catch (error) {
     if (hasNetworkError(error)) return mockPatients;
     throw error;
@@ -449,7 +549,20 @@ export async function getNutritionistPatientProfile(clientId: number): Promise<N
   if (useBackendMocks) return { ...mockPatientProfile, client_id: clientId };
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientProfile> | NutritionistPatientProfile>(`/nutritionist/patients/${clientId}/`);
-    return unwrapResponse(response.data);
+    const raw: any = unwrapResponse(response.data);
+    // Normalize nested client fields from the API response
+    return {
+      client_id: raw.client?.client_id ?? raw.client_id ?? clientId,
+      age: raw.client?.age ?? raw.age ?? 0,
+      weight: raw.client?.weight ?? raw.weight ?? 0,
+      height: raw.client?.height ?? raw.height ?? 0,
+      bmi: raw.client?.bmi ?? raw.bmi ?? 0,
+      bmr: raw.client?.bmr ?? raw.bmr ?? 0,
+      health_history: raw.client?.health_history ?? raw.health_history ?? "",
+      goal_name: raw.client?.goal?.name ?? raw.goal_name ?? "",
+      notes: Array.isArray(raw.notes) ? raw.notes.map((n: { note_content?: string } | string) => (typeof n === "string" ? n : n.note_content ?? "")) : [],
+      progress: raw.progress ?? { current_weight: raw.client?.weight ?? 0, goal_weight: 0, adherence_score: 0 },
+    };
   } catch (error) {
     if (hasNetworkError(error)) return { ...mockPatientProfile, client_id: clientId };
     throw error;
@@ -470,7 +583,7 @@ export async function getNutritionistPatientProgress(clientId: number): Promise<
   if (useBackendMocks) return mockPatientProgress;
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientProgressResponse> | NutritionistPatientProgressResponse>(
-      `/nutritionist/patients/${clientId}/progress/`
+      `/nutritionist/patients/${clientId}/progress/`,
     );
     return unwrapResponse(response.data);
   } catch (error) {
@@ -483,7 +596,7 @@ export async function getNutritionistPatientPlans(clientId: number): Promise<Nut
   if (useBackendMocks) return mockPatientPlans;
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientAssignedPlan[]> | NutritionistPatientAssignedPlan[]>(
-      `/nutritionist/patients/${clientId}/plans/`
+      `/nutritionist/patients/${clientId}/plans/`,
     );
     return unwrapResponse(response.data);
   } catch (error) {
@@ -509,6 +622,7 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
       id: Date.now(),
       status: payload.plan_type === "public-predefined" ? "pending" : "approved",
       created_at: new Date().toISOString(),
+      category: "predefined",
       ...payload,
     };
   }
@@ -521,6 +635,7 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
         id: Date.now(),
         status: payload.plan_type === "public-predefined" ? "pending" : "approved",
         created_at: new Date().toISOString(),
+        category: "predefined",
         ...payload,
       };
     }
