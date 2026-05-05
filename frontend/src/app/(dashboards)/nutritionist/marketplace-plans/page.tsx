@@ -17,6 +17,9 @@ import {
   NutritionistPlan,
   PlanCategory,
   updateNutritionistPlan,
+  MealContent,
+  MealIngredient,
+  createEmptyMeal,
 } from "@/lib/nutritionist";
 import GenericDropdown from "@/components/ui/GenericDropdown";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -51,11 +54,13 @@ export default function MarketplacePlansPage() {
     void loadPlans();
   }, []);
 
+  const freshIngredient = (): MealIngredient => ({ name: "", amount: "", unit: "" });
+
   const freshDay = () => ({
-    breakfast: "",
-    lunch: "",
-    dinner: "",
-    snacks: "",
+    breakfast: createEmptyMeal(),
+    lunch: createEmptyMeal(),
+    dinner: createEmptyMeal(),
+    snacks: createEmptyMeal(),
     instructions: "",
   });
 
@@ -148,10 +153,10 @@ export default function MarketplacePlansPage() {
       days:
         plan.content_json.length > 0
           ? plan.content_json.map((day) => ({
-              breakfast: day.breakfast,
-              lunch: day.lunch,
-              dinner: day.dinner,
-              snacks: day.snacks,
+              breakfast: typeof day.breakfast === "object" ? day.breakfast : createEmptyMeal(),
+              lunch: typeof day.lunch === "object" ? day.lunch : createEmptyMeal(),
+              dinner: typeof day.dinner === "object" ? day.dinner : createEmptyMeal(),
+              snacks: typeof day.snacks === "object" ? day.snacks : createEmptyMeal(),
               instructions: day.instructions,
             }))
           : [freshDay()],
@@ -339,63 +344,84 @@ export default function MarketplacePlansPage() {
                 <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Content Template</h3>
                 <div className="space-y-4">
                   {planData.days.map((day, index) => (
-                    <div key={`day-${index}`} className="rounded-md border border-border p-4 space-y-2">
+                    <div key={`day-${index}`} className="rounded-md border border-border p-4 space-y-4">
                       <p className="text-sm font-semibold">Day {index + 1}</p>
+
+                      {(["breakfast", "lunch", "dinner", "snacks"] as const).map((mealKey) => {
+                        const meal = day[mealKey] as MealContent;
+                        return (
+                          <div key={mealKey} className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground capitalize">{mealKey}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                              <div className="md:col-span-2">
+                                <Input
+                                  placeholder={`${mealKey} name`}
+                                  value={meal.name}
+                                  onChange={(e) =>
+                                    setPlanData((prev) => ({
+                                      ...prev,
+                                      days: prev.days.map((item, dayIndex) =>
+                                        dayIndex === index
+                                          ? { ...item, [mealKey]: { ...item[mealKey], name: e.target.value } }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-8 text-sm bg-background"
+                                />
+                              </div>
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder="Calories"
+                                value={meal.calories || ""}
+                                onChange={(e) =>
+                                  setPlanData((prev) => ({
+                                    ...prev,
+                                    days: prev.days.map((item, dayIndex) =>
+                                      dayIndex === index
+                                        ? { ...item, [mealKey]: { ...item[mealKey], calories: parseInt(e.target.value) || 0 } }
+                                        : item,
+                                    ),
+                                  }))
+                                }
+                                className="h-8 text-sm bg-background"
+                              />
+                            </div>
+                            {/* Ingredients */}
+                            {meal.ingredients.map((ing, ingIdx) => (
+                              <div key={ingIdx} className="flex items-center gap-1.5">
+                                <Input placeholder="Ingredient" value={ing.name} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], name: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background flex-1" />
+                                <Input placeholder="Amt" value={ing.amount} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], amount: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background w-16" />
+                                <Input placeholder="Unit" value={ing.unit} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], unit: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background w-16" />
+                                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive/60" onClick={() => { const updated = meal.ingredients.filter((_, i) => i !== ingIdx); setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }}><Trash2 className="w-3 h-3" /></Button>
+                              </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" className="text-xs h-6" onClick={() => { setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: [...(item[mealKey] as MealContent).ingredients, freshIngredient()] } } : item) })); }}>
+                              <Plus className="w-3 h-3 mr-1" /> Ingredient
+                            </Button>
+                            <textarea
+                              className="flex min-h-[40px] w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+                              placeholder="Notes"
+                              value={meal.notes}
+                              onChange={(e) =>
+                                setPlanData((prev) => ({
+                                  ...prev,
+                                  days: prev.days.map((item, dayIndex) =>
+                                    dayIndex === index
+                                      ? { ...item, [mealKey]: { ...item[mealKey], notes: e.target.value } }
+                                      : item,
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+                        );
+                      })}
+
                       <textarea
-                        className="flex min-h-[70px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                        placeholder="Breakfast"
-                        value={day.breakfast}
-                        onChange={(event) =>
-                          setPlanData((prev) => ({
-                            ...prev,
-                            days: prev.days.map((item, dayIndex) =>
-                              dayIndex === index ? { ...item, breakfast: event.target.value } : item,
-                            ),
-                          }))
-                        }
-                      />
-                      <textarea
-                        className="flex min-h-[70px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                        placeholder="Lunch"
-                        value={day.lunch}
-                        onChange={(event) =>
-                          setPlanData((prev) => ({
-                            ...prev,
-                            days: prev.days.map((item, dayIndex) =>
-                              dayIndex === index ? { ...item, lunch: event.target.value } : item,
-                            ),
-                          }))
-                        }
-                      />
-                      <textarea
-                        className="flex min-h-[70px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                        placeholder="Dinner"
-                        value={day.dinner}
-                        onChange={(event) =>
-                          setPlanData((prev) => ({
-                            ...prev,
-                            days: prev.days.map((item, dayIndex) =>
-                              dayIndex === index ? { ...item, dinner: event.target.value } : item,
-                            ),
-                          }))
-                        }
-                      />
-                      <textarea
-                        className="flex min-h-[50px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                        placeholder="Snacks"
-                        value={day.snacks}
-                        onChange={(event) =>
-                          setPlanData((prev) => ({
-                            ...prev,
-                            days: prev.days.map((item, dayIndex) =>
-                              dayIndex === index ? { ...item, snacks: event.target.value } : item,
-                            ),
-                          }))
-                        }
-                      />
-                      <textarea
-                        className="flex min-h-[90px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                        placeholder="Instructions"
+                        className="flex min-h-[60px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                        placeholder="Day instructions"
                         value={day.instructions}
                         onChange={(event) =>
                           setPlanData((prev) => ({

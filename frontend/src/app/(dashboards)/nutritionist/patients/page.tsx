@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   Card,
@@ -37,12 +37,21 @@ import {
   FileText,
   LineChart,
   Utensils,
+  Plus,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   NutritionistPatientAssignedPlan,
   NutritionistPatientProgressResponse,
   getNutritionistPatientPlans,
   getNutritionistPatientProgress,
+  getNutritionistPatients,
+  getNutritionistPatientProfile,
+  createNutritionistPlan,
+  MealContent,
+  MealIngredient,
+  createEmptyMeal,
 } from "@/lib/nutritionist";
 import ProgressChart from "@/components/dashboard/client/ProgressChart";
 import CalorieStats from "@/components/dashboard/client/CalorieStats";
@@ -61,57 +70,16 @@ interface PatientRecord {
   status: "pending_plan" | "completed";
 }
 
-const mockPatients: PatientRecord[] = [
-  {
-    client_id: 101,
-    name: "Alex Johnson",
-    avatarUrl: "https://i.pravatar.cc/150?u=101",
-    age: 29,
-    weight: 85,
-    height: 180,
-    bmi: 26.2,
-    goals: "Weight Loss & Muscle Gain",
-    healthHistory: "No major issues, mildly lactose intolerant.",
-    consultationDate: "2026-04-12 10:00 AM",
-    status: "pending_plan",
-  },
-  {
-    client_id: 102,
-    name: "Sarah Smith",
-    avatarUrl: "https://i.pravatar.cc/150?u=102",
-    age: 34,
-    weight: 65,
-    height: 165,
-    bmi: 23.9,
-    goals: "Maintain Weight & Manage PCOS",
-    healthHistory: "PCOS diagnosed 3 years ago.",
-    consultationDate: "2026-04-11 02:00 PM",
-    status: "pending_plan",
-  },
-  {
-    client_id: 103,
-    name: "Marcus Cole",
-    avatarUrl: "https://i.pravatar.cc/150?u=103",
-    age: 42,
-    weight: 92,
-    height: 175,
-    bmi: 30.0,
-    goals: "Lower Blood Pressure",
-    healthHistory: "Hypertension, family history of heart disease.",
-    consultationDate: "2026-04-10 09:30 AM",
-    status: "completed",
-  },
-];
-
 type ViewState = "list" | "profile" | "designer" | "progress";
+
+const freshIngredient = (): MealIngredient => ({ name: "", amount: "", unit: "" });
 
 export default function ConsultationsAndPlansPage() {
   const [viewState, setViewState] = useState<ViewState>("list");
-  const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(
-    null,
-  );
+  const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [patients, setPatients] = useState<PatientRecord[]>(mockPatients);
+  const [patients, setPatients] = useState<PatientRecord[]>([]);
+  const [isListLoading, setIsListLoading] = useState(true);
   const [isProgressLoading, setIsProgressLoading] = useState(false);
   const [progressError, setProgressError] = useState<string | null>(null);
   const [progressData, setProgressData] =
@@ -123,6 +91,37 @@ export default function ConsultationsAndPlansPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
+  // Fetch patients from API on mount
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const apiPatients = await getNutritionistPatients();
+        setPatients(
+          (Array.isArray(apiPatients) ? apiPatients : []).map((p) => ({
+            client_id: p.client_id,
+            name: p.username,
+            avatarUrl: `https://i.pravatar.cc/150?u=${p.client_id}`,
+            age: 0,
+            weight: 0,
+            height: 0,
+            bmi: 0,
+            goals: "",
+            healthHistory: "",
+            consultationDate: p.first_consultation_date
+              ? new Date(p.first_consultation_date).toLocaleString()
+              : "N/A",
+            status: "pending_plan" as const,
+          })),
+        );
+      } catch {
+        toast.error("Failed to load patients.");
+      } finally {
+        setIsListLoading(false);
+      }
+    };
+    void loadPatients();
+  }, []);
+
   const filteredPatients = useMemo(() => {
     return patients.filter(
       (patient) =>
@@ -132,20 +131,41 @@ export default function ConsultationsAndPlansPage() {
     );
   }, [patients, debouncedSearch]);
 
-  // Form state for plan
+  // Form state for plan — structured MealContent
   const [planData, setPlanData] = useState({
     title: "",
     duration: 7,
-    breakfast: "",
-    lunch: "",
-    dinner: "",
-    snacks: "",
+    breakfast: createEmptyMeal(),
+    lunch: createEmptyMeal(),
+    dinner: createEmptyMeal(),
+    snacks: createEmptyMeal(),
     instructions: "",
   });
 
-  const enterProfile = (patient: PatientRecord) => {
+  const enterProfile = async (patient: PatientRecord) => {
     setSelectedPatient(patient);
     setViewState("profile");
+    // Hydrate the patient profile from the API if data is missing
+    if (patient.age === 0) {
+      try {
+        const profile = await getNutritionistPatientProfile(patient.client_id);
+        const updated: PatientRecord = {
+          ...patient,
+          age: profile.age,
+          weight: profile.weight,
+          height: profile.height,
+          bmi: profile.bmi,
+          goals: profile.goal_name || patient.goals,
+          healthHistory: profile.health_history || patient.healthHistory,
+        };
+        setSelectedPatient(updated);
+        setPatients((prev) =>
+          prev.map((p) => (p.client_id === patient.client_id ? updated : p)),
+        );
+      } catch {
+        toast.error("Could not load full patient profile.");
+      }
+    }
   };
 
   const showPatientProgress = async () => {
@@ -179,14 +199,31 @@ export default function ConsultationsAndPlansPage() {
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
-    if (!planData.title || !planData.breakfast) {
-      toast.error("Please provide at least a title and breakfast details.");
+    if (!planData.title || !planData.breakfast.name) {
+      toast.error("Please provide at least a title and breakfast name.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await createNutritionistPlan({
+        title: planData.title,
+        description: `Custom plan for ${selectedPatient.name}`,
+        plan_type: "private-custom",
+        target_client_id: selectedPatient.client_id,
+        price: 0,
+        duration_days: planData.duration,
+        content_json: [
+          {
+            day_index: 0,
+            breakfast: planData.breakfast,
+            lunch: planData.lunch,
+            dinner: planData.dinner,
+            snacks: planData.snacks,
+            instructions: planData.instructions,
+          },
+        ],
+      });
       setPatients((prev) =>
         prev.map((p) =>
           p.client_id === selectedPatient.client_id
@@ -199,13 +236,13 @@ export default function ConsultationsAndPlansPage() {
       setPlanData({
         title: "",
         duration: 7,
-        breakfast: "",
-        lunch: "",
-        dinner: "",
-        snacks: "",
+        breakfast: createEmptyMeal(),
+        lunch: createEmptyMeal(),
+        dinner: createEmptyMeal(),
+        snacks: createEmptyMeal(),
         instructions: "",
       });
-    } catch (err) {
+    } catch {
       toast.error("Failed to submit the plan.");
     } finally {
       setIsSubmitting(false);
@@ -214,6 +251,11 @@ export default function ConsultationsAndPlansPage() {
 
   const renderListView = () => (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
+      {isListLoading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : (<>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
@@ -337,6 +379,7 @@ export default function ConsultationsAndPlansPage() {
           </TableBody>
         </Table>
       </Card>
+      </>)}
     </div>
   );
 
@@ -592,66 +635,150 @@ export default function ConsultationsAndPlansPage() {
                     value="meals"
                     className="p-6 space-y-6 bg-background m-0"
                   >
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 font-bold mb-2">
-                        <div className="w-3 h-3 rounded bg-primary/40 shadow-sm" />{" "}
-                        BREAKFAST PROTOCOL
-                      </Label>
-                      <textarea
-                        className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors"
-                        placeholder="Define macronutrient thresholds and ingredient constraints..."
-                        value={planData.breakfast}
-                        onChange={(e) =>
-                          setPlanData({
-                            ...planData,
-                            breakfast: e.target.value,
-                          })
-                        }
-                        disabled={selectedPatient.status === "completed"}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 font-bold mb-2">
-                        <div className="w-3 h-3 rounded bg-primary/60 shadow-sm" />{" "}
-                        LUNCH PROTOCOL
-                      </Label>
-                      <textarea
-                        className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors"
-                        value={planData.lunch}
-                        onChange={(e) =>
-                          setPlanData({ ...planData, lunch: e.target.value })
-                        }
-                        disabled={selectedPatient.status === "completed"}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 font-bold mb-2">
-                        <div className="w-3 h-3 rounded bg-primary/80 shadow-sm" />{" "}
-                        DINNER PROTOCOL
-                      </Label>
-                      <textarea
-                        className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors"
-                        value={planData.dinner}
-                        onChange={(e) =>
-                          setPlanData({ ...planData, dinner: e.target.value })
-                        }
-                        disabled={selectedPatient.status === "completed"}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 font-bold mb-2">
-                        <div className="w-3 h-3 rounded bg-primary shadow-sm" />{" "}
-                        SUPPLEMENTS & SNACKS
-                      </Label>
-                      <textarea
-                        className="w-full min-h-[90px] rounded-lg border-border bg-background p-4 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors"
-                        value={planData.snacks}
-                        onChange={(e) =>
-                          setPlanData({ ...planData, snacks: e.target.value })
-                        }
-                        disabled={selectedPatient.status === "completed"}
-                      />
-                    </div>
+                    {/* Reusable meal block renderer */}
+                    {(["breakfast", "lunch", "dinner", "snacks"] as const).map((mealKey, idx) => {
+                      const labels = ["BREAKFAST PROTOCOL", "LUNCH PROTOCOL", "DINNER PROTOCOL", "SUPPLEMENTS & SNACKS"];
+                      const opacities = ["bg-primary/40", "bg-primary/60", "bg-primary/80", "bg-primary"];
+                      const meal = planData[mealKey];
+                      const disabled = selectedPatient.status === "completed";
+
+                      const updateMealField = (field: keyof MealContent, value: string | number) => {
+                        setPlanData((prev) => ({
+                          ...prev,
+                          [mealKey]: { ...prev[mealKey], [field]: value },
+                        }));
+                      };
+
+                      return (
+                        <div key={mealKey} className="space-y-3 p-4 rounded-xl border border-border bg-muted/30">
+                          <Label className="flex items-center gap-2 font-bold">
+                            <div className={`w-3 h-3 rounded ${opacities[idx]} shadow-sm`} />{" "}
+                            {labels[idx]}
+                          </Label>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="md:col-span-2 space-y-1">
+                              <Label className="text-xs text-muted-foreground">Meal Name <span className="text-destructive">*</span></Label>
+                              <Input
+                                placeholder="e.g. Greek yogurt with berries"
+                                value={meal.name}
+                                onChange={(e) => updateMealField("name", e.target.value)}
+                                disabled={disabled}
+                                className="h-9 bg-background"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Calories (kcal)</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder="0"
+                                value={meal.calories || ""}
+                                onChange={(e) => updateMealField("calories", parseInt(e.target.value) || 0)}
+                                disabled={disabled}
+                                className="h-9 bg-background"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Ingredients dynamic list */}
+                          <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground">Ingredients</Label>
+                            {meal.ingredients.map((ing, ingIdx) => (
+                              <div key={ingIdx} className="flex items-center gap-2">
+                                <Input
+                                  placeholder="Name"
+                                  value={ing.name}
+                                  onChange={(e) => {
+                                    const updated = [...meal.ingredients];
+                                    updated[ingIdx] = { ...updated[ingIdx], name: e.target.value };
+                                    setPlanData((prev) => ({
+                                      ...prev,
+                                      [mealKey]: { ...prev[mealKey], ingredients: updated },
+                                    }));
+                                  }}
+                                  disabled={disabled}
+                                  className="h-8 text-xs bg-background flex-1"
+                                />
+                                <Input
+                                  placeholder="Amt"
+                                  value={ing.amount}
+                                  onChange={(e) => {
+                                    const updated = [...meal.ingredients];
+                                    updated[ingIdx] = { ...updated[ingIdx], amount: e.target.value };
+                                    setPlanData((prev) => ({
+                                      ...prev,
+                                      [mealKey]: { ...prev[mealKey], ingredients: updated },
+                                    }));
+                                  }}
+                                  disabled={disabled}
+                                  className="h-8 text-xs bg-background w-20"
+                                />
+                                <Input
+                                  placeholder="Unit"
+                                  value={ing.unit}
+                                  onChange={(e) => {
+                                    const updated = [...meal.ingredients];
+                                    updated[ingIdx] = { ...updated[ingIdx], unit: e.target.value };
+                                    setPlanData((prev) => ({
+                                      ...prev,
+                                      [mealKey]: { ...prev[mealKey], ingredients: updated },
+                                    }));
+                                  }}
+                                  disabled={disabled}
+                                  className="h-8 text-xs bg-background w-20"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive/60 hover:text-destructive"
+                                  disabled={disabled}
+                                  onClick={() => {
+                                    const updated = meal.ingredients.filter((_, i) => i !== ingIdx);
+                                    setPlanData((prev) => ({
+                                      ...prev,
+                                      [mealKey]: { ...prev[mealKey], ingredients: updated },
+                                    }));
+                                  }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={disabled}
+                              onClick={() => {
+                                setPlanData((prev) => ({
+                                  ...prev,
+                                  [mealKey]: {
+                                    ...prev[mealKey],
+                                    ingredients: [...prev[mealKey].ingredients, freshIngredient()],
+                                  },
+                                }));
+                              }}
+                              className="text-xs h-7"
+                            >
+                              <Plus className="w-3 h-3 mr-1" /> Add Ingredient
+                            </Button>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Notes</Label>
+                            <textarea
+                              className="w-full min-h-[50px] rounded-lg border-border bg-background p-3 text-sm focus:border-primary focus:ring-1 focus:ring-ring transition-colors"
+                              placeholder="Additional notes for this meal..."
+                              value={meal.notes}
+                              onChange={(e) => updateMealField("notes", e.target.value)}
+                              disabled={disabled}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </TabsContent>
 
                   <TabsContent
@@ -829,19 +956,19 @@ export default function ConsultationsAndPlansPage() {
                           <CardContent className="space-y-3 text-sm">
                             <p>
                               <span className="font-semibold">Breakfast:</span>{" "}
-                              {currentDayContent?.breakfast || "N/A"}
+                              {(typeof currentDayContent?.breakfast === "object" ? currentDayContent?.breakfast?.name : currentDayContent?.breakfast) || "N/A"}
                             </p>
                             <p>
                               <span className="font-semibold">Lunch:</span>{" "}
-                              {currentDayContent?.lunch || "N/A"}
+                              {(typeof currentDayContent?.lunch === "object" ? currentDayContent?.lunch?.name : currentDayContent?.lunch) || "N/A"}
                             </p>
                             <p>
                               <span className="font-semibold">Dinner:</span>{" "}
-                              {currentDayContent?.dinner || "N/A"}
+                              {(typeof currentDayContent?.dinner === "object" ? currentDayContent?.dinner?.name : currentDayContent?.dinner) || "N/A"}
                             </p>
                             <p>
                               <span className="font-semibold">Snacks:</span>{" "}
-                              {currentDayContent?.snacks || "N/A"}
+                              {(typeof currentDayContent?.snacks === "object" ? currentDayContent?.snacks?.name : currentDayContent?.snacks) || "N/A"}
                             </p>
                           </CardContent>
                         </Card>
