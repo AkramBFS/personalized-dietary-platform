@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Check, X, Archive, Edit, Trash2 } from "lucide-react";
-import { getModerationPlans, type ModerationPlan } from "@/lib/admin";
-import api from "@/lib/api";
+import { getModerationPlans, getPlanDetail, approvePlan, rejectPlan, archivePlan, type ModerationPlan } from "@/lib/admin";
 
 export default function AdminPlansPage() {
   const [pendingPlans, setPendingPlans] = useState<ModerationPlan[]>([]);
@@ -71,8 +70,8 @@ export default function AdminPlansPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      const response = await api.get(`/lookup/admin/plans/${plan.id}/`);
-      setPlanDetails(response.data);
+      const data = await getPlanDetail(plan.id);
+      setPlanDetails(data);
     } catch (error) {
       console.error("Failed to fetch plan details", error);
       setPlanDetails(null);
@@ -84,7 +83,7 @@ export default function AdminPlansPage() {
   const handleApprovePlan = async (planId: number) => {
     setSubmitting(true);
     try {
-      await api.post(`/lookup/admin/plans/${planId}/approve/`);
+      await approvePlan(planId);
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
       setIsModalOpen(false);
       setSelectedPlan(null);
@@ -100,9 +99,7 @@ export default function AdminPlansPage() {
   const handleRejectPlan = async (planId: number, reason: string) => {
     setSubmitting(true);
     try {
-      await api.post(`/lookup/admin/plans/${planId}/reject/`, {
-        rejection_reason: reason,
-      });
+      await rejectPlan(planId, reason);
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
       setIsModalOpen(false);
       setSelectedPlan(null);
@@ -117,7 +114,7 @@ export default function AdminPlansPage() {
 
   const handleArchivePlan = async (planId: number) => {
     try {
-      await api.post(`/lookup/admin/plans/${planId}/archive/`);
+      await archivePlan(planId);
       setLivePlans((prev) => prev.filter((p) => p.id !== planId));
       toast.success("Plan archived successfully.");
     } catch (error) {

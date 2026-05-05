@@ -22,17 +22,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, Search, X } from "lucide-react";
-import { getAdminUsers, banUser, type AdminUser } from "@/lib/admin";
-import api from "@/lib/api";
+import { getAdminUsers, getAdminUserDetail, banUser, type AdminUser } from "@/lib/admin";
 import { toast } from "sonner";
 
 const getDisplayRole = (role?: string) => {
-  if (!role) return "Unknown"; 
+  if (!role) return "Unknown";
   if (role === "high_admin") return "Admin";
   return role.replace("_", " ");
 };
-
-
 
 export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
@@ -69,7 +66,7 @@ export default function AdminUsersPage() {
       })
       .sort(
         (a, b) =>
-          new Date(b.date_joined).getTime() - new Date(a.date_joined).getTime(),
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(), // Changed here
       );
   }, [users, query, roleFilter]);
 
@@ -78,8 +75,8 @@ export default function AdminUsersPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      const response = await api.get(`/lookup/admin/users/${user.id}/`);
-      setUserDetails(response.data);
+      const data = await getAdminUserDetail(user.id);
+      setUserDetails(data);
     } catch (error) {
       console.error("Failed to fetch user details", error);
       setUserDetails(null);
@@ -92,14 +89,18 @@ export default function AdminUsersPage() {
     try {
       await banUser(user.id, user.is_active);
       setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, is_active: !user.is_active } : u))
+        prev.map((u) =>
+          u.id === user.id ? { ...u, is_active: !user.is_active } : u,
+        ),
       );
       if (userDetails && userDetails.id === user.id) {
         setUserDetails({ ...userDetails, is_active: !user.is_active });
       }
-      toast.success(`User ${user.is_active ? 'banned' : 'unbanned'} successfully`);
+      toast.success(
+        `User ${user.is_active ? "banned" : "unbanned"} successfully`,
+      );
     } catch (error) {
-      toast.error(`Failed to ${user.is_active ? 'ban' : 'unban'} user`);
+      toast.error(`Failed to ${user.is_active ? "ban" : "unban"} user`);
     }
   };
 
@@ -183,7 +184,7 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(user.date_joined).toLocaleDateString()}
+                        {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

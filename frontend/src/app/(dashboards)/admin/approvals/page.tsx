@@ -26,6 +26,7 @@ import {
   approveNutritionist,
   getPendingNutritionists,
   rejectNutritionist,
+  getNutritionistDetail,
   type PendingNutritionist,
 } from "@/lib/admin";
 
@@ -36,6 +37,22 @@ export default function AdminApprovalsPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const handleReview = async (item: PendingNutritionist) => {
+    setSelected(item);
+    setIsModalOpen(true);
+    setDetailsLoading(true);
+    try {
+      const data = await getNutritionistDetail(item.id);
+      setSelected(data);
+    } catch (error) {
+      console.error("Failed to fetch nutritionist details", error);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -127,23 +144,14 @@ export default function AdminApprovalsPage() {
                     <TableRow key={item.id}>
                       <TableCell>{item.username}</TableCell>
                       <TableCell>{item.email}</TableCell>
-                      <TableCell>
-                        {item.nutritionist?.specialization?.name ?? "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {item.nutritionist?.years_experience ?? "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {item.nutritionist?.certification_ref ?? "N/A"}
-                      </TableCell>
+                      <TableCell>{item.specialization_name ?? "N/A"}</TableCell>
+                      <TableCell>{item.years_experience ?? "N/A"}</TableCell>
+                      <TableCell>{item.certification_ref ?? "N/A"}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setSelected(item);
-                            setIsModalOpen(true);
-                          }}
+                          onClick={() => handleReview(item)}
                         >
                           Review
                         </Button>
@@ -168,68 +176,78 @@ export default function AdminApprovalsPage() {
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm">
-                  <span className="font-semibold">Username:</span>{" "}
-                  {selected.username}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Email:</span> {selected.email}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Bio:</span>{" "}
-                  {selected.bio ?? "N/A"}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Specialization:</span>{" "}
-                  {selected.nutritionist?.specialization?.name ?? "N/A"}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Experience:</span>{" "}
-                  {selected.nutritionist?.years_experience ?? "N/A"} years
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Certification Ref:</span>{" "}
-                  {selected.nutritionist?.certification_ref ?? "N/A"}
-                </p>
-                {selected.nutritionist?.cert_image_url ? (
-                  <a
-                    href={selected.nutritionist.cert_image_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary underline"
-                  >
-                    View Certificate
-                  </a>
-                ) : null}
-              </div>
+              {detailsLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <p className="text-sm">
+                      <span className="font-semibold">Username:</span>{" "}
+                      {selected.username}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Email:</span> {selected.email}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Bio:</span>{" "}
+                      {selected.bio ?? "N/A"}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Specialization:</span>{" "}
+                      {selected.specialization_name ?? "N/A"}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Experience:</span>{" "}
+                      {selected.years_experience ?? "N/A"} years
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Certification Ref:</span>{" "}
+                      {selected.certification_ref ?? "N/A"}
+                    </p>
+                    {selected.cert_image_url ? (
+                      <a
+                        href={selected.cert_image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-primary underline"
+                      >
+                        View Certificate
+                      </a>
+                    ) : null}
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Reason for Rejection
-                </label>
-                <Input
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Required when rejecting."
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Reason for Rejection
+                    </label>
+                    <Input
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Required when rejecting."
+                    />
+                  </div>
 
-              <div className="flex gap-3 justify-end">
-                <Button
-                  disabled={submitting}
-                  variant="outline"
-                  onClick={() => handleReject(selected.id)}
-                >
-                  Reject
-                </Button>
-                <Button
-                  disabled={submitting}
-                  onClick={() => handleApprove(selected.id)}
-                >
-                  Approve
-                </Button>
-              </div>
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      disabled={submitting}
+                      variant="outline"
+                      onClick={() => handleReject(selected.id)}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      disabled={submitting}
+                      onClick={() => handleApprove(selected.id)}
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
