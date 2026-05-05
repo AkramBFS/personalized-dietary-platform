@@ -96,7 +96,7 @@ export default function LoginPage() {
       const errorCode = error.response?.data?.code || error.response?.data?.error_code || error.response?.data?.message;
 
       if (error.response?.status === 403 && (errorCode === "ACCOUNT_PENDING_APPROVAL" || errorCode === "Your account is pending approval.")) {
-        alert("Your account is pending approval. Please wait for admin confirmation.");
+        router.push("/register/pending");
       } else if (error.response?.status === 403 && errorCode === "ACCOUNT_REJECTED") {
         alert("Your account application was rejected. Please contact support for details.");
       } else if (error.response?.status === 401) {

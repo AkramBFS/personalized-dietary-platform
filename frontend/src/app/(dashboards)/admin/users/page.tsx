@@ -22,48 +22,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, Search, X } from "lucide-react";
-import { getAdminUsers, type AdminUser } from "@/lib/admin";
+import { getAdminUsers, banUser, type AdminUser } from "@/lib/admin";
 import api from "@/lib/api";
+import { toast } from "sonner";
 
-const getDisplayRole = (role: string) => {
+const getDisplayRole = (role?: string) => {
+  if (!role) return "Unknown"; 
   if (role === "high_admin") return "Admin";
   return role.replace("_", " ");
 };
 
-const mockUsers: AdminUser[] = [
-  {
-    id: 1,
-    username: "amira_h",
-    email: "amira@example.com",
-    role: "client",
-    is_active: true,
-    date_joined: "2026-01-11T00:00:00Z",
-  },
-  {
-    id: 2,
-    username: "dr_kareem",
-    email: "kareem@example.com",
-    role: "nutritionist",
-    is_active: true,
-    date_joined: "2026-01-28T00:00:00Z",
-  },
-  {
-    id: 3,
-    username: "admin_test",
-    email: "admin@example.com",
-    role: "high_admin",
-    is_active: true,
-    date_joined: "2026-02-04T00:00:00Z",
-  },
-  {
-    id: 4,
-    username: "banned_user",
-    email: "banned@example.com",
-    role: "client",
-    is_active: false,
-    date_joined: "2025-12-20T00:00:00Z",
-  },
-];
+
 
 export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
@@ -80,8 +49,8 @@ export default function AdminUsersPage() {
       try {
         const data = await getAdminUsers();
         setUsers(data);
-      } catch {
-        setUsers(mockUsers);
+      } catch (error) {
+        toast.error("Failed to fetch users");
       } finally {
         setLoading(false);
       }
@@ -109,13 +78,28 @@ export default function AdminUsersPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      const response = await api.get(`/admin/users/${user.id}/`);
+      const response = await api.get(`/lookup/admin/users/${user.id}/`);
       setUserDetails(response.data);
     } catch (error) {
       console.error("Failed to fetch user details", error);
       setUserDetails(null);
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const handleBanToggle = async (user: AdminUser) => {
+    try {
+      await banUser(user.id, user.is_active);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, is_active: !user.is_active } : u))
+      );
+      if (userDetails && userDetails.id === user.id) {
+        setUserDetails({ ...userDetails, is_active: !user.is_active });
+      }
+      toast.success(`User ${user.is_active ? 'banned' : 'unbanned'} successfully`);
+    } catch (error) {
+      toast.error(`Failed to ${user.is_active ? 'ban' : 'unban'} user`);
     }
   };
 
@@ -202,14 +186,23 @@ export default function AdminUsersPage() {
                         {new Date(user.date_joined).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(user)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(user)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            variant={user.is_active ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={() => handleBanToggle(user)}
+                          >
+                            {user.is_active ? "Ban" : "Unban"}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
