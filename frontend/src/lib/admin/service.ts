@@ -13,7 +13,7 @@ export interface AdminUser {
   email: string;
   role: "client" | "nutritionist" | "high_admin";
   is_active: boolean;
-  date_joined: string;
+  created_at: string;
 }
 
 export interface PendingNutritionist {
@@ -21,12 +21,12 @@ export interface PendingNutritionist {
   username: string;
   email: string;
   bio?: string;
-  nutritionist?: {
-    specialization?: { name?: string };
-    years_experience?: number;
-    certification_ref?: string;
-    cert_image_url?: string;
-  };
+  specialization_name?: string;
+  years_experience?: number;
+  certification_ref?: string;
+  cert_image_url?: string;
+  approval_status: string;
+  created_at: string;
 }
 
 export interface ModerationPlan {
@@ -40,12 +40,14 @@ export interface ModerationPlan {
 
 export interface ModerationPost {
   id: number;
-  title: string;
-  author?: string;
-  status?: "pending" | "approved" | "rejected";
-  created_at?: string;
+  author_username: string; // Matches API
+  content: string;         // Matches API
+  image_url: string | null;
+  status: "draft" | "approved" | "rejected"; // Matches API "status"
+  is_approved: boolean;    // Matches API
+  created_at: string;      // Matches API
+  title?: string;          // Kept as optional if some posts have titles
 }
-
 export interface BlogArticle {
   id: number;
   title: string;
@@ -77,24 +79,59 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   return Array.isArray(data) ? data : data.results ?? [];
 }
 
+export async function getAdminUserDetail(id: number): Promise<any> {
+  const response = await api.get(`/lookup/admin/users/${id}/`);
+  return unwrapEnvelope(response.data);
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  await api.delete(`/lookup/admin/users/${id}/delete/`);
+}
+
 export async function getPendingNutritionists(): Promise<PendingNutritionist[]> {
-  const response = await api.get("/lookup/admin/nutritionists/pending/");
+  const response = await api.get("/lookup/nutritionists/pending/");
   const data = unwrapEnvelope<PendingNutritionist[] | { results?: PendingNutritionist[] }>(response.data);
   return Array.isArray(data) ? data : data.results ?? [];
 }
 
+export async function getNutritionistDetail(id: number): Promise<any> {
+  const response = await api.get(`/lookup/nutritionists/${id}/`);
+  return unwrapEnvelope(response.data);
+}
+
 export async function approveNutritionist(id: number): Promise<void> {
-  await api.post(`/lookup/admin/nutritionists/${id}/approve/`);
+  await api.post(`/lookup/nutritionists/${id}/approve/`);
 }
 
 export async function rejectNutritionist(id: number, rejection_reason: string): Promise<void> {
-  await api.post(`/lookup/admin/nutritionists/${id}/reject/`, { rejection_reason });
+  await api.post(`/lookup/nutritionists/${id}/reject/`, { rejection_reason });
 }
 
-export async function getModerationPlans(): Promise<ModerationPlan[]> {
-  const response = await api.get("/lookup/admin/plans/");
+export async function reReviewNutritionist(id: number): Promise<void> {
+  await api.post(`/lookup/nutritionists/${id}/re-review/`);
+}
+
+export async function getModerationPlans(status?: string): Promise<ModerationPlan[]> {
+  const response = await api.get("/lookup/admin/plans/", { params: { status } });
   const data = unwrapEnvelope<ModerationPlan[] | { results?: ModerationPlan[] }>(response.data);
   return Array.isArray(data) ? data : data.results ?? [];
+}
+
+export async function getPlanDetail(id: number): Promise<any> {
+  const response = await api.get(`/lookup/admin/plans/${id}/`);
+  return unwrapEnvelope(response.data);
+}
+
+export async function approvePlan(id: number): Promise<void> {
+  await api.post(`/lookup/admin/plans/${id}/approve/`);
+}
+
+export async function rejectPlan(id: number, rejection_reason: string): Promise<void> {
+  await api.post(`/lookup/admin/plans/${id}/reject/`, { rejection_reason });
+}
+
+export async function archivePlan(id: number): Promise<void> {
+  await api.post(`/lookup/admin/plans/${id}/archive/`);
 }
 
 export async function getModerationPosts(): Promise<ModerationPost[]> {
@@ -103,28 +140,31 @@ export async function getModerationPosts(): Promise<ModerationPost[]> {
   return Array.isArray(data) ? data : data.results ?? [];
 }
 
+export async function approvePost(id: number): Promise<void> {
+  await api.patch(`/lookup/admin/posts/${id}/approve/`);
+}
+
+export async function rejectPost(id: number): Promise<void> {
+  await api.patch(`/lookup/admin/posts/${id}/reject/`);
+}
+
+export async function deletePost(id: number): Promise<void> {
+  await api.delete(`/lookup/admin/posts/${id}/`);
+}
+
 export async function getBlogArticles(): Promise<BlogArticle[]> {
-  const response = await api.get("/lookup/admin/blog/");
+  const response = await api.get("/blog/");
   const data = unwrapEnvelope<BlogArticle[] | { results?: BlogArticle[] }>(response.data);
   return Array.isArray(data) ? data : data.results ?? [];
 }
 
+export async function getBlogArticle(id: number): Promise<BlogArticle> {
+  const response = await api.get(`/blog/${id}/`);
+  return unwrapEnvelope(response.data);
+}
+
 export async function createBlogArticle(payload: Pick<BlogArticle, "title" | "content"> & { cover_image?: string; tags?: string[] }): Promise<void> {
   await api.post("/lookup/admin/blog/", payload);
-}
-
-export async function getAdminInquiries(): Promise<InquiryTicket[]> {
-  const response = await api.get("/lookup/admin/inquiries/");
-  const data = unwrapEnvelope<InquiryTicket[] | { results?: InquiryTicket[] }>(response.data);
-  return Array.isArray(data) ? data : data.results ?? [];
-}
-
-export async function banUser(id: number, is_banned: boolean): Promise<void> {
-  await api.patch(`/lookup/admin/users/${id}/ban/`, { is_banned });
-}
-
-export async function respondToInquiry(id: number, admin_response: string): Promise<void> {
-  await api.patch(`/lookup/admin/inquiries/${id}/respond/`, { admin_response });
 }
 
 export async function updateBlogArticle(id: number, payload: Partial<BlogArticle>): Promise<void> {
@@ -132,7 +172,26 @@ export async function updateBlogArticle(id: number, payload: Partial<BlogArticle
 }
 
 export async function deleteBlogArticle(id: number): Promise<void> {
-  await api.delete(`/lookup/admin/blog/${id}/`);
+  await api.delete(`/lookup/admin/blog/${id}/delete/`);
+}
+
+export async function getAdminInquiries(status?: string): Promise<InquiryTicket[]> {
+  const response = await api.get("/lookup/admin/inquiries/", { params: { status } });
+  const data = unwrapEnvelope<InquiryTicket[] | { results?: InquiryTicket[] }>(response.data);
+  return Array.isArray(data) ? data : data.results ?? [];
+}
+
+export async function getInquiryDetail(id: number): Promise<any> {
+  const response = await api.get(`/lookup/admin/inquiries/${id}/`);
+  return unwrapEnvelope(response.data);
+}
+
+export async function banUser(id: number, is_banned: boolean): Promise<void> {
+  await api.patch(`/lookup/admin/users/${id}/ban/`, { is_banned });
+}
+
+export async function respondToInquiry(id: number, admin_response: string, status: string = "resolved"): Promise<void> {
+  await api.patch(`/lookup/admin/inquiries/${id}/respond/`, { admin_response, status });
 }
 
 export async function getDashboardStats(): Promise<any> {
