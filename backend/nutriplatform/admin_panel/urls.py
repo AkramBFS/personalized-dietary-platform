@@ -37,6 +37,7 @@ from .views import (
     AdminInquiryRespondView,
     ActivityLevelListView,
     DietListView,
+    AdminDashboardStatsView,
 )
 
 urlpatterns = [
@@ -84,6 +85,9 @@ urlpatterns = [
 
     path('activity-levels/', ActivityLevelListView.as_view(), name='activity-levels'),
     path('diets/',           DietListView.as_view(),          name='diets'),
+
+    path('admin/dashboard/', AdminDashboardStatsView.as_view(), name='admin-dashboard'),
+    
 ]
 
 
