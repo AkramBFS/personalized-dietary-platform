@@ -692,3 +692,42 @@ class AdminInquiryRespondView(APIView):
                 "status":         inquiry.status,
             }
         })
+
+class AdminDashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        from users.models import User
+        from nutritionist.models import Nutritionist
+        from marketplace.models import Plan
+        from community.models import FeedbackToAdmin
+
+        # Total users by role
+        total_users        = User.objects.filter(is_active=True).count()
+        total_clients      = User.objects.filter(role='client', is_active=True).count()
+        total_nutritionists = User.objects.filter(role='nutritionist', is_active=True).count()
+        total_admins       = User.objects.filter(role='high_admin', is_active=True).count()
+
+        # Pending approvals (nutritionists waiting for approval)
+        pending_approvals  = Nutritionist.objects.filter(approval_status='pending').count()
+
+        # Pending plans
+        pending_plans      = Plan.objects.filter(status='pending').count()
+
+        # Unresolved inquiries
+        unresolved_inquiries = FeedbackToAdmin.objects.filter(status='open').count()
+
+        return Response({
+            "status": "success",
+            "data": {
+                "users": {
+                    "total":        total_users,
+                    "clients":      total_clients,
+                    "nutritionists": total_nutritionists,
+                    "admins":       total_admins,
+                },
+                "pending_approvals":   pending_approvals,
+                "pending_plans":       pending_plans,
+                "unresolved_inquiries": unresolved_inquiries,
+            }
+        })
