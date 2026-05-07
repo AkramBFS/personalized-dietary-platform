@@ -155,3 +155,45 @@ export const getNutritionists = async (params?: {
   const response = await api.get("marketplace/nutritionists/", { params });
   return response.data;
 };
+
+// ============================================
+// Nutritionist Invoices API
+// ============================================
+
+export interface NutritionistInvoice {
+  id: number;
+  transaction_number: string;
+  total_paid: number;
+  commission_rate: number;
+  net_earnings: number;
+  item_type: "plan" | "consultation_advice" | "consultation_custom";
+  created_at: string;
+  client: {
+    username: string;
+  };
+  nutritionist: {
+    user: {
+      username: string;
+    };
+  };
+}
+
+/**
+ * GET /nutritionist/invoices/
+ * List nutritionist's invoices
+ */
+export const getNutritionistInvoices = async (): Promise<NutritionistInvoice[]> => {
+  const response = await api.get("nutritionist/invoices/");
+  return unwrapResponse(response.data);
+};
+
+/**
+ * GET /invoices/{id}/
+ * Fetch full invoice details (shared with client if endpoint is same)
+ * Note: If nutritionist uses a different endpoint, change it here.
+ * Based on the request, nutritionist might use the same detailed view as client.
+ */
+export const getInvoiceDetail = async (id: number): Promise<NutritionistInvoice> => {
+  const response = await api.get(`invoices/${id}/`);
+  return unwrapResponse(response.data);
+};

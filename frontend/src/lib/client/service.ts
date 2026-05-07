@@ -203,6 +203,17 @@ export interface CommunityPost {
   updated_at?: string;
 }
 
+export interface ClientInvoice {
+  id: number;
+  transaction_number: string;
+  total_paid: number;
+  item_type: string;
+  created_at: string;
+  client: {
+    username: string;
+  };
+}
+
 function unwrapList<T>(payload: ApiEnvelope<T[]> | T[] | { results?: T[] }): T[] {
   const data = unwrapResponse(payload as ApiEnvelope<T[]> | T[] | { results?: T[] });
   if (Array.isArray(data)) return data;
@@ -383,4 +394,14 @@ export async function getClientOwnPosts(page?: number): Promise<CommunityPost[]>
 
 export async function deleteClientPost(postId: number): Promise<void> {
   await api.delete(`/client/posts/${postId}/`);
+}
+
+export async function getClientInvoices(): Promise<ClientInvoice[]> {
+  const response = await api.get<ApiEnvelope<ClientInvoice[]> | ClientInvoice[] | { results?: ClientInvoice[] }>("/client/invoices/");
+  return unwrapList(response.data);
+}
+
+export async function getInvoiceDetail(id: number): Promise<ClientInvoice> {
+  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`/invoices/${id}/`);
+  return unwrapResponse(response.data);
 }
