@@ -121,3 +121,37 @@ export const bookConsultation = async (payload: {
   const response = await api.post("client/consultations/book/", payload);
   return response.data;
 };
+
+// ============================================
+// Nutritionist Directory (Marketplace List)
+// ============================================
+
+/**
+ * Matches the exact shape returned by GET /marketplace/nutritionists/
+ */
+export interface NutritionistListItem {
+  nutritionist_id: number;
+  username: string;
+  profile_photo_url: string | null;
+  bio: string;
+  years_experience: number;
+  consultation_price: number;
+  specialization_name: string;
+  country_name: string;
+  languages: string[];
+  rating: number;
+}
+
+/**
+ * GET /marketplace/nutritionists/
+ * Fetch list of approved nutritionists for the public directory.
+ */
+export const getNutritionists = async (params?: {
+  specialization_id?: number;
+  language_id?: number;
+  country_id?: number;
+  sort?: string;
+}) => {
+  const response = await api.get("marketplace/nutritionists/", { params });
+  return response.data;
+};
