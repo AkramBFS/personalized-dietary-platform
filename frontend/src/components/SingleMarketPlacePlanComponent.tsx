@@ -79,7 +79,7 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
   }
 
   return (
-    <div className="bg-background text-foreground font-sans min-h-screen flex flex-col selection:bg-brand selection:text-brand-foreground">
+    <div className="bg-background text-foreground font-sans min-h-screen flex flex-col selection:bg-brand selection:text-brand-foreground mt-8">
       <main className="flex-grow w-full max-w-[1280px] mx-auto px-6 md:px-8 py-12 flex flex-col gap-20">
         
         {/* Hero Section */}
