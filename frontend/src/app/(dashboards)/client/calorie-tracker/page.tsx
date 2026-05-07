@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { resolveApiUrl } from "@/lib/api";
+import GenericDropdown from "@/components/ui/GenericDropdown";
 import {
   AICalorieLog,
   AIPrediction,
@@ -640,19 +641,16 @@ export default function CalorieTrackerPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={submitManualLog} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Meal Type</label>
-                    <select
+                  <div className="space-y-1">
+                    <GenericDropdown
+                      label="Meal Type"
                       value={mealType}
-                      onChange={(event) => setMealType(event.target.value as MealType)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      {MEAL_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {MEAL_LABELS[type]}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setMealType(val as MealType)}
+                      options={MEAL_TYPES.map((type) => ({
+                        label: MEAL_LABELS[type],
+                        value: type,
+                      }))}
+                    />
                   </div>
 
                   <div className="space-y-3 rounded-xl border border-border bg-background p-4">

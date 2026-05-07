@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ClientProfile, getClientProfile, patchClientProfile } from "@/lib/client";
 import { bootstrapLookups, getActivityLevels, getCountries, getDiets, getGoals, LookupItem } from "@/lib/lookups";
 import { resolveApiUrl } from "@/lib/api";
+import GenericDropdown from "@/components/ui/GenericDropdown";
 
 const ACTIVITY_FALLBACK = [
   { value: "sedentary", label: "Sedentary" },
@@ -199,75 +200,126 @@ export default function ProfilePage() {
             <CardContent>
               <form onSubmit={handleSave} className="space-y-5">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="age">Age</Label>
-                    <Input id="age" type="number" min={0} name="age" value={form.age} onChange={handleChange} />
+                  <div className="space-y-3">
+                    <Label htmlFor="age" className="font-bold ml-1">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      min={0}
+                      name="age"
+                      value={form.age}
+                      onChange={handleChange}
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="height">Height (cm)</Label>
-                    <Input id="height" type="number" min={0} name="height" value={form.height} onChange={handleChange} />
+                  <div className="space-y-3">
+                    <Label htmlFor="height" className="font-bold ml-1">Height (cm)</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      min={0}
+                      name="height"
+                      value={form.height}
+                      onChange={handleChange}
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="weight">Weight (kg)</Label>
-                    <Input id="weight" type="number" min={0} step="0.1" name="weight" value={form.weight} onChange={handleChange} />
+                  <div className="space-y-3">
+                    <Label htmlFor="weight" className="font-bold ml-1">Weight (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      name="weight"
+                      value={form.weight}
+                      onChange={handleChange}
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country_id">Country</Label>
-                    <select id="country_id" name="country_id" value={form.country_id} onChange={handleChange} className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
-                      <option value="">Select country</option>
-                      {Array.isArray(countries) && countries.map((country) => (
-                        <option key={country.id} value={country.id}>{optionLabel(country)}</option>
-                      ))}
-                    </select>
+                  <div className="space-y-1">
+                    <GenericDropdown
+                      label="Country"
+                      value={form.country_id}
+                      options={countries.map((c) => ({
+                        label: optionLabel(c),
+                        value: String(c.id),
+                      }))}
+                      onChange={(val) =>
+                        setForm((prev) => ({ ...prev, country_id: val }))
+                      }
+                      placeholder="Select country"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="goal_id">Health Goal</Label>
-                    <select id="goal_id" name="goal_id" value={form.goal_id} onChange={handleChange} className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
-                      <option value="">Select goal</option>
-                      {Array.isArray(goals) && goals.map((goal) => (
-                        <option key={goal.id} value={goal.id}>{optionLabel(goal)}</option>
-                      ))}
-                    </select>
+                  <div className="space-y-1">
+                    <GenericDropdown
+                      label="Health Goal"
+                      value={form.goal_id}
+                      options={goals.map((g) => ({
+                        label: optionLabel(g),
+                        value: String(g.id),
+                      }))}
+                      onChange={(val) =>
+                        setForm((prev) => ({ ...prev, goal_id: val }))
+                      }
+                      placeholder="Select goal"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="activity_level">Activity Level</Label>
-                    <select id="activity_level" name="activity_level" value={form.activity_level} onChange={handleChange} className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
-                      <option value="">Select activity level</option>
-                      {Array.isArray(activityLevels) && activityLevels.length > 0
-                        ? activityLevels.map((option) => <option key={optionValue(option)} value={optionValue(option)}>{optionLabel(option)}</option>)
-                        : ACTIVITY_FALLBACK.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                    </select>
+                  <div className="space-y-1">
+                    <GenericDropdown
+                      label="Activity Level"
+                      value={form.activity_level}
+                      options={(activityLevels.length > 0
+                        ? activityLevels
+                        : ACTIVITY_FALLBACK
+                      ).map((a) => ({
+                        label: optionLabel(a),
+                        value: optionValue(a),
+                      }))}
+                      onChange={(val) =>
+                        setForm((prev) => ({ ...prev, activity_level: val }))
+                      }
+                      placeholder="Select activity level"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="diet">Diet</Label>
-                    <select id="diet" name="diet" value={form.diet} onChange={handleChange} className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
-                      <option value="">Select diet</option>
-                      {Array.isArray(diets) && diets.length > 0
-                        ? diets.map((option) => <option key={optionValue(option)} value={optionValue(option)}>{optionLabel(option)}</option>)
-                        : DIET_FALLBACK.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                    </select>
+                  <div className="space-y-1">
+                    <GenericDropdown
+                      label="Diet"
+                      value={form.diet}
+                      options={(diets.length > 0 ? diets : DIET_FALLBACK).map(
+                        (d) => ({
+                          label: optionLabel(d),
+                          value: optionValue(d),
+                        }),
+                      )}
+                      onChange={(val) =>
+                        setForm((prev) => ({ ...prev, diet: val }))
+                      }
+                      placeholder="Select diet"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="health_history">Health History</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="health_history" className="font-bold ml-1">Health History</Label>
                   <textarea
                     id="health_history"
                     name="health_history"
                     value={form.health_history}
                     onChange={handleChange}
-                    className="min-h-[100px] w-full rounded-md border border-input bg-background p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="min-h-[120px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-4 px-6 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300 hover:bg-accent/50"
                     placeholder="Enter any medical conditions or dietary restrictions..."
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="profile_photo">Profile Photo</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="profile_photo" className="font-bold ml-1">Profile Photo</Label>
                   <Input
                     id="profile_photo"
                     type="file"
                     accept="image/*"
                     onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
+                    className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   />
                 </div>
 

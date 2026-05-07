@@ -14,16 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Eye, Search, X } from "lucide-react";
 import { getAdminUsers, getAdminUserDetail, banUser, type AdminUser } from "@/lib/admin";
 import { toast } from "sonner";
+import GenericDropdown from "@/components/ui/GenericDropdown";
 
 const getDisplayRole = (role?: string) => {
   if (!role) return "Unknown";
@@ -114,17 +108,18 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="client">Client</SelectItem>
-              <SelectItem value="nutritionist">Nutritionist</SelectItem>
-              <SelectItem value="high_admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
+          <GenericDropdown
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={[
+              { label: "All Roles", value: "all" },
+              { label: "Client", value: "client" },
+              { label: "Nutritionist", value: "nutritionist" },
+              { label: "Admin", value: "high_admin" },
+            ]}
+            placeholder="Filter by role"
+            className="w-40 py-2 px-4 text-sm"
+          />
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

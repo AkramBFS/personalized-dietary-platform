@@ -13,6 +13,7 @@ interface GenericDropdownProps {
   onChange: (value: any) => void;
   placeholder?: string;
   className?: string;
+  error?: string;
 }
 
 export default function GenericDropdown({
@@ -22,6 +23,7 @@ export default function GenericDropdown({
   onChange,
   placeholder = "Select an option",
   className = "",
+  error,
 }: GenericDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +50,7 @@ export default function GenericDropdown({
     shadow-[0_8px_32px_rgba(0,0,0,0.05)]
     hover:bg-accent transition-all duration-300
     cursor-pointer group
+    ${error ? "border-destructive/50 ring-1 ring-destructive/20" : ""}
     ${className}
   `;
 
@@ -123,6 +126,11 @@ export default function GenericDropdown({
             </li>
           )}
         </ul>
+      )}
+      {error && (
+        <p className="mt-1 text-sm text-destructive ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+          {error}
+        </p>
       )}
     </div>
   );
