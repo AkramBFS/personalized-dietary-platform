@@ -20,6 +20,7 @@ import {
   getNutritionistAvailability,
   bookConsultation,
 } from "@/lib/api";
+import NutritionistProfileModal from "./NutritionistProfileModal";
 
 // --- API Mapping Interfaces ---
 interface TimeSlot {
@@ -28,14 +29,15 @@ interface TimeSlot {
   is_available: boolean;
 }
 
+/** Internal display model — normalised from the flat marketplace API response */
 interface NutritionistProfile {
   id: string | number;
-  name: string;
-  specialization: string;
-  tags: string[];
+  name: string;         // ← API: username
+  specialization: string; // ← API: specialization_name
+  tags: string[];       // ← built from languages[] + specialization_name
   bio: string;
   consultation_price: number;
-  profile_image: string;
+  profile_image: string; // ← API: profile_photo_url (resolved)
 }
 
 // Props Interface
@@ -62,28 +64,36 @@ export default function ScheduleConsultation({
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // 2. Fetch Profile on Mount
+  // 2. Fetch Profile on Mount — normalize flat marketplace API response
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setIsPageLoading(true);
-        const data = await getNutritionistProfile(nutritionistId);
-        setNutritionist(data);
+        const raw = await getNutritionistProfile(nutritionistId);
+        // unwrap { status, data } envelope if present
+        const d: any = raw?.data ?? raw;
+        setNutritionist({
+          id: d.nutritionist_id ?? nutritionistId,
+          name: d.username ?? "Unknown",
+          specialization: d.specialization_name ?? "",
+          tags: [
+            d.specialization_name,
+            ...(Array.isArray(d.languages) ? d.languages : []),
+          ].filter(Boolean) as string[],
+          bio: d.bio ?? "",
+          consultation_price: d.consultation_price ?? 0,
+          profile_image: d.profile_photo_url
+            ? d.profile_photo_url.startsWith("http")
+              ? d.profile_photo_url
+              : `http://127.0.0.1:8000/${d.profile_photo_url}`
+            : "/placeholder-avatar.png",
+        });
         setError(null);
       } catch (err) {
         console.error("Failed to load profile", err);
         setError("Failed to load nutritionist profile");
-        // Fallback to mock data for development
-        setNutritionist({
-          id: nutritionistId,
-          name: "Sarah Jenkins, MS, RDN",
-          specialization: "Lead Clinical Dietitian",
-          tags: ["Hormonal Health", "Weight Loss", "Metabolic Disorders"],
-          bio: "Sarah specializes in evidence-based nutritional strategies for complex metabolic conditions...",
-          consultation_price: 150.0,
-          profile_image: "https://placehold.co/150x150/png",
-        });
       } finally {
         setIsPageLoading(false);
       }
@@ -99,27 +109,23 @@ export default function ScheduleConsultation({
       setIsSlotsLoading(true);
       try {
         const formattedDate = format(selectedDate, "yyyy-MM-dd");
-        const data = await getNutritionistAvailability(
+        const raw = await getNutritionistAvailability(
           nutritionistId,
           formattedDate,
         );
-        const extractSlots = (resData: any) => {
-          if (Array.isArray(resData)) return resData;
-          if (resData && Array.isArray(resData.available_slots)) return resData.available_slots;
-          if (resData && Array.isArray(resData.results)) return resData.results;
-          return [];
-        };
-        setAvailability(extractSlots(data));
+        // API returns: { status, data: { is_holiday, available_slots } }
+        const payload: any = raw?.data ?? raw;
+        const slots: TimeSlot[] = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.available_slots)
+          ? payload.available_slots
+          : Array.isArray(payload?.results)
+          ? payload.results
+          : [];
+        setAvailability(slots);
       } catch (err) {
         console.error("Failed to load slots", err);
-        // Fallback to mock data for development
-        setAvailability([
-          { start_time: "09:00", end_time: "09:45", is_available: true },
-          { start_time: "09:30", end_time: "10:15", is_available: true },
-          { start_time: "11:00", end_time: "11:45", is_available: false },
-          { start_time: "13:00", end_time: "13:45", is_available: true },
-          { start_time: "14:30", end_time: "15:15", is_available: true },
-        ]);
+        setAvailability([]);
       } finally {
         setIsSlotsLoading(false);
       }
@@ -163,15 +169,15 @@ export default function ScheduleConsultation({
     );
   }
 
-  // Use fallback data if nutritionist is still loading
-  const currentNutritionist = nutritionist || {
+  // Use fallback data while nutritionist state is being populated
+  const currentNutritionist = nutritionist ?? {
     id: nutritionistId,
-    name: "Loading...",
+    name: "Loading…",
     specialization: "",
     tags: [],
     bio: "",
-    consultation_price: 150.0,
-    profile_image: "https://placehold.co/150x150/png",
+    consultation_price: 0,
+    profile_image: "/placeholder-avatar.png",
   };
 
   // 7. Booking Handler (Connects to POST /client/consultations/book/)
@@ -180,7 +186,8 @@ export default function ScheduleConsultation({
 
     setIsLoading(true);
     const payload = {
-      nutritionist_id: String(nutritionistId),
+      // API requires nutritionist_id as a string per the bookConsultation signature
+      nutritionist_id: String(nutritionist.id),
       appointment_date: format(selectedDate, "yyyy-MM-dd"),
       start_time: selectedSlot.start_time,
       end_time: selectedSlot.end_time,
@@ -232,7 +239,10 @@ export default function ScheduleConsultation({
                     {currentNutritionist.specialization}
                   </p>
                 </div>
-                <button className="text-sm font-semibold text-button-primary bg-accent hover:bg-primary hover:text-primary-foreground rounded-lg px-4 py-2 transition-all w-full sm:w-auto">
+                <button 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="text-sm font-semibold text-button-primary bg-accent hover:bg-primary hover:text-primary-foreground rounded-lg px-4 py-2 transition-all w-full sm:w-auto"
+                >
                   View Full Profile
                 </button>
               </div>
@@ -490,6 +500,12 @@ export default function ScheduleConsultation({
           </div>
         </div>
       </div>
+
+      <NutritionistProfileModal
+        id={nutritionistId}
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </main>
   );
 }
