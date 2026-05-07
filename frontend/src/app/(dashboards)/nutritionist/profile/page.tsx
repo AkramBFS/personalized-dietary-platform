@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { NutritionistProfile, getNutritionistProfile, patchNutritionistProfile } from "@/lib/nutritionist";
 import { bootstrapLookups, getLanguages, LookupItem } from "@/lib/lookups";
 import { resolveApiUrl } from "@/lib/api";
+import GenericDropdown from "@/components/ui/GenericDropdown";
 
 function lookupName(item: LookupItem): string {
   return item.name ?? item.label ?? item.value ?? String(item.id);
@@ -167,20 +168,20 @@ export default function ProfilePage() {
                 <CardDescription className="text-muted-foreground">Update your professional details and public consultation settings.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="bio" className="font-bold ml-1">Bio</Label>
                   <textarea
                     id="bio"
                     value={form.bio}
                     onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))}
-                    className="flex min-h-[110px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="flex min-h-[120px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-4 px-6 text-sm transition-all duration-300 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     placeholder="Share your expertise and focus areas."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="years">Years of Experience</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="years" className="font-bold ml-1">Years of Experience</Label>
                     <Input
                       id="years"
                       type="number"
@@ -189,10 +190,11 @@ export default function ProfilePage() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, years_experience: Number(event.target.value) || 0 }))
                       }
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Consultation Price (USD)</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="price" className="font-bold ml-1">Consultation Price (USD)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -202,28 +204,35 @@ export default function ProfilePage() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, consultation_price: Number(event.target.value) || 0 }))
                       }
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <Label>Languages</Label>
-                  <div className="flex gap-2">
-                    <select
-                      value={pendingLanguageId}
-                      onChange={(event) => setPendingLanguageId(event.target.value)}
-                      className="h-9 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <GenericDropdown
+                        label="Add Language"
+                        value={pendingLanguageId}
+                        onChange={(val) => setPendingLanguageId(val)}
+                        options={languages
+                          .filter((language) => !form.language_ids.includes(language.id))
+                          .map((language) => ({
+                            label: lookupName(language),
+                            value: String(language.id),
+                          }))}
+                        placeholder="Select language"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddLanguage}
+                      disabled={!pendingLanguageId}
+                      className="h-auto py-4 px-6 rounded-2xl border-border shadow-sm hover:bg-accent transition-all duration-300"
                     >
-                      <option value="">Select language</option>
-                      {languages
-                        .filter((language) => !form.language_ids.includes(language.id))
-                        .map((language) => (
-                          <option key={language.id} value={language.id}>
-                            {lookupName(language)}
-                          </option>
-                        ))}
-                    </select>
-                    <Button type="button" variant="outline" onClick={handleAddLanguage} disabled={!pendingLanguageId}>
                       <Plus className="mr-2 h-4 w-4" />
                       Add
                     </Button>
@@ -247,15 +256,16 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="photo">Profile Photo</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="photo" className="font-bold ml-1">Profile Photo</Label>
                   <Input
                     id="photo"
                     type="file"
                     accept="image/*"
                     onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
+                    className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   />
-                  {profilePhotoUrl ? <p className="text-xs text-muted-foreground">Current photo is already set.</p> : null}
+                  {profilePhotoUrl ? <p className="text-xs text-muted-foreground ml-1">Current photo is already set.</p> : null}
                 </div>
               </CardContent>
               <CardFooter className="justify-end pt-6">

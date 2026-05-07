@@ -43,95 +43,7 @@ const initialState: FormState = {
   language_ids: [],
 };
 
-/* ─── Inline form-sized dropdown ──────────────────────────────────────── */
-interface FormDropdownProps {
-  label: string;
-  value: string;
-  options: { label: string; value: string }[];
-  onChange: (value: string) => void;
-  placeholder?: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-}
-
-function FormDropdown({
-  label,
-  value,
-  options,
-  onChange,
-  placeholder = "Select an option",
-  isOpen,
-  onToggle,
-  onClose,
-}: FormDropdownProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  const selectedLabel =
-    options.find((o) => o.value === value)?.label || placeholder;
-
-  return (
-    <div className="relative" ref={ref}>
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="mt-1 flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all hover:bg-muted/50 focus:ring-2 focus:ring-brand/50 focus:border-brand"
-      >
-        <span className={!value ? "text-muted-foreground" : ""}>
-          {selectedLabel}
-        </span>
-        <svg
-          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {isOpen && (
-        <ul className="absolute z-30 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
-          {options.length > 0 ? (
-            options.map((opt) => (
-              <li
-                key={opt.value}
-                onClick={() => {
-                  onChange(opt.value);
-                  onClose();
-                }}
-                className={`cursor-pointer px-3 py-2 text-sm font-medium transition-colors hover:bg-brand hover:text-primary-foreground ${
-                  value === opt.value
-                    ? "bg-brand/10 text-brand"
-                    : "text-foreground"
-                }`}
-              >
-                {opt.label}
-              </li>
-            ))
-          ) : (
-            <li className="px-3 py-2 text-sm text-muted-foreground">
-              No options available
-            </li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
-}
+import GenericDropdown from "../ui/GenericDropdown";
 
 /* ─── Multi-select dropdown for languages ─────────────────────────────── */
 interface MultiSelectDropdownProps {
@@ -444,7 +356,7 @@ export default function NutritionistRegistrationForm() {
 
             {/* Country dropdown — matches input sizing */}
             <div className="block">
-              <FormDropdown
+              <GenericDropdown
                 label="Country"
                 value={formData.country_id}
                 options={countries.map((c) => ({
@@ -455,20 +367,14 @@ export default function NutritionistRegistrationForm() {
                   setFormData((prev) => ({ ...prev, country_id: val }))
                 }
                 placeholder="Select a country"
-                isOpen={openDropdown === "country"}
-                onToggle={() =>
-                  setOpenDropdown((p) => (p === "country" ? null : "country"))
-                }
-                onClose={() =>
-                  setOpenDropdown((p) => (p === "country" ? null : p))
-                }
+                className="py-2 px-3 rounded-lg"
+                error={errors.country_id}
               />
-              <FieldError name="country_id" />
             </div>
 
             {/* Specialization dropdown — matches input sizing */}
             <div className="block">
-              <FormDropdown
+              <GenericDropdown
                 label="Specialization"
                 value={formData.specialization_id}
                 options={specializations.map((s) => ({
@@ -479,17 +385,9 @@ export default function NutritionistRegistrationForm() {
                   setFormData((prev) => ({ ...prev, specialization_id: val }))
                 }
                 placeholder="Select a specialization"
-                isOpen={openDropdown === "specialization"}
-                onToggle={() =>
-                  setOpenDropdown((p) =>
-                    p === "specialization" ? null : "specialization",
-                  )
-                }
-                onClose={() =>
-                  setOpenDropdown((p) => (p === "specialization" ? null : p))
-                }
+                className="py-2 px-3 rounded-lg"
+                error={errors.specialization_id}
               />
-              <FieldError name="specialization_id" />
             </div>
 
             <label className="block">
