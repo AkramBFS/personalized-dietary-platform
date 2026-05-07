@@ -15,9 +15,12 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Wallet, TrendingUp, BadgePercent, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
+import { Wallet, TrendingUp, BadgePercent, ArrowUpRight, ArrowDownRight, Clock, Receipt, Eye, X, Download, Calendar, FileText, CreditCard } from "lucide-react";
 import { getNutritionistEarnings, NutritionistEarningsSummary, groupTransactionsByMonth } from "@/lib/nutritionist";
+import { getNutritionistInvoices, getInvoiceDetail, type NutritionistInvoice } from "@/lib/api";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Interfaces ──────────────────────────────────────────────────────────
 interface Payout {
@@ -81,21 +84,48 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 // ── Component ───────────────────────────────────────────────────────────
 export default function EarningsPage() {
   const [earnings, setEarnings] = useState<NutritionistEarningsSummary | null>(null);
+  const [invoices, setInvoices] = useState<NutritionistInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [selectedInvoice, setSelectedInvoice] = useState<NutritionistInvoice | null>(null);
+  const [invoiceDetail, setInvoiceDetail] = useState<NutritionistInvoice | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const loadEarnings = async () => {
+    const loadData = async () => {
       try {
-        const payload = await getNutritionistEarnings();
-        setEarnings(payload);
-      } catch {
+        const [earningsData, invoicesData] = await Promise.all([
+          getNutritionistEarnings(),
+          getNutritionistInvoices()
+        ]);
+        setEarnings(earningsData);
+        setInvoices(invoicesData);
+      } catch (error) {
+        console.error("Failed to load earnings data", error);
         toast.error("Failed to load earnings.");
       } finally {
         setIsLoading(false);
       }
     };
-    void loadEarnings();
+    void loadData();
   }, []);
+
+  const handleViewDetails = async (invoice: NutritionistInvoice) => {
+    setSelectedInvoice(invoice);
+    setIsModalOpen(true);
+    setDetailsLoading(true);
+    try {
+      const data = await getInvoiceDetail(invoice.id);
+      setInvoiceDetail(data);
+    } catch (error) {
+      console.error("Failed to fetch invoice details", error);
+      // Fallback to summary data
+      setInvoiceDetail(invoice);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   const availableBalance = useMemo(() => {
     if (!earnings) return 0;
@@ -103,9 +133,13 @@ export default function EarningsPage() {
   }, [earnings]);
 
   const monthlyIncome = useMemo(() => {
-    if (!earnings?.transactions) return [];
-    return groupTransactionsByMonth(earnings.transactions);
-  }, [earnings]);
+    if (!invoices || invoices.length === 0) return [];
+    // Convert NutritionistInvoice[] to what groupTransactionsByMonth expects if needed
+    // Actually groupTransactionsByMonth expects NutritionistEarningsTransaction[]
+    // which has transaction_number, total_paid, net_earnings, item_type, created_at.
+    // NutritionistInvoice has all of these.
+    return groupTransactionsByMonth(invoices as any);
+  }, [invoices]);
 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading earnings...</div>;
@@ -235,31 +269,47 @@ export default function EarningsPage() {
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead>Date & Time</TableHead>
+                  <TableHead>Reference #</TableHead>
                   <TableHead>Client Name</TableHead>
                   <TableHead>Service Provided</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Net Earnings</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Array.isArray(earnings.transactions) && earnings.transactions.map((tx) => (
-                  <TableRow key={tx.transaction_number}>
+                {Array.isArray(invoices) && invoices.map((invoice) => (
+                  <TableRow key={invoice.id} className="hover:bg-primary/5 transition-colors group">
                     <TableCell className="text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        {new Date(tx.created_at).toLocaleString()}
+                        {new Date(invoice.created_at).toLocaleString()}
                       </div>
                     </TableCell>
-                    <TableCell className="font-semibold text-foreground">{tx.transaction_number}</TableCell>
-                    <TableCell>{serviceBadge(tx.item_type)}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{invoice.transaction_number}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      {invoice.client?.username ? `@${invoice.client.username}` : "—"}
+                    </TableCell>
+                    <TableCell>{serviceBadge(invoice.item_type)}</TableCell>
                     <TableCell className="text-right font-bold text-primary">
-                      +${tx.net_earnings.toFixed(2)}
+                      +${invoice.net_earnings.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDetails(invoice)}
+                        className="rounded-lg hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
             <div className="px-6 py-3 bg-muted/30 border-t border-border text-xs text-muted-foreground text-center">
-              Showing {earnings.transactions.length} most recent transactions
+              Showing {invoices.length} most recent transactions
             </div>
           </Card>
         </TabsContent>
@@ -310,6 +360,107 @@ export default function EarningsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Invoice Detail Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden border border-border/50 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center p-6 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">Invoice Details</h2>
+                  <p className="text-xs text-muted-foreground">Transaction Ref: {selectedInvoice?.transaction_number}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-8">
+              {detailsLoading ? (
+                <div className="space-y-6">
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                  <div className="grid grid-cols-2 gap-6">
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                  </div>
+                  <Skeleton className="h-24 w-full rounded-xl" />
+                </div>
+              ) : invoiceDetail ? (
+                <div className="space-y-8">
+                  {/* Earnings Header */}
+                  <div className="text-center p-6 bg-primary/5 rounded-2xl border border-primary/10">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-1">Your Net Earnings</p>
+                    <h3 className="text-4xl font-black text-primary">${invoiceDetail.net_earnings.toFixed(2)}</h3>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Gross: ${invoiceDetail.total_paid.toFixed(2)} • Fee: {invoiceDetail.commission_rate}%
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        <CreditCard className="w-3 h-3" />
+                        Reference
+                      </div>
+                      <p className="text-sm font-mono font-medium text-foreground bg-muted/50 p-2 rounded-lg break-all">
+                        {invoiceDetail.transaction_number}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        <Calendar className="w-3 h-3" />
+                        Date
+                      </div>
+                      <p className="text-sm font-medium text-foreground bg-muted/50 p-2 rounded-lg h-full flex items-center">
+                        {new Date(invoiceDetail.created_at).toLocaleString(undefined, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service Type</div>
+                      <div className="mt-1">
+                        {serviceBadge(invoiceDetail.item_type)}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-right">
+                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Client</div>
+                      <p className="text-sm font-semibold text-foreground">@{invoiceDetail.client.username}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-dashed border-border flex flex-col gap-3">
+                    <Button className="w-full py-6 rounded-xl font-bold shadow-lg shadow-primary/20 group">
+                      <Download className="w-4 h-4 mr-2 group-hover:translate-y-0.5 transition-transform" />
+                      Download Statement
+                    </Button>
+                    <Button variant="outline" className="w-full py-6 rounded-xl text-muted-foreground" onClick={() => setIsModalOpen(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-destructive font-medium">Failed to load detailed invoice information.</p>
+                  <Button variant="ghost" className="mt-4" onClick={() => setIsModalOpen(false)}>Back to list</Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
