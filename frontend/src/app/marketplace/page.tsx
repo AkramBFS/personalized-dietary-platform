@@ -1,7 +1,7 @@
 "use client";
 import { HeroHeader } from "@/components/layout/navbar";
 import FooterSection from "@/components/layout/footer";
-import PlanMarketplace from "@/components/planmaketplace";
+import PlanMarketplace from "@/components/PlanMarketplace";
 
 export default function MarketplacePage() {
   return (
