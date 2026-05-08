@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
 import gsap from "gsap";
@@ -14,7 +13,8 @@ if (typeof window !== "undefined") {
 }
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Sun, Moon } from "lucide-react";
+import { UserProfileDropdown } from "@/components/dashboard/shared/UserProfileDropdown";
+import { getProfileIdentity, CurrentProfileIdentity } from "@/lib/profile";
 import {
   Popover,
   PopoverButton,
@@ -22,9 +22,6 @@ import {
   PopoverPanel,
   Dialog,
   DialogPanel,
-  Disclosure,
-  DisclosureButton,
-  DisclosurePanel,
 } from "@headlessui/react";
 import {
   ChevronDownIcon,
@@ -75,11 +72,8 @@ const mainNav = [
 export const HeroHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [profileIdentity, setProfileIdentity] = useState<CurrentProfileIdentity | null>(null);
   const headerRef = useRef<HTMLElement>(null);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,6 +81,21 @@ export const HeroHeader = () => {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadIdentity = async () => {
+      const identity = await getProfileIdentity();
+      if (isMounted) setProfileIdentity(identity);
+    };
+
+    void loadIdentity();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useGSAP(() => {
@@ -207,7 +216,16 @@ export const HeroHeader = () => {
                 {/* THEME TOGGLE */}
                 <ThemeToggle />
 
-                {!isScrolled ? (
+                {profileIdentity ? (
+                  <UserProfileDropdown
+                    user={{
+                      username: profileIdentity.username,
+                      email: profileIdentity.email,
+                      avatarUrl: profileIdentity.avatarUrl,
+                    }}
+                    role={profileIdentity.role}
+                  />
+                ) : !isScrolled ? (
                   <>
                     <Button
                       key="login-btn"

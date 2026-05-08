@@ -1,33 +1,54 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
-import api from "@/lib/api";
 import { NotificationDropdown } from "./NotificationDropdown";
+import { getProfileIdentity } from "@/lib/profile";
 
 type RoleType = "client" | "nutritionist" | "high_admin";
 
 export function DashboardHeader({ role }: { role: RoleType }) {
-  const [user, setUser] = useState<{ username: string; email: string }>({
-    username: "User",
-    email: "user@example.com",
-  });
-
-  const { isMobile } = useSidebar();
+  const [user, setUser] = useState<{ username: string; email: string; avatarUrl?: string }>(() =>
+    role === "high_admin"
+      ? { username: "Admin", email: "admin@example.com" }
+      : { username: "User", email: "user@example.com" },
+  );
 
   useEffect(() => {
-    // In a real app we'd fetch the user's lightweight basic info here or get it from context
-    // We'll mock it based on role
-    if (role === "client") {
-      setUser({ username: "Souki", email: "souki@example.com" });
-    } else if (role === "nutritionist") {
-      setUser({ username: "Dr. Smith", email: "doctor@example.com" });
-    } else if (role === "high_admin") {
-      setUser({ username: "Admin", email: "admin@example.com" });
+    let isMounted = true;
+
+    if (role === "high_admin") {
+      return;
     }
+
+    const loadIdentity = async () => {
+      try {
+        const identity = await getProfileIdentity(role);
+        if (isMounted && identity) {
+          setUser({
+            username: identity.username,
+            email: identity.email,
+            avatarUrl: identity.avatarUrl,
+          });
+        }
+      } catch {
+        if (isMounted) {
+          setUser({
+            username: role === "client" ? "Client" : "Nutritionist",
+            email: "",
+          });
+        }
+      }
+    };
+
+    void loadIdentity();
+
+    return () => {
+      isMounted = false;
+    };
   }, [role]);
 
   return (

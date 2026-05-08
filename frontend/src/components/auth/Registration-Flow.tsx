@@ -17,8 +17,29 @@ import {
   getLanguages,
   getActivityLevels,
   getDiets,
-  LookupItem
+  LookupItem,
 } from "@/lib/lookups";
+
+type RegistrationFormData = {
+  country: string;
+  language: string;
+  goal: string;
+  goalCustom: string;
+  activityLevel: string;
+  diet: string;
+  age: number;
+  weight: number;
+  height: number;
+  gender: string;
+  medicalConditions: string[];
+  medicalConditionsCustom: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  profilePhoto: File | null;
+  agreedToTerms: boolean;
+};
 
 const StepCountry = dynamic(() => import("../forms/StepCountrySelect"));
 const StepGoal = dynamic(() => import("../forms/StepGoal"));
@@ -45,7 +66,7 @@ export default function RegistrationFlow() {
 
   const router = useRouter();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegistrationFormData>({
     country: "",
     language: "",
     goal: "",
@@ -62,6 +83,7 @@ export default function RegistrationFlow() {
     lastName: "",
     email: "",
     password: "",
+    profilePhoto: null,
     agreedToTerms: false,
   });
 
@@ -70,14 +92,14 @@ export default function RegistrationFlow() {
   const cardVariants: Variants = {
     initial: (step: number) => {
       // Step 10: Simple fade in
-      if (step === 10) return { opacity: 0, y: 10 }; 
-      
+      if (step === 10) return { opacity: 0, y: 10 };
+
       // Group 1 (Steps 3, 6, 9): Fade in while going from small to big
       if ([3, 6, 9].includes(step)) return { scale: 0.95, opacity: 0, x: 0 };
-      
+
       // Group 2 (Steps 2, 5, 8): Fade in while sliding in from the left
       if ([2, 5, 8].includes(step)) return { x: -40, opacity: 0 };
-      
+
       // Default (Steps 1, 4, 7): Fade in while sliding in from the right
       return { x: 40, opacity: 0 };
     },
@@ -123,10 +145,36 @@ export default function RegistrationFlow() {
     }
   }, [currentStep]);
 
-  const isStepValid = useMemo(() => {
+  const stepValidation = useMemo(() => {
     const schema = stepSchemas[currentStep - 1];
-    return schema?.safeParse(formData).success ?? false;
+    return schema?.safeParse(formData) ?? null;
   }, [currentStep, formData]);
+
+  const isStepValid = stepValidation?.success ?? false;
+
+  const currentStepErrors = useMemo(() => {
+    if (!stepValidation || stepValidation.success) return {};
+
+    const fieldErrors = stepValidation.error.flatten().fieldErrors;
+    return Object.fromEntries(
+      Object.entries(fieldErrors)
+        .filter(([, value]) => value?.[0])
+        .map(([key, value]) => [key, value?.[0] ?? "Invalid value"]),
+    );
+  }, [stepValidation]);
+
+  const healthMetrics = useMemo(() => {
+    const { weight, height, age, gender } = formData;
+    if (!weight || !height || !age || !gender) return null;
+
+    const bmi = weight / (height / 100) ** 2;
+
+    // Mifflin-St Jeor Formula
+    const bmr =
+      10 * weight + 6.25 * height - 5 * age + (gender === "male" ? 5 : -161);
+
+    return { bmi: bmi.toFixed(1), bmr: Math.round(bmr) };
+  }, [formData]);
 
   //lock check + lock set for next and back
   const nextStep = () => {
@@ -146,21 +194,36 @@ export default function RegistrationFlow() {
   const handleSubmit = () => {
     if (isAnimating || isPending || loadingLookup) return;
     setIsAnimating(true);
+
     startTransition(async () => {
       try {
-        // Map form data to API payload
+        // 1. Map readable names to their respective IDs from lookup cache
         const countryId = countries.find(
-          (c) => c.name === formData.country,
+          (c) =>
+            c.name?.toLowerCase().trim() ===
+            formData.country.toLowerCase().trim(),
         )?.id;
-        const goalId = goals.find((g) => g.name === formData.goal)?.id;
-        const activityId = activityLevels.find((a) => a.name === formData.activityLevel)?.id;
-        const dietId = diets.find((d) => d.name === formData.diet)?.id;
 
-        if (!countryId || !goalId || !activityId || !dietId) {
-          throw new Error("Please ensure all fields (Country, Goal, Activity Level, Diet) are selected correctly.");
+        const goalId = goals.find(
+          (g) =>
+            g.name?.toLowerCase().trim() === formData.goal.toLowerCase().trim(),
+        )?.id;
+
+        const languageId = languages.find(
+          (l) =>
+            l.name?.toLowerCase().trim() ===
+            formData.language.toLowerCase().trim(),
+        )?.id;
+        console.log("Mapped IDs:", { countryId, goalId, languageId });
+        // Validate that we found all required Foreign Keys
+        if (!countryId || !goalId || !languageId) {
+          throw new Error(
+            "Mapping failed: Please ensure Country, Goal, and Language are selected correctly.",
+          );
         }
 
-        const healthHistory = (formData.medicalConditions as string[])
+        // 2. Process Health History
+        const healthHistory = formData.medicalConditions
           .filter((cond) => cond !== "None")
           .concat(
             formData.medicalConditionsCustom
@@ -169,36 +232,62 @@ export default function RegistrationFlow() {
           )
           .join(", ");
 
+        // 3. Construct the Payload - strictly including only API-expected fields
         const payload = new FormData();
-        payload.append("username", formData.email); // Use email as username
+
+        // Basic Info[cite: 2]
+        payload.append("username", formData.email); // Using email as username per original logic[cite: 1]
         payload.append("email", formData.email);
         payload.append("password", formData.password);
+
+        // Metrics (No BMI included here)[cite: 2]
         payload.append("age", formData.age.toString());
         payload.append("weight", formData.weight.toString());
         payload.append("height", formData.height.toString());
         payload.append("gender", formData.gender);
+
+        // Foreign Keys[cite: 1, 2]
         payload.append("country_id", countryId.toString());
         payload.append("goal_id", goalId.toString());
-        payload.append("activity_level_id", activityId.toString());
-        payload.append("diet_id", dietId.toString());
+        payload.append("language_id", languageId.toString());
+
+        // Lifestyle & History[cite: 2]
+        payload.append(
+          "activity_level",
+          formData.activityLevel.toLowerCase().trim(),
+        );
+        payload.append("Diet", formData.diet); // Casing matches API doc snippet[cite: 2]
+
         if (healthHistory) {
           payload.append("health_history", healthHistory);
         }
 
+        if (formData.profilePhoto) {
+          payload.append("profile_photo", formData.profilePhoto);
+        }
+
+        console.log("Payload:", payload);
+        // 4. API Request[cite: 1]
         await api.post("/auth/register/client/", payload, {
           headers: {
-            "Content-Type": undefined,
+            "Content-Type": "multipart/form-data",
           },
         });
+
         alert("Registration Successful! Please log in.");
         router.push("/login");
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Registration failed", err);
-        if (err.response?.data?.message) {
-          alert(err.response.data.message);
-        } else {
-          alert("Error submitting form");
-        }
+        const responseMessage =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { message?: string } } }).response
+                ?.data?.message
+            : undefined;
+        const errorMsg =
+          responseMessage ||
+          (err instanceof Error ? err.message : undefined) ||
+          "Error submitting form";
+        alert(errorMsg);
       } finally {
         setIsAnimating(false);
       }
@@ -223,18 +312,18 @@ export default function RegistrationFlow() {
       case 6:
         return <StepHeight {...props} />;
       case 7:
-        return <StepBMI {...props} />;
+        return <StepBMI {...props} metrics={healthMetrics} />;
       case 8:
         return <StepMedical {...props} />;
       case 9:
-        return <StepSignUp {...props} />;
+        return <StepSignUp {...props} errors={currentStepErrors} />;
       case 10:
         return <StepReview {...props} />;
       default:
         return null;
     }
   };
-
+  console.log(formData);
   return (
     <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-background">
       <div className="absolute top-6 right-6 z-50 flex items-center gap-4">

@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/Input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -16,78 +19,45 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Check, X, Archive, Edit, Trash2 } from "lucide-react";
-import { getModerationPlans, type ModerationPlan } from "@/lib/admin";
-import api from "@/lib/api";
-
-const mockPendingPlans: ModerationPlan[] = [
-  {
-    id: 1,
-    title: "PCOS Reset Plan",
-    plan_type: "public-predefined",
-    status: "pending",
-    price: 29.99,
-    created_at: "2026-03-10T00:00:00Z",
-  },
-  {
-    id: 2,
-    title: "Lean Bulk 12-Week",
-    plan_type: "private-custom",
-    status: "pending",
-    price: 49.0,
-    created_at: "2026-03-22T00:00:00Z",
-  },
-];
-
-const mockLivePlans: ModerationPlan[] = [
-  {
-    id: 3,
-    title: "Summer Detox Plan",
-    plan_type: "public-predefined",
-    status: "approved",
-    price: 39.99,
-    created_at: "2026-02-15T00:00:00Z",
-  },
-  {
-    id: 4,
-    title: "Weight Loss Accelerator",
-    plan_type: "public-predefined",
-    status: "approved",
-    price: 59.99,
-    created_at: "2026-01-20T00:00:00Z",
-  },
-];
-
-const mockSeasonalPlans: ModerationPlan[] = [
-  {
-    id: 5,
-    title: "Holiday Wellness Plan",
-    plan_type: "public-predefined",
-    status: "approved",
-    price: 34.99,
-    created_at: "2026-03-01T00:00:00Z",
-  },
-];
+import { getModerationPlans, getPlanDetail, approvePlan, rejectPlan, archivePlan, type ModerationPlan } from "@/lib/admin";
 
 export default function AdminPlansPage() {
-  const [pendingPlans, setPendingPlans] =
-    useState<ModerationPlan[]>(mockPendingPlans);
-  const [livePlans, setLivePlans] = useState<ModerationPlan[]>(mockLivePlans);
-  const [seasonalPlans, setSeasonalPlans] =
-    useState<ModerationPlan[]>(mockSeasonalPlans);
+  const [pendingPlans, setPendingPlans] = useState<ModerationPlan[]>([]);
+  const [livePlans, setLivePlans] = useState<ModerationPlan[]>([]);
+  const [seasonalPlans, setSeasonalPlans] = useState<ModerationPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<ModerationPlan | null>(null);
   const [planDetails, setPlanDetails] = useState<any>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  const filteredPending = useMemo(() => 
+    pendingPlans.filter(p => p.title.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [pendingPlans, debouncedSearch]
+  );
+  
+  const filteredLive = useMemo(() => 
+    livePlans.filter(p => p.title.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [livePlans, debouncedSearch]
+  );
+  
+  const filteredSeasonal = useMemo(() => 
+    seasonalPlans.filter(p => p.title.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [seasonalPlans, debouncedSearch]
+  );
 
   useEffect(() => {
     const load = async () => {
       try {
-        // In a real implementation, you'd fetch different plan types
-        await getModerationPlans();
-      } catch {
-        // Using mock data
+        const plans = await getModerationPlans();
+        setPendingPlans(plans.filter((p) => p.status === "pending"));
+        setLivePlans(plans.filter((p) => p.status === "approved" && !p.title.toLowerCase().includes("seasonal") && !p.title.toLowerCase().includes("holiday")));
+        setSeasonalPlans(plans.filter((p) => p.status === "approved" && (p.title.toLowerCase().includes("seasonal") || p.title.toLowerCase().includes("holiday"))));
+      } catch (error) {
+        toast.error("Failed to fetch plans");
       } finally {
         setLoading(false);
       }
@@ -100,21 +70,8 @@ export default function AdminPlansPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      // In a real implementation, fetch plan details
-      // const response = await api.get(`/admin/plans/${plan.id}/`);
-      // setPlanDetails(response.data);
-
-      // Mock plan details
-      setPlanDetails({
-        id: plan.id,
-        title: plan.title,
-        description: `Detailed description for ${plan.title}. This plan includes comprehensive meal planning, nutritional guidance, and progress tracking.`,
-        plan_type: plan.plan_type,
-        price: plan.price,
-        created_at: plan.created_at,
-        creator: "Dr. Nutritionist",
-        content: "Full plan content would be displayed here...",
-      });
+      const data = await getPlanDetail(plan.id);
+      setPlanDetails(data);
     } catch (error) {
       console.error("Failed to fetch plan details", error);
       setPlanDetails(null);
@@ -126,7 +83,7 @@ export default function AdminPlansPage() {
   const handleApprovePlan = async (planId: number) => {
     setSubmitting(true);
     try {
-      await api.post(`/admin/plans/${planId}/approve/`);
+      await approvePlan(planId);
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
       setIsModalOpen(false);
       setSelectedPlan(null);
@@ -142,9 +99,7 @@ export default function AdminPlansPage() {
   const handleRejectPlan = async (planId: number, reason: string) => {
     setSubmitting(true);
     try {
-      await api.post(`/admin/plans/${planId}/reject/`, {
-        rejection_reason: reason,
-      });
+      await rejectPlan(planId, reason);
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
       setIsModalOpen(false);
       setSelectedPlan(null);
@@ -159,7 +114,7 @@ export default function AdminPlansPage() {
 
   const handleArchivePlan = async (planId: number) => {
     try {
-      await api.post(`/admin/plans/${planId}/archive/`);
+      await archivePlan(planId);
       setLivePlans((prev) => prev.filter((p) => p.id !== planId));
       toast.success("Plan archived successfully.");
     } catch (error) {
@@ -170,12 +125,24 @@ export default function AdminPlansPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Plan Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Review pending plans, manage live marketplace plans, and oversee
-          seasonal offerings.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Plan Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Review pending plans, manage live marketplace plans, and oversee
+            seasonal offerings.
+          </p>
+        </div>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search plans..."
+            className="pl-8 bg-background border-border"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
@@ -210,7 +177,7 @@ export default function AdminPlansPage() {
                           </TableCell>
                         </TableRow>
                       ))
-                    : pendingPlans.map((plan) => (
+                    : filteredPending.map((plan) => (
                         <TableRow key={plan.id}>
                           <TableCell className="font-medium">
                             {plan.title}
@@ -259,7 +226,7 @@ export default function AdminPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {livePlans.map((plan) => (
+                  {filteredLive.map((plan) => (
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">
                         {plan.title}
@@ -320,7 +287,7 @@ export default function AdminPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {seasonalPlans.map((plan) => (
+                  {filteredSeasonal.map((plan) => (
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">
                         {plan.title}

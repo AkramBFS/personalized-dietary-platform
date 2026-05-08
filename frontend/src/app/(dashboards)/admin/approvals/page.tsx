@@ -26,50 +26,39 @@ import {
   approveNutritionist,
   getPendingNutritionists,
   rejectNutritionist,
+  getNutritionistDetail,
   type PendingNutritionist,
 } from "@/lib/admin";
 
-const mockPendingNutritionists: PendingNutritionist[] = [
-  {
-    id: 101,
-    username: "dr_nour",
-    email: "nour@example.com",
-    bio: "Sports nutrition specialist with client-centered meal planning.",
-    nutritionist: {
-      specialization: { name: "Sports Nutrition" },
-      years_experience: 6,
-      certification_ref: "SN-44820",
-      cert_image_url: "https://example.com/certs/sn-44820.jpg",
-    },
-  },
-  {
-    id: 102,
-    username: "dr_lina",
-    email: "lina@example.com",
-    bio: "Clinical dietitian focused on diabetes and metabolic health.",
-    nutritionist: {
-      specialization: { name: "Clinical Nutrition" },
-      years_experience: 8,
-      certification_ref: "CL-99011",
-      cert_image_url: "https://example.com/certs/cl-99011.jpg",
-    },
-  },
-];
-
 export default function AdminApprovalsPage() {
-  const [records, setRecords] = useState<PendingNutritionist[]>(
-    mockPendingNutritionists,
-  );
+  const [records, setRecords] = useState<PendingNutritionist[]>([]);
   const [selected, setSelected] = useState<PendingNutritionist | null>(null);
   const [loading, setLoading] = useState(true);
   const [rejectionReason, setRejectionReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const handleReview = async (item: PendingNutritionist) => {
+    setSelected(item);
+    setIsModalOpen(true);
+    setDetailsLoading(true);
+    try {
+      const data = await getNutritionistDetail(item.nutritionist_id);
+      setSelected(data);
+    } catch (error) {
+      console.error("Failed to fetch nutritionist details", error);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
-        await getPendingNutritionists();
+        const data = await getPendingNutritionists();
+        setRecords(data);
       } finally {
         setLoading(false);
       }
@@ -77,14 +66,14 @@ export default function AdminApprovalsPage() {
     void load();
   }, []);
 
-  const refreshAfterAction = (id: number) =>
-    setRecords((prev) => prev.filter((item) => item.id !== id));
+  const refreshAfterAction = (nutritionist_id: number) =>
+    setRecords((prev) => prev.filter((item) => item.nutritionist_id !== nutritionist_id));
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (nutritionist_id: number) => {
     setSubmitting(true);
     try {
-      await approveNutritionist(id);
-      refreshAfterAction(id);
+      await approveNutritionist(nutritionist_id);
+      refreshAfterAction(nutritionist_id);
       setSelected(null);
       setIsModalOpen(false);
       toast.success("Nutritionist approved successfully.");
@@ -95,15 +84,15 @@ export default function AdminApprovalsPage() {
     }
   };
 
-  const handleReject = async (id: number) => {
+  const handleReject = async (nutritionist_id: number) => {
     if (!rejectionReason.trim()) {
       toast.error("Rejection reason is required.");
       return;
     }
     setSubmitting(true);
     try {
-      await rejectNutritionist(id, rejectionReason.trim());
-      refreshAfterAction(id);
+      await rejectNutritionist(nutritionist_id, rejectionReason.trim());
+      refreshAfterAction(nutritionist_id);
       setSelected(null);
       setRejectionReason("");
       setIsModalOpen(false);
@@ -155,23 +144,14 @@ export default function AdminApprovalsPage() {
                     <TableRow key={item.id}>
                       <TableCell>{item.username}</TableCell>
                       <TableCell>{item.email}</TableCell>
-                      <TableCell>
-                        {item.nutritionist?.specialization?.name ?? "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {item.nutritionist?.years_experience ?? "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {item.nutritionist?.certification_ref ?? "N/A"}
-                      </TableCell>
+                      <TableCell>{item.specialization_name ?? "N/A"}</TableCell>
+                      <TableCell>{item.years_experience ?? "N/A"}</TableCell>
+                      <TableCell>{item.certification_ref ?? "N/A"}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setSelected(item);
-                            setIsModalOpen(true);
-                          }}
+                          onClick={() => handleReview(item)}
                         >
                           Review
                         </Button>
@@ -196,68 +176,122 @@ export default function AdminApprovalsPage() {
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm">
-                  <span className="font-semibold">Username:</span>{" "}
-                  {selected.username}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Email:</span> {selected.email}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Bio:</span>{" "}
-                  {selected.bio ?? "N/A"}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Specialization:</span>{" "}
-                  {selected.nutritionist?.specialization?.name ?? "N/A"}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Experience:</span>{" "}
-                  {selected.nutritionist?.years_experience ?? "N/A"} years
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Certification Ref:</span>{" "}
-                  {selected.nutritionist?.certification_ref ?? "N/A"}
-                </p>
-                {selected.nutritionist?.cert_image_url ? (
-                  <a
-                    href={selected.nutritionist.cert_image_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary underline"
-                  >
-                    View Certificate
-                  </a>
-                ) : null}
-              </div>
+              {detailsLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Username:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.username}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Email:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.email}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Country:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.country_name ?? "N/A"}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Languages:</span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.languages?.length ? selected.languages.join(", ") : "N/A"}
+                        </span>
+                      </p>
+                    </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Reason for Rejection
-                </label>
-                <Input
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Required when rejecting."
-                />
-              </div>
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Specialization:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.specialization_name ?? "N/A"}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Experience:</span>{" "}
+                        <span className="block mt-1 font-medium">{selected.years_experience ?? "N/A"} years</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Consultation Price:</span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.consultation_price !== undefined ? `$${selected.consultation_price}` : "N/A"}
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Status:</span>{" "}
+                        <span className="block mt-1 font-medium capitalize">{selected.approval_status}</span>
+                      </p>
+                    </div>
 
-              <div className="flex gap-3 justify-end">
-                <Button
-                  disabled={submitting}
-                  variant="outline"
-                  onClick={() => handleReject(selected.id)}
-                >
-                  Reject
-                </Button>
-                <Button
-                  disabled={submitting}
-                  onClick={() => handleApprove(selected.id)}
-                >
-                  Approve
-                </Button>
-              </div>
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">Bio:</span>{" "}
+                        <span className="block mt-1 whitespace-pre-wrap">{selected.bio ?? "N/A"}</span>
+                      </p>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
+                      <p className="text-sm flex justify-between items-center">
+                        <span className="font-semibold text-muted-foreground">Certification Reference:</span>
+                        <span className="font-medium bg-muted px-2 py-1 rounded">{selected.certification_ref ?? "N/A"}</span>
+                      </p>
+                      
+                      {selected.cert_image_url && (
+                        <div className="mt-4 flex flex-col gap-2">
+                          <span className="text-sm font-semibold text-muted-foreground">Certification Document:</span>
+                          <a
+                            href={selected.cert_image_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-primary underline block truncate hover:text-primary/80 transition-colors"
+                          >
+                            View Document
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Registered: {new Date(selected.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-4">
+                    <label className="text-sm font-medium">
+                      Reason for Rejection
+                    </label>
+                    <Input
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Required when rejecting."
+                    />
+                  </div>
+
+                  <div className="flex gap-3 justify-end pt-4">
+                    <Button
+                      disabled={submitting}
+                      variant="outline"
+                      onClick={() => handleReject(selected.nutritionist_id)}
+                      className="text-destructive border-destructive hover:bg-destructive/10"
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      disabled={submitting}
+                      onClick={() => handleApprove(selected.nutritionist_id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

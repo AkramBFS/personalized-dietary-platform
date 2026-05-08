@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronDown, User, Settings, LogOut, Sun, Moon, Palette } from "lucide-react";
 import { useTheme } from "next-themes";
+import { clearAuthSession } from "@/lib/auth";
 
 interface UserProfileDropdownProps {
   user: {
@@ -34,7 +35,7 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
   }, []);
 
   // Fallback initial
-  const initial = user.username.charAt(0).toUpperCase();
+  const initial = (user.username || user.email || "U").charAt(0).toUpperCase();
 
   return (
     <DropdownMenu onOpenChange={setIsOpen}>
@@ -133,7 +134,7 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
           asChild
           className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 py-2.5"
         >
-          <Link href="/login" className="flex items-center w-full">
+          <Link href="/login" onClick={clearAuthSession} className="flex items-center w-full">
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </Link>

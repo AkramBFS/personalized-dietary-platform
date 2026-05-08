@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Utensils,
@@ -150,7 +151,7 @@ const filterCategories = [
 
 const featuredPlans = [
   {
-    id: "metabolic-reset",
+    slug: "metabolic-reset",
     title: "28-Day Metabolic Reset",
     price: "$49",
     description:
@@ -169,7 +170,7 @@ const featuredPlans = [
     },
   },
   {
-    id: "plant-based-vitality",
+    slug: "plant-based-vitality",
     title: "Plant-Based Vitality Protocol",
     price: "$35",
     description:
@@ -189,7 +190,7 @@ const featuredPlans = [
     },
   },
   {
-    id: "performance-macros",
+    slug: "performance-macros",
     title: "Performance Macros Guide",
     price: "$55",
     description:
@@ -414,14 +415,14 @@ export default function ClinicalNutritionPlans() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredPlans.map((plan, index) => (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.15 }}
-                className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
-              >
+  <Link key={plan.slug} href={`/marketplace/${plan.slug}`}> {/* [2] Wrap the card in Link */}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.15 }}
+      className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
+    >
                 <div className="relative h-60 overflow-hidden bg-muted">
                   <img
                     alt={plan.title}
@@ -473,6 +474,7 @@ export default function ClinicalNutritionPlans() {
                   </div>
                 </div>
               </motion.div>
+              </Link>
             ))}
           </div>
 

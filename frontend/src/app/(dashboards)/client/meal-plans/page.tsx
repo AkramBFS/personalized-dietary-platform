@@ -103,7 +103,7 @@ export default function MealPlansPage() {
               className="mt-8 px-8"
               asChild
             >
-              <Link href="/client/consultations">Book a Consultation</Link>
+              <Link href="/consultations">Book a Consultation</Link>
             </Button>
           </CardContent>
         </Card>

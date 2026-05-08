@@ -8,13 +8,25 @@ const LEVELS = [
   { id: "active", label: "Very Active", desc: "Daily intense training" },
 ];
 
+interface ActivityLevel {
+  id?: number | string;
+  name?: string;
+  value?: string;
+  label?: string;
+  description?: string;
+}
+
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
-  activityLevels?: any[];
+  activityLevels?: ActivityLevel[];
 }
 
-export default function StepActivity({ formData, setFormData, activityLevels = [] }: Props) {
+export default function StepActivity({
+  formData,
+  setFormData,
+  activityLevels = [],
+}: Props) {
   const cardBaseClasses = `
     w-full flex flex-col items-center justify-center p-6 
     rounded-2xl border transition-all duration-300 
@@ -35,20 +47,23 @@ export default function StepActivity({ formData, setFormData, activityLevels = [
       </div>
 
       <div className="w-full max-w-md space-y-4">
-        {Array.isArray(activityLevels) && activityLevels.map((level) => {
-          const isSelected = formData.activityLevel === level.name;
+        {Array.isArray(activityLevels) &&
+          activityLevels.map((level) => {
+            const optionLabel = level.label ?? level.name ?? level.value ?? "";
+            const optionValue = level.value ?? level.name ?? level.label ?? "";
+            const isSelected = formData.activityLevel === optionValue;
 
-          return (
-            <button
-              key={level.id}
-              type="button"
-              onClick={() =>
-                setFormData((prev: any) => ({
-                  ...prev,
-                  activityLevel: level.name,
-                }))
-              }
-              className={`
+            return (
+              <button
+                key={level.id ?? optionValue}
+                type="button"
+                onClick={() =>
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    activityLevel: optionValue,
+                  }))
+                }
+                className={`
                 ${cardBaseClasses}
                 ${
                   isSelected
@@ -56,19 +71,17 @@ export default function StepActivity({ formData, setFormData, activityLevels = [
                     : "bg-card/40 border-border hover:bg-accent"
                 }
               `}
-            >
-              <div
-                className={`text-lg font-bold transition-colors duration-300 ${
-                  isSelected
-                    ? "text-primary-foreground"
-                    : "text-foreground"
-                }`}
               >
-                {level.name}
-              </div>
-            </button>
-          );
-        })}
+                <div
+                  className={`text-lg font-bold transition-colors duration-300 ${
+                    isSelected ? "text-primary-foreground" : "text-foreground"
+                  }`}
+                >
+                  {optionLabel}
+                </div>
+              </button>
+            );
+          })}
       </div>
     </div>
   );

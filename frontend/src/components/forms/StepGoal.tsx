@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef } from "react";
+import type { LookupItem } from "@/lib/lookups";
 
 const GOALS_FALLBACK = [
   "Weight Loss",
@@ -14,13 +15,14 @@ const GOALS_FALLBACK = [
 interface Props {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
-  goals?: { id: number; name: string }[];
+  goals?: LookupItem[];
 }
 
 export default function StepGoal({ formData, setFormData, goals }: Props) {
-  const goalsList = Array.isArray(goals) && goals.length > 0
-    ? goals.map((g) => g.name)
-    : GOALS_FALLBACK;
+  const goalsList =
+    Array.isArray(goals) && goals.length > 0
+      ? goals.map((g) => g.name ?? "").filter(Boolean)
+      : GOALS_FALLBACK;
   const isOtherSelected = formData.goal === "Other";
   const otherInputRef = useRef<HTMLDivElement | null>(null);
 

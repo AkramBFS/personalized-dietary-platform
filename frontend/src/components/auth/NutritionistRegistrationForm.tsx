@@ -1,9 +1,8 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition, useEffect } from "react";
+import { FormEvent, useMemo, useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
 import { submitNutritionistRegistration } from "@/app/actions/submitNutritionistRegistration";
 import { nutritionistRegistrationSchema } from "@/lib/constants";
 import { Logo } from "../layout/logo";
@@ -11,8 +10,10 @@ import {
   bootstrapLookups,
   getCountries,
   getSpecializations,
+  getLanguages,
   LookupItem,
 } from "@/lib/lookups";
+import { ThemeToggle } from "../ui/theme-toggle";
 
 type FormState = {
   username: string;
@@ -25,7 +26,7 @@ type FormState = {
   bio: string;
   certification_ref: string;
   cert_image: File | null;
-  language_ids: string;
+  language_ids: number[];
 };
 
 const initialState: FormState = {
@@ -39,9 +40,162 @@ const initialState: FormState = {
   bio: "",
   certification_ref: "",
   cert_image: null,
-  language_ids: "",
+  language_ids: [],
 };
 
+import GenericDropdown from "../ui/GenericDropdown";
+
+/* ─── Multi-select dropdown for languages ─────────────────────────────── */
+interface MultiSelectDropdownProps {
+  label: string;
+  selectedIds: number[];
+  options: { label: string; value: number }[];
+  onChange: (ids: number[]) => void;
+  placeholder?: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}
+
+function MultiSelectDropdown({
+  label,
+  selectedIds,
+  options,
+  onChange,
+  placeholder = "Select languages",
+  isOpen,
+  onToggle,
+  onClose,
+}: MultiSelectDropdownProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  const toggleId = (id: number) => {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter((v) => v !== id));
+    } else {
+      onChange([...selectedIds, id]);
+    }
+  };
+
+  const selectedLabels = options
+    .filter((o) => selectedIds.includes(o.value))
+    .map((o) => o.label);
+
+  const displayText =
+    selectedLabels.length > 0 ? selectedLabels.join(", ") : placeholder;
+
+  return (
+    <div className="relative" ref={ref}>
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="mt-1 flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all hover:bg-muted/50 focus:ring-2 focus:ring-brand/50 focus:border-brand"
+      >
+        <span
+          className={`truncate ${selectedIds.length === 0 ? "text-muted-foreground" : ""}`}
+        >
+          {displayText}
+        </span>
+        <svg
+          className={`ml-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+      {isOpen && (
+        <ul className="absolute z-30 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
+          {options.length > 0 ? (
+            options.map((opt) => {
+              const isSelected = selectedIds.includes(opt.value);
+              return (
+                <li
+                  key={opt.value}
+                  onClick={() => toggleId(opt.value)}
+                  className={`flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium transition-colors hover:bg-brand hover:text-primary-foreground ${
+                    isSelected
+                      ? "bg-brand/10 text-brand"
+                      : "text-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                      isSelected
+                        ? "border-brand bg-brand text-primary-foreground"
+                        : "border-input bg-card"
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                  {opt.label}
+                </li>
+              );
+            })
+          ) : (
+            <li className="px-3 py-2 text-sm text-muted-foreground">
+              No languages available
+            </li>
+          )}
+        </ul>
+      )}
+
+      {/* Selected language chips */}
+      {selectedIds.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {options
+            .filter((o) => selectedIds.includes(o.value))
+            .map((o) => (
+              <span
+                key={o.value}
+                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground"
+              >
+                {o.label}
+                <button
+                  type="button"
+                  onClick={() => toggleId(o.value)}
+                  className="ml-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Main form ───────────────────────────────────────────────────────── */
 export default function NutritionistRegistrationForm() {
   const [formData, setFormData] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,7 +204,9 @@ export default function NutritionistRegistrationForm() {
   const [isPending, startTransition] = useTransition();
   const [countries, setCountries] = useState<LookupItem[]>([]);
   const [specializations, setSpecializations] = useState<LookupItem[]>([]);
+  const [languages, setLanguages] = useState<LookupItem[]>([]);
   const [isLoadingLookups, setIsLoadingLookups] = useState(true);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const { setTheme, resolvedTheme } = useTheme();
 
   // Bootstrap lookup data on component mount
@@ -60,6 +216,7 @@ export default function NutritionistRegistrationForm() {
         await bootstrapLookups();
         setCountries(getCountries());
         setSpecializations(getSpecializations());
+        setLanguages(getLanguages());
       } catch (err) {
         console.error("Failed to load lookup data:", err);
       } finally {
@@ -70,17 +227,6 @@ export default function NutritionistRegistrationForm() {
     loadLookups();
   }, []);
 
-  const languageIds = useMemo(
-    () =>
-      formData.language_ids
-        .split(",")
-        .map((id) => id.trim())
-        .filter(Boolean)
-        .map((id) => Number(id))
-        .filter((id) => Number.isInteger(id) && id > 0),
-    [formData.language_ids],
-  );
-
   const validate = () => {
     const result = nutritionistRegistrationSchema.safeParse({
       ...formData,
@@ -89,7 +235,7 @@ export default function NutritionistRegistrationForm() {
       years_experience: Number(formData.years_experience),
       consultation_price: Number(formData.consultation_price),
       cert_image: formData.cert_image,
-      language_ids: languageIds,
+      language_ids: formData.language_ids,
     });
 
     if (result.success) {
@@ -135,53 +281,32 @@ export default function NutritionistRegistrationForm() {
 
   const FieldError = ({ name }: { name: string }) =>
     errors[name] ? (
-      <p className="mt-1 text-sm text-red-500 dark:text-red-400">
-        {errors[name]}
-      </p>
+      <p className="mt-1 text-sm text-destructive">{errors[name]}</p>
     ) : null;
 
+  const inputClasses =
+    "mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand";
+
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#0f141a] dark:text-white px-4 py-8">
+    <main className="min-h-screen bg-background text-foreground px-4 py-8">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-[#1a2027] dark:text-gray-100 dark:hover:bg-[#222a33]"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
           >
             <Logo />
             Back to home
           </Link>
 
-          <button
-            type="button"
-            onClick={() =>
-              setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
-            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition shadow-sm ${
-              resolvedTheme === "dark"
-                ? "bg-white text-gray-900 border-gray-200 hover:bg-gray-100"
-                : "bg-[#1a2027] text-white border-gray-700 hover:bg-[#222a33]"
-            }`}
-          >
-            {resolvedTheme === "dark" ? (
-              <>
-                <Sun className="h-4 w-4 text-orange-500" />
-                Light mode
-              </>
-            ) : (
-              <>
-                <Moon className="h-4 w-4 text-blue-400" />
-                Dark mode
-              </>
-            )}
-          </button>
+          <ThemeToggle />
         </div>
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-[#2a3038] dark:bg-[#1a2027] md:p-8">
-          <h1 className="text-2xl font-semibold md:text-3xl">
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-8">
+          <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
             Nutritionist registration
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             Complete this form to create your nutritionist account. New accounts
             remain pending approval before access is granted.
           </p>
@@ -191,92 +316,84 @@ export default function NutritionistRegistrationForm() {
             className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2"
           >
             <label className="block">
-              <span className="text-sm font-medium">Username</span>
+              <span className="text-sm font-medium text-foreground">Username</span>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, username: e.target.value }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
               <FieldError name="username" />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">Email</span>
+              <span className="text-sm font-medium text-foreground">Email</span>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, email: e.target.value }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
               <FieldError name="email" />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">Password</span>
+              <span className="text-sm font-medium text-foreground">Password</span>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, password: e.target.value }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
               <FieldError name="password" />
             </label>
 
-            <label className="block">
-              <span className="text-sm font-medium">Country</span>
-              <select
+            {/* Country dropdown — matches input sizing */}
+            <div className="block">
+              <GenericDropdown
+                label="Country"
                 value={formData.country_id}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    country_id: e.target.value,
-                  }))
+                options={countries.map((c) => ({
+                  label: c.name || "",
+                  value: String(c.id),
+                }))}
+                onChange={(val) =>
+                  setFormData((prev) => ({ ...prev, country_id: val }))
                 }
-                disabled={isLoadingLookups}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
-              >
-                <option value="">Select a country</option>
-                {Array.isArray(countries) && countries.map((country) => (
-                  <option key={country.id} value={country.id}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
-              <FieldError name="country_id" />
-            </label>
+                placeholder="Select a country"
+                className="py-2 px-3 rounded-lg"
+                error={errors.country_id}
+              />
+            </div>
 
-            <label className="block">
-              <span className="text-sm font-medium">Specialization</span>
-              <select
+            {/* Specialization dropdown — matches input sizing */}
+            <div className="block">
+              <GenericDropdown
+                label="Specialization"
                 value={formData.specialization_id}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    specialization_id: e.target.value,
-                  }))
+                options={specializations.map((s) => ({
+                  label: s.name || "",
+                  value: String(s.id),
+                }))}
+                onChange={(val) =>
+                  setFormData((prev) => ({ ...prev, specialization_id: val }))
                 }
-                disabled={isLoadingLookups}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#11161c]"
-              >
-                <option value="">Select a specialization</option>
-                {Array.isArray(specializations) && specializations.map((spec) => (
-                  <option key={spec.id} value={spec.id}>
-                    {spec.name}
-                  </option>
-                ))}
-              </select>
-              <FieldError name="specialization_id" />
-            </label>
+                placeholder="Select a specialization"
+                className="py-2 px-3 rounded-lg"
+                error={errors.specialization_id}
+              />
+            </div>
 
             <label className="block">
-              <span className="text-sm font-medium">Years of experience</span>
+              <span className="text-sm font-medium text-foreground">
+                Years of experience
+              </span>
               <input
                 type="number"
                 min={0}
@@ -287,13 +404,13 @@ export default function NutritionistRegistrationForm() {
                     years_experience: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
               <FieldError name="years_experience" />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-foreground">
                 Consultation price (USD)
               </span>
               <input
@@ -307,13 +424,13 @@ export default function NutritionistRegistrationForm() {
                     consultation_price: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
               <FieldError name="consultation_price" />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-foreground">
                 Certification reference
               </span>
               <input
@@ -325,32 +442,43 @@ export default function NutritionistRegistrationForm() {
                     certification_ref: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
               <FieldError name="certification_ref" />
             </label>
 
-            <label className="block md:col-span-2">
-              <span className="text-sm font-medium">
-                Language IDs (comma-separated)
-              </span>
-              <input
-                type="text"
-                placeholder="Example: 1,2,3"
-                value={formData.language_ids}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    language_ids: e.target.value,
-                  }))
+            {/* Languages multi-select dropdown */}
+            <div className="block">
+              <MultiSelectDropdown
+                label="Languages"
+                selectedIds={formData.language_ids}
+                options={
+                  Array.isArray(languages)
+                    ? languages.map((l) => ({
+                        label: l.name || "",
+                        value: l.id,
+                      }))
+                    : []
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                onChange={(ids) =>
+                  setFormData((prev) => ({ ...prev, language_ids: ids }))
+                }
+                placeholder="Select languages"
+                isOpen={openDropdown === "languages"}
+                onToggle={() =>
+                  setOpenDropdown((p) =>
+                    p === "languages" ? null : "languages",
+                  )
+                }
+                onClose={() =>
+                  setOpenDropdown((p) => (p === "languages" ? null : p))
+                }
               />
               <FieldError name="language_ids" />
-            </label>
+            </div>
 
             <label className="block md:col-span-2">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-foreground">
                 Certification document image
               </span>
               <input
@@ -369,13 +497,13 @@ export default function NutritionistRegistrationForm() {
                     cert_image: file,
                   }));
                 }}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none file:mr-4 file:rounded-md file:border-0 file:bg-emerald-600 file:px-3 file:py-1 file:text-sm file:text-white dark:border-gray-700 dark:bg-[#11161c]"
+                className="mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand file:mr-4 file:rounded-md file:border-0 file:bg-button-primary file:px-3 file:py-1 file:text-sm file:text-button-primary-foreground"
               />
               <FieldError name="cert_image" />
             </label>
 
             <label className="block md:col-span-2">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-foreground">
                 Professional bio (optional)
               </span>
               <textarea
@@ -384,12 +512,12 @@ export default function NutritionistRegistrationForm() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, bio: e.target.value }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-[#11161c]"
+                className={inputClasses}
               />
             </label>
 
             {serverError ? (
-              <p className="md:col-span-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              <p className="md:col-span-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {serverError}
               </p>
             ) : null}
@@ -397,7 +525,7 @@ export default function NutritionistRegistrationForm() {
             <div className="md:col-span-2 flex items-center justify-between gap-4 pt-2">
               <Link
                 href="/register"
-                className="text-sm font-medium text-emerald-600 underline underline-offset-4 hover:text-emerald-500 dark:text-emerald-400"
+                className="text-sm font-medium text-primary underline underline-offset-4 hover:text-accent-foreground"
               >
                 Back to regular registration
               </Link>
@@ -405,7 +533,7 @@ export default function NutritionistRegistrationForm() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg bg-button-primary px-5 py-2.5 text-sm font-semibold text-button-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPending ? "Submitting..." : "Submit for approval"}
               </button>
@@ -416,9 +544,11 @@ export default function NutritionistRegistrationForm() {
 
       {showSuccessModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-[#1a2027]">
-            <h2 className="text-xl font-semibold">Registration submitted</h2>
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-foreground">
+              Registration submitted
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
               Your account is under review. Please expect a response email
               within 1-7 working days.
             </p>
@@ -426,13 +556,13 @@ export default function NutritionistRegistrationForm() {
               <button
                 type="button"
                 onClick={() => setShowSuccessModal(false)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-[#222a33]"
+                className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
               >
                 Close
               </button>
               <Link
                 href="/"
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                className="rounded-lg bg-button-primary px-4 py-2 text-sm font-semibold text-button-primary-foreground transition hover:opacity-90"
               >
                 Go to home
               </Link>
