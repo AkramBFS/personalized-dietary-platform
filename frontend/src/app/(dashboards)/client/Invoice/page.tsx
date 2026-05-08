@@ -2,7 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/Input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,16 +20,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, Search, X, FileText, Receipt, Download, Calendar, CreditCard } from "lucide-react";
-import { getClientInvoices, getInvoiceDetail, type ClientInvoice } from "@/lib/client";
+import {
+  Eye,
+  Search,
+  X,
+  FileText,
+  Receipt,
+  Download,
+  Calendar,
+  CreditCard,
+} from "lucide-react";
+import {
+  getClientInvoices,
+  getInvoiceDetail,
+  type ClientInvoice,
+} from "@/lib/client";
 import { toast } from "sonner";
 
 export default function InvoicePage() {
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [query, setQuery] = useState("");
-  const [selectedInvoice, setSelectedInvoice] = useState<ClientInvoice | null>(null);
-  const [invoiceDetail, setInvoiceDetail] = useState<ClientInvoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClientInvoice | null>(
+    null,
+  );
+  const [invoiceDetail, setInvoiceDetail] = useState<ClientInvoice | null>(
+    null,
+  );
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -42,16 +65,9 @@ export default function InvoicePage() {
             total_paid: 29.99,
             item_type: "plan",
             created_at: new Date().toISOString(),
-            client: { username: "akram" }
+            client_username: "akram", // NEW
+            nutritionist_username: "Nutritest", // NEW
           },
-          {
-            id: 2,
-            transaction_number: "TRX-987654321",
-            total_paid: 199.99,
-            item_type: "premium_annual",
-            created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
-            client: { username: "akram" }
-          }
         ]);
       } finally {
         setLoading(false);
@@ -63,9 +79,12 @@ export default function InvoicePage() {
   const filteredInvoices = useMemo(() => {
     return invoices
       .filter((invoice) =>
-        invoice.transaction_number.toLowerCase().includes(query.toLowerCase())
+        invoice.transaction_number.toLowerCase().includes(query.toLowerCase()),
       )
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
   }, [invoices, query]);
 
   const handleViewDetails = async (invoice: ClientInvoice) => {
@@ -124,11 +143,21 @@ export default function InvoicePage() {
               <TableBody>
                 {Array.from({ length: 5 }).map((_, idx) => (
                   <TableRow key={idx}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-20 ml-auto" />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -143,7 +172,8 @@ export default function InvoicePage() {
             </div>
             <h3 className="text-xl font-semibold">No invoices found</h3>
             <p className="text-muted-foreground max-w-sm mx-auto mt-2">
-              You haven't made any transactions yet. Your billing history will appear here once you subscribe to a plan.
+              You haven't made any transactions yet. Your billing history will
+              appear here once you subscribe to a plan.
             </p>
           </CardContent>
         </Card>
@@ -162,12 +192,18 @@ export default function InvoicePage() {
               </TableHeader>
               <TableBody>
                 {filteredInvoices.map((invoice) => (
-                  <TableRow key={invoice.id} className="hover:bg-primary/5 transition-colors group">
+                  <TableRow
+                    key={invoice.id}
+                    className="hover:bg-primary/5 transition-colors group"
+                  >
                     <TableCell className="font-mono text-sm text-foreground/80">
                       {invoice.transaction_number}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize bg-accent/50 text-primary border-primary/20">
+                      <Badge
+                        variant="outline"
+                        className="capitalize bg-accent/50 text-primary border-primary/20"
+                      >
                         {invoice.item_type.replace("_", " ")}
                       </Badge>
                     </TableCell>
@@ -207,7 +243,9 @@ export default function InvoicePage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold">Invoice Details</h2>
-                  <p className="text-xs text-muted-foreground">Transaction ID: {selectedInvoice?.id}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Transaction ID: {selectedInvoice?.id}
+                  </p>
                 </div>
               </div>
               <button
@@ -217,7 +255,7 @@ export default function InvoicePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-8">
               {detailsLoading ? (
                 <div className="space-y-6">
@@ -231,9 +269,13 @@ export default function InvoicePage() {
               ) : invoiceDetail ? (
                 <div className="space-y-8">
                   {/* Total Paid Header */}
-                  <div className="text-center p-6 bg-primary/5 rounded-2xl border border-primary/10">
-                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-1">Total Amount Paid</p>
-                    <h3 className="text-4xl font-black text-primary">${invoiceDetail.total_paid.toFixed(2)}</h3>
+                  <div className="space-y-1 text-right">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Client
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">
+                      @{invoiceDetail.client_username}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-6 gap-x-4">
@@ -246,30 +288,42 @@ export default function InvoicePage() {
                         {invoiceDetail.transaction_number}
                       </p>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                         <Calendar className="w-3 h-3" />
                         Date
                       </div>
                       <p className="text-sm font-medium text-foreground bg-muted/50 p-2 rounded-lg h-full flex items-center">
-                        {new Date(invoiceDetail.created_at).toLocaleString(undefined, {
-                          dateStyle: 'medium',
-                          timeStyle: 'short'
-                        })}
+                        {new Date(invoiceDetail.created_at).toLocaleString(
+                          undefined,
+                          {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          },
+                        )}
                       </p>
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service Type</div>
-                      <Badge className="capitalize py-1 px-3 text-sm" variant="secondary">
+                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Service Type
+                      </div>
+                      <Badge
+                        className="capitalize py-1 px-3 text-sm"
+                        variant="secondary"
+                      >
                         {invoiceDetail.item_type.replace("_", " ")}
                       </Badge>
                     </div>
 
                     <div className="space-y-1 text-right">
-                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Client</div>
-                      <p className="text-sm font-semibold text-foreground">@{invoiceDetail.client.username}</p>
+                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Client
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">
+                        @{invoiceDetail.client_username}
+                      </p>
                     </div>
                   </div>
 
@@ -278,15 +332,27 @@ export default function InvoicePage() {
                       <Download className="w-4 h-4 mr-2 group-hover:translate-y-0.5 transition-transform" />
                       Download PDF Receipt
                     </Button>
-                    <Button variant="outline" className="w-full py-6 rounded-xl text-muted-foreground" onClick={() => setIsModalOpen(false)}>
+                    <Button
+                      variant="outline"
+                      className="w-full py-6 rounded-xl text-muted-foreground"
+                      onClick={() => setIsModalOpen(false)}
+                    >
                       Close
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <p className="text-destructive font-medium">Failed to load detailed invoice information.</p>
-                  <Button variant="ghost" className="mt-4" onClick={() => setIsModalOpen(false)}>Back to list</Button>
+                  <p className="text-destructive font-medium">
+                    Failed to load detailed invoice information.
+                  </p>
+                  <Button
+                    variant="ghost"
+                    className="mt-4"
+                    onClick={() => setIsModalOpen(false)}
+                  >
+                    Back to list
+                  </Button>
                 </div>
               )}
             </div>

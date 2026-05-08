@@ -15,7 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Eye, Search, X } from "lucide-react";
-import { getAdminUsers, getAdminUserDetail, banUser, type AdminUser } from "@/lib/admin";
+import {
+  getAdminUsers,
+  getAdminUserDetail,
+  banUser,
+  type AdminUser,
+} from "@/lib/admin";
 import { toast } from "sonner";
 import GenericDropdown from "@/components/ui/GenericDropdown";
 
@@ -125,7 +130,7 @@ export default function AdminUsersPage() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-12"
               placeholder="Search users..."
             />
           </div>

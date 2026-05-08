@@ -67,7 +67,9 @@ export default function AdminApprovalsPage() {
   }, []);
 
   const refreshAfterAction = (nutritionist_id: number) =>
-    setRecords((prev) => prev.filter((item) => item.nutritionist_id !== nutritionist_id));
+    setRecords((prev) =>
+      prev.filter((item) => item.nutritionist_id !== nutritionist_id),
+    );
 
   const handleApprove = async (nutritionist_id: number) => {
     setSubmitting(true);
@@ -103,6 +105,8 @@ export default function AdminApprovalsPage() {
       setSubmitting(false);
     }
   };
+
+  const BACKEND_URL = "http://localhost:8000";
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
@@ -187,77 +191,124 @@ export default function AdminApprovalsPage() {
                   <div className="rounded-lg border p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Username:</span>{" "}
-                        <span className="block mt-1 font-medium">{selected.username}</span>
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Email:</span>{" "}
-                        <span className="block mt-1 font-medium">{selected.email}</span>
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Country:</span>{" "}
-                        <span className="block mt-1 font-medium">{selected.country_name ?? "N/A"}</span>
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Languages:</span>{" "}
+                        <span className="font-semibold text-muted-foreground">
+                          Username:
+                        </span>{" "}
                         <span className="block mt-1 font-medium">
-                          {selected.languages?.length ? selected.languages.join(", ") : "N/A"}
+                          {selected.username}
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">
+                          Email:
+                        </span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.email}
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">
+                          Country:
+                        </span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.country_name ?? "N/A"}
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">
+                          Languages:
+                        </span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.languages?.length
+                            ? selected.languages.join(", ")
+                            : "N/A"}
                         </span>
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Specialization:</span>{" "}
-                        <span className="block mt-1 font-medium">{selected.specialization_name ?? "N/A"}</span>
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Experience:</span>{" "}
-                        <span className="block mt-1 font-medium">{selected.years_experience ?? "N/A"} years</span>
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Consultation Price:</span>{" "}
+                        <span className="font-semibold text-muted-foreground">
+                          Specialization:
+                        </span>{" "}
                         <span className="block mt-1 font-medium">
-                          {selected.consultation_price !== undefined ? `$${selected.consultation_price}` : "N/A"}
+                          {selected.specialization_name ?? "N/A"}
                         </span>
                       </p>
                       <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Status:</span>{" "}
-                        <span className="block mt-1 font-medium capitalize">{selected.approval_status}</span>
+                        <span className="font-semibold text-muted-foreground">
+                          Experience:
+                        </span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.years_experience ?? "N/A"} years
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">
+                          Consultation Price:
+                        </span>{" "}
+                        <span className="block mt-1 font-medium">
+                          {selected.consultation_price !== undefined
+                            ? `$${selected.consultation_price}`
+                            : "N/A"}
+                        </span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold text-muted-foreground">
+                          Status:
+                        </span>{" "}
+                        <span className="block mt-1 font-medium capitalize">
+                          {selected.approval_status}
+                        </span>
                       </p>
                     </div>
 
                     <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
                       <p className="text-sm">
-                        <span className="font-semibold text-muted-foreground">Bio:</span>{" "}
-                        <span className="block mt-1 whitespace-pre-wrap">{selected.bio ?? "N/A"}</span>
+                        <span className="font-semibold text-muted-foreground">
+                          Bio:
+                        </span>{" "}
+                        <span className="block mt-1 whitespace-pre-wrap">
+                          {selected.bio ?? "N/A"}
+                        </span>
                       </p>
                     </div>
 
                     <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
                       <p className="text-sm flex justify-between items-center">
-                        <span className="font-semibold text-muted-foreground">Certification Reference:</span>
-                        <span className="font-medium bg-muted px-2 py-1 rounded">{selected.certification_ref ?? "N/A"}</span>
+                        <span className="font-semibold text-muted-foreground">
+                          Certification Reference:
+                        </span>
+                        <span className="font-medium bg-muted px-2 py-1 rounded">
+                          {selected.certification_ref ?? "N/A"}
+                        </span>
                       </p>
-                      
+
                       {selected.cert_image_url && (
                         <div className="mt-4 flex flex-col gap-2">
-                          <span className="text-sm font-semibold text-muted-foreground">Certification Document:</span>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            Certification Document:
+                          </span>
                           <a
-                            href={selected.cert_image_url}
+                            href={
+                              selected.cert_image_url.startsWith("http")
+                                ? selected.cert_image_url
+                                : `${BACKEND_URL}/media/${selected.cert_image_url.replace(/^\/+/, "")}`
+                            }
                             target="_blank"
                             rel="noreferrer"
-                            className="text-sm text-primary underline block truncate hover:text-primary/80 transition-colors"
+                            className="text-sm text-primary underline block truncate hover:text-primary/80"
                           >
-                            View Document
+                            View Document (Opens in new tab)
                           </a>
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="col-span-1 md:col-span-2 space-y-2 mt-2 pt-4 border-t">
                       <p className="text-sm text-muted-foreground">
-                        Registered: {new Date(selected.created_at).toLocaleString()}
+                        Registered:{" "}
+                        {new Date(selected.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>

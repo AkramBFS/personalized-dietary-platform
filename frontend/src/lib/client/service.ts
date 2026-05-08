@@ -209,11 +209,12 @@ export interface ClientInvoice {
   total_paid: number;
   item_type: string;
   created_at: string;
-  client: {
-    username: string;
-  };
+  // Change these to match the API response you logged
+  client_username: string; 
+  nutritionist_username: string;
+  net_earnings?: number;
+  commission_rate?: number;
 }
-
 function unwrapList<T>(payload: ApiEnvelope<T[]> | T[] | { results?: T[] }): T[] {
   const data = unwrapResponse(payload as ApiEnvelope<T[]> | T[] | { results?: T[] });
   if (Array.isArray(data)) return data;
@@ -402,6 +403,7 @@ export async function getClientInvoices(): Promise<ClientInvoice[]> {
 }
 
 export async function getInvoiceDetail(id: number): Promise<ClientInvoice> {
-  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`/invoices/${id}/`);
+  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`/client/invoices/${id}/`);
+  console.log("Invoice detail response:", response.data);
   return unwrapResponse(response.data);
 }
