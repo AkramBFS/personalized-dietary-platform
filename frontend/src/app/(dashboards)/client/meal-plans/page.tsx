@@ -17,12 +17,10 @@ import Link from "next/link";
 
 interface UserPlan {
   id: number;
-  plan: {
-    id: number;
-    title: string;
-    cover_image_url?: string;
-    duration_days: number;
-  };
+  plan_id: number;
+  plan_title: string;
+  plan_cover: string;
+  plan_duration: number;
   current_day_index: number;
   progress_percent: number;
   status: string;
@@ -33,38 +31,23 @@ export default function MealPlansPage() {
   const [plans, setPlans] = useState<UserPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
+  console.log(plans);
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         const response = await api.get("/client/user-plans/");
-        const raw = response.data.results || response.data || [];
-        setPlans(Array.isArray(raw) ? raw : []);
+        // 2. Correctly grab the array from the 'data' property
+        const raw = response.data.data || [];
+        setPlans(raw);
       } catch (error) {
         console.error("Failed to fetch plans", error);
-        // Mock fallback
-        setPlans([
-          {
-            id: 1,
-            plan: { id: 101, title: "Hormonal Balance", duration_days: 30 },
-            current_day_index: 15,
-            progress_percent: 50,
-            status: "active",
-            free_consultations_used: 1,
-          },
-          {
-            id: 2,
-            plan: { id: 102, title: "Detox 7-Day", duration_days: 7 },
-            current_day_index: 7,
-            progress_percent: 100,
-            status: "completed",
-            free_consultations_used: 0,
-          },
-        ]);
+        setPlans([]); // Handle error gracefully
       } finally {
         setLoading(false);
       }
     };
     fetchPlans();
+    console.log("Rendering plan:", plans);
   }, []);
 
   return (
@@ -99,10 +82,7 @@ export default function MealPlansPage() {
               You haven't subscribed to any meal plans yet. Start your journey
               with a professional consultation.
             </p>
-            <Button
-              className="mt-8 px-8"
-              asChild
-            >
+            <Button className="mt-8 px-8" asChild>
               <Link href="/consultations">Book a Consultation</Link>
             </Button>
           </CardContent>
@@ -134,14 +114,12 @@ export default function MealPlansPage() {
                 </div>
               </div>
 
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                  {userPlan.plan.title}
-                </CardTitle>
-                <CardDescription className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
+              <CardHeader>
+                <CardTitle>{userPlan.plan_title}</CardTitle>{" "}
+                {/* Changed from userPlan.plan.title */}
+                <CardDescription>
                   Day {userPlan.current_day_index + 1} of{" "}
-                  {userPlan.plan.duration_days}
+                  {userPlan.plan_duration}
                 </CardDescription>
               </CardHeader>
 
