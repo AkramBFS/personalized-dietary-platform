@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/schema/',       SpectacularAPIView.as_view(),        name='schema'),
     path('api/docs/',         SpectacularSwaggerView.as_view(),    name='swagger-ui'),
     path('api/redoc/',        SpectacularRedocView.as_view(),      name='redoc'),
+    path('api/v1/checkout/', include('marketplace.checkout_urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
