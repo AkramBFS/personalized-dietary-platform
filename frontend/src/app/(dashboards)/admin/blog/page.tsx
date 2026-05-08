@@ -20,28 +20,12 @@ import {
   type BlogArticle,
 } from "@/lib/admin";
 
-const mockArticles: BlogArticle[] = [
-  {
-    id: 1,
-    title: "How to Build Sustainable Meal Habits",
-    content:
-      "A practical guide for clients to build consistent nutrition habits with simple weekly planning.",
-    tags: ["habits", "meal-planning"],
-    created_at: "2026-04-03T00:00:00Z",
-  },
-  {
-    id: 2,
-    title: "Understanding Macronutrients for Beginners",
-    content:
-      "A beginner-friendly breakdown of proteins, fats, and carbohydrates with examples.",
-    tags: ["education", "macros"],
-    created_at: "2026-04-06T00:00:00Z",
-  },
-];
+import { updateBlogArticle, deleteBlogArticle } from "@/lib/admin";
 
 export default function AdminBlogPage() {
-  const [articles, setArticles] = useState<BlogArticle[]>(mockArticles);
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [coverImage, setCoverImage] = useState("");
@@ -51,75 +35,75 @@ export default function AdminBlogPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        await getBlogArticles();
-      } catch {
-        // Intentionally ignored for now: UI uses static mock data.
+        const data = await getBlogArticles();
+        setArticles(data);
+      } catch (error) {
+        toast.error("Failed to load blog articles");
       }
     };
     void load();
   }, []);
 
-  const handleCreate = async () => {
+  const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
       toast.error("Title and content are required.");
       return;
     }
     setSubmitting(true);
+    const payload = {
+      title: title.trim(),
+      content: content.trim(),
+      cover_image: coverImage.trim() || undefined,
+      tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    };
     try {
-      await createBlogArticle({
-        title: title.trim(),
-        content: content.trim(),
-        cover_image: coverImage.trim() || undefined,
-        tags: tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
-      });
-      setArticles((prev) => [
-        {
-          id: Date.now(),
-          title: title.trim(),
-          content: content.trim(),
-          cover_image: coverImage.trim() || undefined,
-          tags: tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean),
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
-      toast.success("Article created (mock UI).");
-      setEditorOpen(false);
-      setTitle("");
-      setContent("");
-      setCoverImage("");
-      setTags("");
+      if (editingId) {
+        await updateBlogArticle(editingId, payload);
+        setArticles((prev) =>
+          prev.map((a) => (a.id === editingId ? { ...a, ...payload } : a))
+        );
+        toast.success("Article updated successfully.");
+      } else {
+        await createBlogArticle(payload);
+        const data = await getBlogArticles(); // Refresh list to get real ID
+        setArticles(data);
+        toast.success("Article created successfully.");
+      }
+      closeEditor();
     } catch {
-      // Keep the flow usable while backend is pending.
-      setArticles((prev) => [
-        {
-          id: Date.now(),
-          title: title.trim(),
-          content: content.trim(),
-          cover_image: coverImage.trim() || undefined,
-          tags: tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean),
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
-      toast.success("Article created locally (mock UI).");
-      setEditorOpen(false);
-      setTitle("");
-      setContent("");
-      setCoverImage("");
-      setTags("");
+      toast.error(`Failed to ${editingId ? "update" : "create"} article.`);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditClick = (article: BlogArticle) => {
+    setEditingId(article.id);
+    setTitle(article.title);
+    setContent(article.content);
+    setCoverImage(article.cover_image || "");
+    setTags((article.tags || []).join(", "));
+    setEditorOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this article?")) return;
+    try {
+      await deleteBlogArticle(id);
+      setArticles((prev) => prev.filter((a) => a.id !== id));
+      toast.success("Article deleted successfully.");
+    } catch {
+      toast.error("Failed to delete article.");
+    }
+  };
+
+  const closeEditor = () => {
+    setEditorOpen(false);
+    setEditingId(null);
+    setTitle("");
+    setContent("");
+    setCoverImage("");
+    setTags("");
   };
 
   return (
@@ -166,6 +150,14 @@ export default function AdminBlogPage() {
                   </Badge>
                 ))}
               </div>
+              <div className="flex gap-2 justify-end pt-4 border-t mt-4">
+                <Button variant="outline" size="sm" onClick={() => handleEditClick(article)}>
+                  Edit
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => handleDelete(article.id)}>
+                  Delete
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -179,10 +171,10 @@ export default function AdminBlogPage() {
             <div className="flex justify-between items-center px-6 py-4 border-b">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">
-                  New Article
+                  {editingId ? "Edit Article" : "New Article"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Draft and publish a new blog post.
+                  {editingId ? "Update existing article details." : "Draft and publish a new blog post."}
                 </p>
               </div>
               <button
@@ -200,7 +192,7 @@ export default function AdminBlogPage() {
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. 10 Tips for Better React Components"
+                  placeholder="e.g. 10 Tips for losing weight"
                 />
               </div>
 
@@ -218,7 +210,7 @@ export default function AdminBlogPage() {
                   <Input
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
-                    placeholder="react, web-dev, tutorial (comma-separated)"
+                    placeholder="losing weight, healthy food, diet (comma-separated)"
                   />
                 </div>
               </div>
@@ -241,14 +233,14 @@ export default function AdminBlogPage() {
 
             {/* Modal Footer */}
             <div className="px-6 py-4 border-t bg-muted/20 flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={() => setEditorOpen(false)}>
+              <Button variant="ghost" onClick={closeEditor}>
                 Cancel
               </Button>
               <Button
                 disabled={submitting}
-                onClick={handleCreate}
+                onClick={handleSubmit}
               >
-                {submitting ? "Publishing..." : "Publish Article"}
+                {submitting ? (editingId ? "Updating..." : "Publishing...") : (editingId ? "Update Article" : "Publish Article")}
               </Button>
             </div>
           </div>

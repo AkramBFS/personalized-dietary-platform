@@ -1,43 +1,39 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, ShieldAlert, DollarSign } from "lucide-react";
 
-const fallbackStats = {
-  total_users: 1284,
-  active_nutritionists: 87,
-  pending_approvals: 9,
-  total_revenue: 98210,
-  monthly_growth: [
-    { month: "Jan", value: 6 },
-    { month: "Feb", value: 8 },
-    { month: "Mar", value: 12 },
-    { month: "Apr", value: 10 },
-    { month: "May", value: 14 },
-  ],
-  recent_activity: [
-    {
-      id: 1,
-      text: "New nutritionist signed up",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      text: "New inquiry received from client",
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: 3,
-      text: "Community post reported",
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-    },
-  ],
-};
+import { getDashboardStats, type DashboardStats } from "@/lib/admin";
 
 export default function AdminOverviewPage() {
-  const resolved = useMemo(() => fallbackStats, []);
+  const [resolved, setResolved] = React.useState<DashboardStats | null>(null);
+
+  React.useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const stats = await getDashboardStats();
+        setResolved(stats);
+      } catch (error) {
+        console.error("Failed to load dashboard stats", error);
+      }
+    };
+    void loadStats();
+  }, []);
+
+  if (!resolved) {
+    return (
+      <div className="flex flex-col gap-8 pb-10 max-w-7xl mx-auto">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+            Admin Overview
+          </h1>
+          <p className="text-muted-foreground mt-2">Loading statistics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8 pb-10 max-w-7xl mx-auto">

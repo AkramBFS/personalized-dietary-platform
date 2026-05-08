@@ -47,7 +47,11 @@ const relatedPosts = [
   },
 ];
 
-export default function SingleBlogPostPageComponent() {
+interface BlogPostProps {
+  slug: string;
+}
+
+export default function SingleBlogPostPageComponent({ slug }: BlogPostProps) {
   return (
     <main className="max-w-7xl mx-auto w-full px-4 md:px-8 py-12 md:py-16 grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
       {/* Left Column (Main Article Content - Scrollable) */}

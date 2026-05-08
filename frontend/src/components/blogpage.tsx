@@ -1,3 +1,4 @@
+"use client";
 import {
   List,
   ShieldCheck,
@@ -12,6 +13,8 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import { useState, useMemo } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function BlogPageComponent() {
   const articles = [
@@ -52,6 +55,18 @@ export default function BlogPageComponent() {
       desc: "Exploring the latest software and hardware solutions making remote patient monitoring more effective than ever.",
     },
   ];
+
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter(
+      (article) =>
+        article.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        article.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        article.tag.toLowerCase().includes(debouncedSearch.toLowerCase()),
+    );
+  }, [debouncedSearch]);
 
   return (
     <main className="flex-grow max-w-7xl mx-auto w-full px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
@@ -154,11 +169,13 @@ export default function BlogPageComponent() {
             className="w-full pl-12 pr-4 py-3 bg-card border border-input rounded-xl text-base text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm placeholder:text-muted-foreground"
             placeholder="Search articles, topics..."
             type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {articles.map((article, idx) => (
+          {filteredArticles.map((article, idx) => (
             <article
               key={idx}
               className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm flex flex-col transition-transform hover:-translate-y-1 hover:shadow-md duration-300"

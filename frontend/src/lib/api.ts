@@ -1,8 +1,32 @@
 import axios from "axios";
 import { getCookie, withAuthHeader } from "./auth";
 
+export const API_BASE_URL = "http://127.0.0.1:8000/api/v1/";
+
+export interface ApiEnvelope<T> {
+  status: "success" | "error";
+  data: T;
+  message?: string;
+}
+
+export function unwrapResponse<T>(payload: ApiEnvelope<T> | T): T {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return (payload as ApiEnvelope<T>).data;
+  }
+  return payload as T;
+}
+
+export function resolveApiUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (/^(blob:|data:|https?:\/\/)/i.test(url)) return url;
+
+  const apiUrl = new URL(API_BASE_URL);
+  const origin = `${apiUrl.protocol}//${apiUrl.host}`;
+  return new URL(url.replace(/^\/+/, ""), `${origin}/`).toString();
+}
+
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/v1/",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -28,7 +52,7 @@ api.interceptors.response.use(
         }
 
         // Call the refresh endpoint directly to avoid looping
-        const response = await axios.post("http://127.0.0.1:8000/api/v1/auth/token/refresh/", {
+        const response = await axios.post(`${API_BASE_URL}auth/token/refresh/`, {
           refresh: refreshToken
         });
 
@@ -96,4 +120,80 @@ export const bookConsultation = async (payload: {
 }) => {
   const response = await api.post("client/consultations/book/", payload);
   return response.data;
+};
+
+// ============================================
+// Nutritionist Directory (Marketplace List)
+// ============================================
+
+/**
+ * Matches the exact shape returned by GET /marketplace/nutritionists/
+ */
+export interface NutritionistListItem {
+  nutritionist_id: number;
+  username: string;
+  profile_photo_url: string | null;
+  bio: string;
+  years_experience: number;
+  consultation_price: number;
+  specialization_name: string;
+  country_name: string;
+  languages: string[];
+  rating: number;
+}
+
+/**
+ * GET /marketplace/nutritionists/
+ * Fetch list of approved nutritionists for the public directory.
+ */
+export const getNutritionists = async (params?: {
+  specialization_id?: number;
+  language_id?: number;
+  country_id?: number;
+  sort?: string;
+}) => {
+  const response = await api.get("marketplace/nutritionists/", { params });
+  return response.data;
+};
+
+// ============================================
+// Nutritionist Invoices API
+// ============================================
+
+export interface NutritionistInvoice {
+  id: number;
+  transaction_number: string;
+  total_paid: number;
+  commission_rate: number;
+  net_earnings: number;
+  item_type: "plan" | "consultation_advice" | "consultation_custom";
+  created_at: string;
+  client: {
+    username: string;
+  };
+  nutritionist: {
+    user: {
+      username: string;
+    };
+  };
+}
+
+/**
+ * GET /nutritionist/invoices/
+ * List nutritionist's invoices
+ */
+export const getNutritionistInvoices = async (): Promise<NutritionistInvoice[]> => {
+  const response = await api.get("nutritionist/invoices/");
+  return unwrapResponse(response.data);
+};
+
+/**
+ * GET /invoices/{id}/
+ * Fetch full invoice details (shared with client if endpoint is same)
+ * Note: If nutritionist uses a different endpoint, change it here.
+ * Based on the request, nutritionist might use the same detailed view as client.
+ */
+export const getInvoiceDetail = async (id: number): Promise<NutritionistInvoice> => {
+  const response = await api.get(`invoices/${id}/`);
+  return unwrapResponse(response.data);
 };

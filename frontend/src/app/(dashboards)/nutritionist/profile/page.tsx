@@ -5,16 +5,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
-import { Activity, Stethoscope, User } from "lucide-react";
+import { Activity, Plus, Stethoscope, User, X } from "lucide-react";
 import { toast } from "sonner";
 import { NutritionistProfile, getNutritionistProfile, patchNutritionistProfile } from "@/lib/nutritionist";
+import { bootstrapLookups, getLanguages, LookupItem } from "@/lib/lookups";
+import { resolveApiUrl } from "@/lib/api";
+import GenericDropdown from "@/components/ui/GenericDropdown";
 
-const supportedLanguages = [
-  { id: 1, name: "English" },
-  { id: 2, name: "Arabic" },
-  { id: 3, name: "French" },
-  { id: 4, name: "Spanish" },
-];
+function lookupName(item: LookupItem): string {
+  return item.name ?? item.label ?? item.value ?? String(item.id);
+}
 
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +22,8 @@ export default function ProfilePage() {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
   const [profileMeta, setProfileMeta] = useState<NutritionistProfile | null>(null);
+  const [languages, setLanguages] = useState<LookupItem[]>([]);
+  const [pendingLanguageId, setPendingLanguageId] = useState("");
   const [form, setForm] = useState({
     bio: "",
     years_experience: 0,
@@ -32,6 +34,8 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
+        await bootstrapLookups();
+        setLanguages(getLanguages());
         const profile = await getNutritionistProfile();
         setProfileMeta(profile);
         setForm({
@@ -41,7 +45,7 @@ export default function ProfilePage() {
           language_ids: profile.language_ids ?? [],
         });
         if (profile.profile_photo_url) {
-          setProfilePhotoUrl(profile.profile_photo_url);
+          setProfilePhotoUrl(resolveApiUrl(profile.profile_photo_url) ?? "");
         }
       } catch {
         toast.error("Could not load your profile.");
@@ -53,17 +57,23 @@ export default function ProfilePage() {
     void loadProfile();
   }, []);
 
-  const languageLabel = useMemo(() => {
-    if (form.language_ids.length === 0) return "No language selected";
-    return supportedLanguages
-      .filter((language) => form.language_ids.includes(language.id))
-      .map((language) => language.name)
-      .join(", ");
-  }, [form.language_ids]);
+  const selectedLanguages = useMemo(
+    () => languages.filter((language) => form.language_ids.includes(language.id)),
+    [form.language_ids, languages],
+  );
 
-  const handleLanguageSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedIds = Array.from(event.target.selectedOptions).map((option) => Number(option.value));
-    setForm((prev) => ({ ...prev, language_ids: selectedIds }));
+  const handleAddLanguage = () => {
+    const languageId = Number(pendingLanguageId);
+    if (!languageId || form.language_ids.includes(languageId)) return;
+    setForm((prev) => ({ ...prev, language_ids: [...prev.language_ids, languageId] }));
+    setPendingLanguageId("");
+  };
+
+  const handleRemoveLanguage = (languageId: number) => {
+    setForm((prev) => ({
+      ...prev,
+      language_ids: prev.language_ids.filter((selectedId) => selectedId !== languageId),
+    }));
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -77,8 +87,17 @@ export default function ProfilePage() {
         language_ids: form.language_ids,
         profile_photo: selectedPhoto ?? undefined,
       });
-      if (updated.profile_photo_url) {
-        setProfilePhotoUrl(updated.profile_photo_url);
+      const freshProfile = await getNutritionistProfile();
+      setProfileMeta(freshProfile);
+      setForm({
+        bio: freshProfile.bio ?? "",
+        years_experience: freshProfile.years_experience ?? 0,
+        consultation_price: freshProfile.consultation_price ?? 0,
+        language_ids: freshProfile.language_ids ?? [],
+      });
+      setSelectedPhoto(null);
+      if (freshProfile.profile_photo_url || updated.profile_photo_url) {
+        setProfilePhotoUrl(resolveApiUrl(freshProfile.profile_photo_url ?? updated.profile_photo_url) ?? "");
       }
       toast.success("Profile updated successfully.");
     } catch {
@@ -149,20 +168,20 @@ export default function ProfilePage() {
                 <CardDescription className="text-muted-foreground">Update your professional details and public consultation settings.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="bio" className="font-bold ml-1">Bio</Label>
                   <textarea
                     id="bio"
                     value={form.bio}
                     onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))}
-                    className="flex min-h-[110px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="flex min-h-[120px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-4 px-6 text-sm transition-all duration-300 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     placeholder="Share your expertise and focus areas."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="years">Years of Experience</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="years" className="font-bold ml-1">Years of Experience</Label>
                     <Input
                       id="years"
                       type="number"
@@ -171,10 +190,11 @@ export default function ProfilePage() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, years_experience: Number(event.target.value) || 0 }))
                       }
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Consultation Price (USD)</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="price" className="font-bold ml-1">Consultation Price (USD)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -184,37 +204,68 @@ export default function ProfilePage() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, consultation_price: Number(event.target.value) || 0 }))
                       }
+                      className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <Label>Languages</Label>
-                  <p className="text-xs text-muted-foreground">Selected: {languageLabel}</p>
-                  <select
-                    multiple
-                    value={form.language_ids.map(String)}
-                    onChange={handleLanguageSelect}
-                    className="min-h-[120px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  >
-                    {supportedLanguages.map((language) => (
-                      <option key={language.id} value={language.id}>
-                        {language.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-muted-foreground">Hold Ctrl (or Cmd on Mac) to select multiple languages.</p>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <GenericDropdown
+                        label="Add Language"
+                        value={pendingLanguageId}
+                        onChange={(val) => setPendingLanguageId(val)}
+                        options={languages
+                          .filter((language) => !form.language_ids.includes(language.id))
+                          .map((language) => ({
+                            label: lookupName(language),
+                            value: String(language.id),
+                          }))}
+                        placeholder="Select language"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddLanguage}
+                      disabled={!pendingLanguageId}
+                      className="h-auto py-4 px-6 rounded-2xl border-border shadow-sm hover:bg-accent transition-all duration-300"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-border bg-muted/30 p-2">
+                    {selectedLanguages.length > 0 ? (
+                      selectedLanguages.map((language) => (
+                        <button
+                          key={language.id}
+                          type="button"
+                          onClick={() => handleRemoveLanguage(language.id)}
+                          className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary hover:bg-primary/15"
+                        >
+                          {lookupName(language)}
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      ))
+                    ) : (
+                      <span className="px-1 py-1 text-sm text-muted-foreground">No languages selected</span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="photo">Profile Photo</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="photo" className="font-bold ml-1">Profile Photo</Label>
                   <Input
                     id="photo"
                     type="file"
                     accept="image/*"
                     onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
+                    className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   />
-                  {profilePhotoUrl ? <p className="text-xs text-muted-foreground">Current photo is already set.</p> : null}
+                  {profilePhotoUrl ? <p className="text-xs text-muted-foreground ml-1">Current photo is already set.</p> : null}
                 </div>
               </CardContent>
               <CardFooter className="justify-end pt-6">

@@ -14,56 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Eye, Search, X } from "lucide-react";
-import { getAdminUsers, type AdminUser } from "@/lib/admin";
-import api from "@/lib/api";
+import { getAdminUsers, getAdminUserDetail, banUser, type AdminUser } from "@/lib/admin";
+import { toast } from "sonner";
+import GenericDropdown from "@/components/ui/GenericDropdown";
 
-const getDisplayRole = (role: string) => {
+const getDisplayRole = (role?: string) => {
+  if (!role) return "Unknown";
   if (role === "high_admin") return "Admin";
   return role.replace("_", " ");
 };
-
-const mockUsers: AdminUser[] = [
-  {
-    id: 1,
-    username: "amira_h",
-    email: "amira@example.com",
-    role: "client",
-    is_active: true,
-    date_joined: "2026-01-11T00:00:00Z",
-  },
-  {
-    id: 2,
-    username: "dr_kareem",
-    email: "kareem@example.com",
-    role: "nutritionist",
-    is_active: true,
-    date_joined: "2026-01-28T00:00:00Z",
-  },
-  {
-    id: 3,
-    username: "admin_test",
-    email: "admin@example.com",
-    role: "high_admin",
-    is_active: true,
-    date_joined: "2026-02-04T00:00:00Z",
-  },
-  {
-    id: 4,
-    username: "banned_user",
-    email: "banned@example.com",
-    role: "client",
-    is_active: false,
-    date_joined: "2025-12-20T00:00:00Z",
-  },
-];
 
 export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
@@ -80,8 +40,8 @@ export default function AdminUsersPage() {
       try {
         const data = await getAdminUsers();
         setUsers(data);
-      } catch {
-        setUsers(mockUsers);
+      } catch (error) {
+        toast.error("Failed to fetch users");
       } finally {
         setLoading(false);
       }
@@ -100,7 +60,7 @@ export default function AdminUsersPage() {
       })
       .sort(
         (a, b) =>
-          new Date(b.date_joined).getTime() - new Date(a.date_joined).getTime(),
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(), // Changed here
       );
   }, [users, query, roleFilter]);
 
@@ -109,13 +69,32 @@ export default function AdminUsersPage() {
     setIsModalOpen(true);
     setDetailsLoading(true);
     try {
-      const response = await api.get(`/admin/users/${user.id}/`);
-      setUserDetails(response.data);
+      const data = await getAdminUserDetail(user.id);
+      setUserDetails(data);
     } catch (error) {
       console.error("Failed to fetch user details", error);
       setUserDetails(null);
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const handleBanToggle = async (user: AdminUser) => {
+    try {
+      await banUser(user.id, user.is_active);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, is_active: !user.is_active } : u,
+        ),
+      );
+      if (userDetails && userDetails.id === user.id) {
+        setUserDetails({ ...userDetails, is_active: !user.is_active });
+      }
+      toast.success(
+        `User ${user.is_active ? "banned" : "unbanned"} successfully`,
+      );
+    } catch (error) {
+      toast.error(`Failed to ${user.is_active ? "ban" : "unban"} user`);
     }
   };
 
@@ -129,17 +108,18 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="client">Client</SelectItem>
-              <SelectItem value="nutritionist">Nutritionist</SelectItem>
-              <SelectItem value="high_admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
+          <GenericDropdown
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={[
+              { label: "All Roles", value: "all" },
+              { label: "Client", value: "client" },
+              { label: "Nutritionist", value: "nutritionist" },
+              { label: "Admin", value: "high_admin" },
+            ]}
+            placeholder="Filter by role"
+            className="w-40 py-2 px-4 text-sm"
+          />
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -199,17 +179,26 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(user.date_joined).toLocaleDateString()}
+                        {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(user)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(user)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            variant={user.is_active ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={() => handleBanToggle(user)}
+                          >
+                            {user.is_active ? "Ban" : "Unban"}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

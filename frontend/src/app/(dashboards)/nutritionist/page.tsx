@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Users, CalendarCheck, FileText, Wallet, Calendar, Store, DollarSign } from "lucide-react";
+import { Users, CalendarCheck, FileText, Wallet, Calendar, Store, DollarSign, Loader2 } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -14,17 +14,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Link from "next/link";
-
-// ── Mock weekly earnings data ───────────────────────────────────────────
-const weeklyEarnings = [
-  { name: "Sun", amount: 0 },
-  { name: "Mon", amount: 45 },
-  { name: "Tue", amount: 120 },
-  { name: "Wed", amount: 0 },
-  { name: "Thu", amount: 29.99 },
-  { name: "Fri", amount: 165 },
-  { name: "Sat", amount: 45 },
-];
+import { toast } from "sonner";
+import {
+  getNutritionistPatients,
+  getNutritionistConsultations,
+  getNutritionistPlans,
+  getNutritionistEarnings,
+  getNutritionistProfile,
+  groupTransactionsByDayOfWeek,
+  NutritionistEarningsSummary,
+} from "@/lib/nutritionist";
 
 // ── Custom tooltip ──────────────────────────────────────────────────────
 const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
@@ -39,12 +38,87 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 
 // ── Component ───────────────────────────────────────────────────────────
 export default function NutritionistOverviewPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [displayName, setDisplayName] = useState("Doctor");
+  const [activePatients, setActivePatients] = useState(0);
+  const [upcomingConsultations, setUpcomingConsultations] = useState(0);
+  const [nextConsultationLabel, setNextConsultationLabel] = useState<string | null>(null);
+  const [pendingPlans, setPendingPlans] = useState(0);
+  const [earnings, setEarnings] = useState<NutritionistEarningsSummary | null>(null);
+
+  const weeklyEarnings = useMemo(() => {
+    if (!earnings?.transactions) return [];
+    return groupTransactionsByDayOfWeek(earnings.transactions);
+  }, [earnings]);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [profile, patients, consultations, plans, earningsData] = await Promise.all([
+          getNutritionistProfile(),
+          getNutritionistPatients(),
+          getNutritionistConsultations(),
+          getNutritionistPlans(),
+          getNutritionistEarnings(),
+        ]);
+
+        // Display name
+        setDisplayName(profile.user?.username ?? "Doctor");
+
+        // Active patients count
+        setActivePatients(Array.isArray(patients) ? patients.length : 0);
+
+        // Upcoming consultations — only scheduled or notified (not finished/cancelled)
+        const upcoming = Array.isArray(consultations)
+          ? consultations.filter((c) => c.status === "scheduled" || c.status === "notified")
+          : [];
+        setUpcomingConsultations(upcoming.length);
+
+        // Find the next upcoming consultation for the subtitle
+        if (upcoming.length > 0) {
+          const sorted = [...upcoming].sort((a, b) => {
+            const dateA = new Date(`${a.appointment_date}T${a.start_time}`);
+            const dateB = new Date(`${b.appointment_date}T${b.start_time}`);
+            return dateA.getTime() - dateB.getTime();
+          });
+          const next = sorted[0];
+          const nextDate = new Date(`${next.appointment_date}T${next.start_time}`);
+          const today = new Date();
+          const isToday = nextDate.toDateString() === today.toDateString();
+          const timeStr = nextDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          setNextConsultationLabel(isToday ? `Next: Today, ${timeStr}` : `Next: ${nextDate.toLocaleDateString()}`);
+        }
+
+        // Pending plans
+        setPendingPlans(
+          Array.isArray(plans) ? plans.filter((p) => p.status === "pending").length : 0,
+        );
+
+        // Earnings
+        setEarnings(earningsData);
+      } catch {
+        toast.error("Failed to load dashboard data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void loadDashboard();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] animate-in fade-in-50 duration-500">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8 pb-10 max-w-7xl mx-auto animate-in fade-in-50 duration-500">
       {/* Header section */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-          Good morning, Dr. Sarah! <span className="inline-block animate-wave">👋</span>
+          Good morning, {displayName}! <span className="inline-block animate-wave">👋</span>
         </h1>
         <Button asChild size="lg" className="px-6 rounded-lg">
           <Link href="/nutritionist/schedule">
@@ -65,8 +139,8 @@ export default function NutritionistOverviewPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Patients</p>
-                <p className="text-lg font-bold text-foreground">24</p>
-                <p className="text-sm text-primary font-medium">+3 this month</p>
+                <p className="text-lg font-bold text-foreground">{activePatients}</p>
+                <p className="text-sm text-primary font-medium">Total enrolled</p>
               </div>
             </div>
           </CardContent>
@@ -81,8 +155,8 @@ export default function NutritionistOverviewPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming Consultations</p>
-                <p className="text-lg font-bold text-foreground">5</p>
-                <p className="text-sm text-muted-foreground">Next: Today, 2:00 PM</p>
+                <p className="text-lg font-bold text-foreground">{upcomingConsultations}</p>
+                <p className="text-sm text-muted-foreground">{nextConsultationLabel ?? "No upcoming"}</p>
               </div>
             </div>
           </CardContent>
@@ -97,8 +171,10 @@ export default function NutritionistOverviewPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pending Plans</p>
-                <p className="text-lg font-bold text-foreground">2</p>
-                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">Awaiting admin review</p>
+                <p className="text-lg font-bold text-foreground">{pendingPlans}</p>
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                  {pendingPlans > 0 ? "Awaiting admin review" : "All plans reviewed"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -114,7 +190,9 @@ export default function NutritionistOverviewPage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Available Balance</p>
-                  <p className="text-lg font-bold text-foreground">$1,088.00</p>
+                  <p className="text-lg font-bold text-foreground">
+                    ${(earnings?.total_net ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
                   <p className="text-sm text-primary font-medium">View details →</p>
                 </div>
               </div>

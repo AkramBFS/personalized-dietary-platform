@@ -4,9 +4,25 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import api from "@/lib/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Bell, CheckCircle2, ChevronRight, Loader2, Monitor, Moon, Palette, Sun, User } from "lucide-react";
+import {
+  Bell,
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  Monitor,
+  Moon,
+  Palette,
+  Sun,
+  User,
+} from "lucide-react";
 
 interface AppNotification {
   id: number;
@@ -21,15 +37,24 @@ interface SettingsPanelProps {
   hideProfile?: boolean;
 }
 
-export function SettingsPanel({ profileHref, hideProfile = false }: SettingsPanelProps) {
+export function SettingsPanel({
+  profileHref,
+  hideProfile = false,
+}: SettingsPanelProps) {
   const initialTab = hideProfile ? "notifications" : "profile";
-  const [activeTab, setActiveTab] = useState<"profile" | "notifications" | "appearance">(initialTab);
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "notifications" | "appearance"
+  >(initialTab);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-2">Manage notification preferences and display behavior.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Settings
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Manage notification preferences and display behavior.
+        </p>
       </div>
 
       <div className="flex bg-muted p-1 rounded-xl w-fit border border-border">
@@ -67,7 +92,9 @@ export function SettingsPanel({ profileHref, hideProfile = false }: SettingsPane
         </button>
       </div>
 
-      {activeTab === "profile" && !hideProfile ? <ProfileTab profileHref={profileHref} /> : null}
+      {activeTab === "profile" && !hideProfile ? (
+        <ProfileTab profileHref={profileHref} />
+      ) : null}
       {activeTab === "notifications" ? <NotificationsTab /> : null}
       {activeTab === "appearance" ? <AppearanceTab /> : null}
     </div>
@@ -81,7 +108,9 @@ function ProfileTab({ profileHref }: { profileHref?: string }) {
         <CardTitle className="flex items-center gap-2">
           <User className="w-5 h-5 text-primary" /> Profile Settings
         </CardTitle>
-        <CardDescription>View and update your account profile information.</CardDescription>
+        <CardDescription>
+          View and update your account profile information.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted rounded-xl border border-border">
@@ -91,7 +120,9 @@ function ProfileTab({ profileHref }: { profileHref?: string }) {
             </div>
             <div>
               <p className="font-semibold text-foreground">Your Profile</p>
-              <p className="text-sm text-muted-foreground">Open your profile page to edit details and preferences.</p>
+              <p className="text-sm text-muted-foreground">
+                Open your profile page to edit details and preferences.
+              </p>
             </div>
           </div>
           <Button asChild className="px-6 rounded-lg">
@@ -114,11 +145,25 @@ function NotificationsTab() {
     const fetchNotifications = async () => {
       try {
         const response = await api.get("/notifications/");
-        setNotifications(response.data.results || response.data || []);
+        // FIX 1: Safely extract the array or fallback to an empty array
+        const fetchedData = response.data?.results || response.data;
+        setNotifications(Array.isArray(fetchedData) ? fetchedData : []);
       } catch {
         setNotifications([
-          { id: 101, title: "System Update", message: "New dashboard capabilities are now available.", is_read: false, created_at: new Date().toISOString() },
-          { id: 102, title: "Reminder", message: "You have unresolved items that need attention.", is_read: false, created_at: new Date(Date.now() - 3600000).toISOString() },
+          {
+            id: 101,
+            title: "System Update",
+            message: "New dashboard capabilities are now available.",
+            is_read: false,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 102,
+            title: "Reminder",
+            message: "You have unresolved items that need attention.",
+            is_read: false,
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+          },
         ]);
       } finally {
         setLoading(false);
@@ -133,7 +178,13 @@ function NotificationsTab() {
     } catch {
       // Optimistic update even when backend action fails.
     } finally {
-      setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, is_read: true } : item)));
+      setNotifications((prev) =>
+        Array.isArray(prev)
+          ? prev.map((item) =>
+              item.id === id ? { ...item, is_read: true } : item,
+            )
+          : [],
+      );
     }
   };
 
@@ -143,11 +194,18 @@ function NotificationsTab() {
     } catch {
       // Optimistic update even when backend action fails.
     } finally {
-      setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
+      setNotifications((prev) =>
+        Array.isArray(prev)
+          ? prev.map((item) => ({ ...item, is_read: true }))
+          : [],
+      );
     }
   };
 
-  const unreadCount = notifications.filter((item) => !item.is_read).length;
+  // FIX 2: Safely check if it's an array before calling .filter()
+  const unreadCount = Array.isArray(notifications)
+    ? notifications.filter((item) => !item.is_read).length
+    : 0;
 
   return (
     <Card className="shadow-sm flex flex-col max-h-[800px]">
@@ -155,10 +213,19 @@ function NotificationsTab() {
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-primary" />
           Notifications
-          {unreadCount > 0 ? <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5 ml-2">{unreadCount}</span> : null}
+          {unreadCount > 0 ? (
+            <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5 ml-2">
+              {unreadCount}
+            </span>
+          ) : null}
         </CardTitle>
         {unreadCount > 0 ? (
-          <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs text-muted-foreground hover:text-primary">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={markAllAsRead}
+            className="text-xs text-muted-foreground hover:text-primary"
+          >
             Mark all read
           </Button>
         ) : null}
@@ -168,23 +235,43 @@ function NotificationsTab() {
           <div className="flex justify-center p-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : notifications.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">You are all caught up.</div>
+        ) : !Array.isArray(notifications) || notifications.length === 0 ? (
+          // Adjusted to handle the case where it might be empty
+          <div className="p-12 text-center text-muted-foreground">
+            You are all caught up.
+          </div>
         ) : (
           <ul className="divide-y divide-border">
             {notifications.map((item) => (
-              <li key={item.id} className={`p-5 transition-colors ${item.is_read ? "opacity-70 bg-transparent" : "bg-primary/5"}`}>
+              <li
+                key={item.id}
+                className={`p-5 transition-colors ${item.is_read ? "opacity-70 bg-transparent" : "bg-primary/5"}`}
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                      {!item.is_read ? <div className="w-2 h-2 rounded-full bg-primary shrink-0" /> : null}
-                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      {!item.is_read ? (
+                        <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                      ) : null}
+                      <p className="text-sm font-semibold text-foreground">
+                        {item.title}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.message}</p>
-                    <p className="text-xs text-muted-foreground mt-2">{new Date(item.created_at).toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {item.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(item.created_at).toLocaleString()}
+                    </p>
                   </div>
                   {!item.is_read ? (
-                    <Button variant="ghost" size="icon" onClick={() => markAsRead(item.id)} title="Mark as read" className="shrink-0 rounded-full hover:bg-accent hover:text-primary">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => markAsRead(item.id)}
+                      title="Mark as read"
+                      className="shrink-0 rounded-full hover:bg-accent hover:text-primary"
+                    >
                       <CheckCircle2 className="w-5 h-5" />
                     </Button>
                   ) : null}
@@ -207,10 +294,25 @@ function AppearanceTab() {
   }, []);
 
   const themes = [
-    { id: "light", label: "Light", icon: Sun, description: "Classic bright interface" },
+    {
+      id: "light",
+      label: "Light",
+      icon: Sun,
+      description: "Classic bright interface",
+    },
     { id: "dark", label: "Dark", icon: Moon, description: "Easy on the eyes" },
-    { id: "special", label: "Special", icon: Palette, description: "Premium branded experience" },
-    { id: "system", label: "System", icon: Monitor, description: "Match your device settings" },
+    {
+      id: "special",
+      label: "Special",
+      icon: Palette,
+      description: "Premium branded experience",
+    },
+    {
+      id: "system",
+      label: "System",
+      icon: Monitor,
+      description: "Match your device settings",
+    },
   ];
 
   return (
@@ -219,7 +321,9 @@ function AppearanceTab() {
         <CardTitle className="flex items-center gap-2">
           <Palette className="w-5 h-5 text-primary" /> Appearance
         </CardTitle>
-        <CardDescription>Choose the theme mode for your dashboard.</CardDescription>
+        <CardDescription>
+          Choose the theme mode for your dashboard.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -238,10 +342,10 @@ function AppearanceTab() {
                   item.id === "light"
                     ? "bg-white text-gray-900"
                     : item.id === "dark"
-                    ? "bg-[#12161b] text-white"
-                    : item.id === "special"
-                    ? "bg-[#01181D] text-[#3DDC97] border-[#0D3239]"
-                    : "bg-muted text-foreground"
+                      ? "bg-[#12161b] text-white"
+                      : item.id === "special"
+                        ? "bg-[#01181D] text-[#3DDC97] border-[#0D3239]"
+                        : "bg-muted text-foreground"
                 }`}
               >
                 {isActive ? (
@@ -254,18 +358,24 @@ function AppearanceTab() {
                     item.id === "light"
                       ? "bg-gray-100 text-gray-600"
                       : item.id === "dark"
-                      ? "bg-gray-800 text-gray-400"
-                      : item.id === "special"
-                      ? "bg-[#0D3239] text-[#3DDC97]"
-                      : "bg-muted text-muted-foreground"
+                        ? "bg-gray-800 text-gray-400"
+                        : item.id === "special"
+                          ? "bg-[#0D3239] text-[#3DDC97]"
+                          : "bg-muted text-muted-foreground"
                   }`}
                 >
                   <IconComp className="w-6 h-6" />
                 </div>
                 <p className="font-semibold text-sm mb-1">{item.label}</p>
-                <p className={`text-xs ${
-                  item.id === "special" ? "text-primary/70" : "text-muted-foreground"
-                }`}>{item.description}</p>
+                <p
+                  className={`text-xs ${
+                    item.id === "special"
+                      ? "text-primary/70"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {item.description}
+                </p>
               </button>
             );
           })}

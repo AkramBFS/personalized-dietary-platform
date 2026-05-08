@@ -4,7 +4,7 @@ import React from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SharedSidebar, SidebarLink } from "@/components/dashboard/shared/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/shared/DashboardHeader";
-import { LayoutDashboard, ClipboardList, MessageSquare, Camera, Users, HelpCircle, Settings, CreditCard } from "lucide-react";
+import { LayoutDashboard, ClipboardList, MessageSquare, Camera, Users, HelpCircle, Settings, CreditCard, Receipt } from "lucide-react";
 
 const clientLinks: SidebarLink[] = [
   {
@@ -36,6 +36,11 @@ const clientLinks: SidebarLink[] = [
     title: "My Subscription",
     url: "/client/subscription",
     icon: CreditCard,
+  },
+  {
+    title: "Invoices",
+    url: "/client/Invoice",
+    icon: Receipt,
   },
   {
     title: "Support",
