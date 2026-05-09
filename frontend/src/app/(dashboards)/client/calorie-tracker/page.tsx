@@ -275,6 +275,7 @@ export default function CalorieTrackerPage() {
         );
       } else {
         setError(errorMessage(submitError, "Failed to analyze image. Please try again."));
+      }
     } finally {
       setAiLoading(false);
       setAiStatusText(null);
@@ -662,6 +663,17 @@ export default function CalorieTrackerPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-4">
+                      <div className="space-y-1">
+                        <GenericDropdown
+                          label="Meal Type"
+                          value={mealType}
+                          onChange={(val) => setMealType(val as MealType)}
+                          options={MEAL_TYPES.map((type) => ({
+                            label: MEAL_LABELS[type],
+                            value: type,
+                          }))}
+                        />
+                      </div>
                       <label
                         className={`relative flex h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors hover:bg-accent ${
                           aiPreview ? "border-primary/50" : "border-border"
@@ -776,3 +788,4 @@ export default function CalorieTrackerPage() {
     </div>
   );
 }
+
