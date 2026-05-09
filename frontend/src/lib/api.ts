@@ -22,7 +22,14 @@ export function resolveApiUrl(url?: string | null): string | undefined {
 
   const apiUrl = new URL(API_BASE_URL);
   const origin = `${apiUrl.protocol}//${apiUrl.host}`;
-  return new URL(url.replace(/^\/+/, ""), `${origin}/`).toString();
+  
+  // Ensure we have /media/ prefix for relative paths if it's not already there
+  let normalizedPath = url.replace(/^\/+/, "");
+  if (!normalizedPath.startsWith("media/")) {
+    normalizedPath = `media/${normalizedPath}`;
+  }
+  
+  return new URL(normalizedPath, `${origin}/`).toString();
 }
 
 const api = axios.create({
@@ -164,18 +171,13 @@ export interface NutritionistInvoice {
   id: number;
   transaction_number: string;
   total_paid: number;
-  commission_rate: number;
-  net_earnings: number;
-  item_type: "plan" | "consultation_advice" | "consultation_custom";
+  item_type: string;
   created_at: string;
-  client: {
-    username: string;
-  };
-  nutritionist: {
-    user: {
-      username: string;
-    };
-  };
+  // Change these to match the API response you logged
+  client_username: string; 
+  nutritionist_username: string;
+  net_earnings?: number;
+  commission_rate?: number;
 }
 
 /**
@@ -194,6 +196,6 @@ export const getNutritionistInvoices = async (): Promise<NutritionistInvoice[]> 
  * Based on the request, nutritionist might use the same detailed view as client.
  */
 export const getInvoiceDetail = async (id: number): Promise<NutritionistInvoice> => {
-  const response = await api.get(`invoices/${id}/`);
+  const response = await api.get(`client/invoices/${id}/`);
   return unwrapResponse(response.data);
 };

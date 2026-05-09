@@ -1,305 +1,102 @@
-Final AI Integration Blueprint & Feature Contract
-
-(Frontend–Backend Integration, Defensive Programming, and API Compliance)
-
-1. Mission Statement (Authoritative)
-
-The AI agent’s responsibility is full, correct, and crash-proof integration between the existing frontend UI and the NUTRI PLATFORM REST API, using the official API documentation (APIdoc.md) and project specifications as the source of truth.
-
-The agent MUST:
-Integrate all already-built UI components with live backend data
-Use only existing API endpoints
-Fix broken, incomplete, or unsafe integrations
-Apply strict defensive programming to prevent runtime crashes
-Produce a long, detailed, written integration plan before touching code
-The agent MUST NOT:
-Alter frontend architecture
-Create new UI components
-Guess API schemas
-Introduce unsafe rendering logic
-Silently drop required fields 2. Non-Negotiable Global Constraint
-Frontend Architecture Lock
-
-The frontend architecture is complete and frozen.
-
-The AI agent acts strictly as integration glue between:
-
-Existing UI components
-Existing backend endpoints
-
-If an API feature cannot be wired because a required UI component does not exist:
-
-The agent MUST flag it as an
-Incomplete Integration Point
-
-The agent must never invent UI to compensate.
-
-3. Universal “App-Killer” Defense Protocol (Highest Priority)
-
-The most critical failure to eliminate:
-
-TypeError: map is not a function
-→ Causes blank screens by unmounting the React tree
-
-This is an application-killing runtime error.
-
-Mandatory Three-Layer Safety Pattern (ENFORCE)
-
-This pattern must be applied to every list-based API integration, without exception.
-
-Layer 1 — Service / Extraction Layer
-
-Never pass raw API responses to components.
-
-All API services must normalize data into safe arrays.
-
-Required extraction pattern:
-const list = response.data?.results ?? response.data ?? [];
-return Array.isArray(list) ? list : [];
-
-This MUST handle:
-
-Paginated responses { count, results }
-Flat arrays
-null, undefined, or malformed responses
-404 / empty responses
-
-Forbidden:
-
-return response.data;
-Layer 2 — State Initialization Layer
-
-All list state must initialize as arrays, never undefined.
-
-Bad:
-
-const [items, setItems] = useState();
-
-Required:
-
-const [items, setItems] = useState<any[]>([]);
-
-This rule applies to:
-
-Lookups
-Tables
-Dropdowns
-Lists
-AI results
-Plans
-Logs
-Patients
-Any iterable UI
-Layer 3 — Defensive Rendering Layer
-
-Components must never assume iterability.
-
-{Array.isArray(items) && items.map(item => (
-<Component key={item.id} />
-))}
-
-Forbidden:
-
-items.map(...) 4. Lookup System Integration (HIGH PRIORITY)
-File: lookup.ts
-
-This file is the single source of truth for all dropdown and lookup data.
-
-Global Rules
-Lookups do not support pagination
-Lookups must be:
-Fetched on application load
-Cached
-Normalized
-Lookups must never return:
-null
-undefined
-objects
-raw API responses
-Required Lookups
-
-Base Path: /api/v1/lookup/
-
-Lookup Endpoint Required Mapping
-Countries GET /countries { id, name }
-Goals GET /goals { id, name }
-Specializations GET /specializations { id, name }
-Languages GET /languages { id, name }
-Activity Levels GET /activity-levels { id, name }
-Diets GET /diets { id, name }
-Known Issues (Must Be Fixed)
-Language lookup is broken
-Unsafe assumptions about response shape
-Missing diet and activity-level support
-Required Service Pattern
-export async function getLanguages() {
-const res = await api.get('/lookup/languages');
-const list = res.data?.results ?? res.data ?? [];
-return Array.isArray(list) ? list : [];
+1)meal plan navigation and marking day as done need to be checked, instead of the next button handling the marking as done the client should be able to navigate the next days without marking as done, the mark as done button should be seperate, 
+Meal plan details show up with day NaN and breakfast lunch and dinner show up empty and missing the snacks and instrutctions and meal notes, suspected wrong interface fields in client/service.ts and wrong details card forms in (dashboards)/client/meal-plans/page.tsx , should be fixed to fetch render proper fields
+example endpoint response for GET client/user-plans/{id}/content/
+{
+    "status": "success",
+    "data": {
+        "day_index": 2,
+        "breakfast": {
+            "name": "shakshuka",
+            "notes": "eggs bacon gritts sausage",
+            "calories": 200,
+            "ingredients": []
+        },
+        "lunch": {
+            "name": "tinga ",
+            "notes": "dir brk",
+            "calories": 20,
+            "ingredients": []
+        },
+        "dinner": {
+            "name": "l3cha rak fahm",
+            "notes": "et3cha mt3rfch t3cha tani ana nkhdmlk l3cha ta3k? a7chm chwi",
+            "calories": 200,
+            "ingredients": []
+        },
+        "snacks": {
+            "name": "dbr rask",
+            "notes": "dbr rask",
+            "calories": 20,
+            "ingredients": []
+        },
+        "instructions": "tb3"
+    }
 }
 
-Each lookup must:
+2)explicit disclaimer about AI approximation needs to be added in calorie tracker UI (modal and card where you upload images)
 
-Use its own function
-Normalize output
-Return an array always 5. Authentication & Registration Workflows
-5.1 Login (POST /auth/login/)
-Already functional
-Agent must:
-Verify payload shape matches APIdoc.md
-Confirm JWT storage and reuse
-Intercept backend error codes
-Error Handling
-403 ACCOUNT_PENDING_APPROVAL
-403 ACCOUNT_REJECTED
+3) Implement meal plan reviews and consultation reviews where the user can submit a review for a plan they have purchased in their dashboard and for a consultation they have had with a nutritionist in their dashboard after the consultation is finished, using the same endpoints,  the only difference is the item_type:
 
-These must:
+POST /reviews/ — Submit a review for a plan or consultation — Client Auth
+Field	Type	Required	Description
+item_type	string	Yes	plan or consultation
+item_id	integer	Yes	ID of the reviewed item
+rating	integer	Yes	1–5 stars
+comment	string	No	Optional written review
 
-Prevent dashboard access
-Route user to correct informational UI
-Success Routing
 
-On 200 OK, immediately route based on role:
+4)Update nutritionist consultation management ui and API calls:
 
-client → /dashboard/client
-nutritionist → /dashboard/nutritionist
-admin → /dashboard/admin
-5.2 Client Registration (POST /auth/register/client/)
-Mandatory Payload Fields
-username
-email
-password
-age
-weight
-height
-gender
-country_id
-goal_id
+6.3 Consultations
+GET /nutritionist/consultations/ — List all consultations — Nutritionist Auth
+Field	Type	Required	Description
+status	string	No	Filter: scheduled, finished, cancelled, notified
+type	string	No	Filter: advice_only, plan_included, custom_plan_session
 
-Field names are case-sensitive.
+PATCH /nutritionist/consultations/{id}/zoom-link/ — Add Zoom link before the call — Nutritionist Auth
+Field	Type	Required	Description
+zoom_link	string	Yes	Valid Zoom or meeting URL
+ℹ  Adding a zoom link triggers a notification to the client. Best practice: add link 5–10 minutes before the call.
 
-Critical Rule
+PATCH /nutritionist/consultations/{id}/status/ — Update consultation status — Nutritionist Auth
+Field	Type	Required	Description
+status	string	Yes	notified, finished, or cancelled
 
-Do NOT compute BMI or BMR on the frontend
+in the nutritionist consultation page the nutritionist should have a ui button to mark a consultation as done and another button to add a zoom link for a consultation after a consultation is scheduled, this button should be disabled if the consultation is finished or cancelled or not scheduled, and when clicked it should open a modal to add the zoom link, and then a notification should be sent to the client with the zoom link. this zoom link should be shown in the client dashboard consultation card if the consultation is scheduled and the zoom link is added by the nutritionist.
 
-The backend computes and returns these automatically.
+5) integrate subsctiption purchase endpoint:
+POST /lookup/client/subscriptions/purchase/
 
-5.3 Nutritionist Registration (POST /auth/register/nutritionist/)
-Multipart Requirement
-Must use multipart/form-data
-Must include cert_image
-Approval State Logic
-Endpoint does not return JWT
-User must be redirected to:
-“Pending Review” screen
-Error Code
-CERT_REQUIRED → show file upload error if buffer is empty 6. Client-Side Core & Premium Features
-6.1 AI Calorie Tracker (Premium Only)
-Access Control
-Check is_premium flag
-If false:
-Show 403 NOT_PREMIUM UI state
-Do NOT call API
-Async Workflow
-POST /client/calorie-tracker/ai/
-(submit meal image)
-Poll every 3 seconds:
-GET /client/calorie-tracker/ai/{log_id}/
-When status = pending_user_review:
-Enable confirmation UI
-Allow user to PATCH final mass estimates
-6.2 Meal Plan Navigation
-Content Fetching
-GET /client/user-plans/{id}/content/?day={index}
-Progress Update
-PATCH /client/user-plans/{id}/advance/
+Field	Type	Required	Description
+plan_type	string	Yes	monthly or yearly
+amount_paid	float	Yes	Simulated payment amount
+transaction_number	string	Yes	Simulated unique transaction reference
+ℹ  Payment is simulated. Backend generates a receipt and sets subscription status to active. End date is calculated automatically based on plan_type.
 
-Only trigger PATCH when user explicitly clicks
-“Mark as Done”
+example request:
+{
+        "plan_type": "monthly",
+        "transaction_number": "2",
+        "amount_paid": 25.99
+}
 
-7. Nutritionist & Admin Features
-   7.1 Nutritionist Patient Management
-   Health Data Access
-   GET /nutritionist/patients/{client_id}/
+example response:
+{
+    "status": "success",
+    "data": {
+        "id": 4,
+        "plan_type": "monthly",
+        "amount_paid": 25.99,
+        "transaction_number": "2",
+        "start_date": "2026-05-08T17:39:59.116495Z",
+        "end_date": "2026-06-07T17:39:59.106496Z",
+        "status": "active"
+    }
+}
 
-Includes:
+//already fixed certification images opening a 404 no found nextjs router url
+//prepended the backend origin and the /media/ prefix to the image path to ensure the browser requests the file from the Django server instead of the Next.js router, in /(dashboards)/admin/approvals/page.tsx may be relevant to similar image loading issues. 
 
-BMI
-BMR
-Health history
-Private Clinical Notes
-POST /nutritionist/patients/{client_id}/notes/
+6)Fix all pfp for profile pages and profile menu's in navbar component and user and nutritionist profile menus in dashboard layout header images returning 404 not found.
 
-Notes are private to the nutritionist.
-
-7.2 Admin Nutritionist Approval Workflow
-Pending Queue
-GET /admin/nutritionists/pending/
-Approve
-POST /admin/nutritionists/{id}/approve/
-
-→ Sets is_active = true
-
-Reject
-POST /admin/nutritionists/{id}/reject/
-Requires rejection_reason (string) 8. Common Backend Error Code Handling
-
-The frontend must explicitly handle these codes:
-
-Error Code Required UI Reaction
-SLOT_UNAVAILABLE Show “Slot already booked”
-PLAN_NOT_APPROVED Hide “Purchase” button
-CERT_REQUIRED Block nutritionist submission
-NOT_PREMIUM Lock premium feature UI 9. Mandatory Implementation Plan Output
-
-Before writing code, the agent must produce a written plan containing:
-
-9.1 File-by-File Integration Map
-
-For each relevant file:
-
-Purpose
-APIs used
-Input / output data shape
-Failure modes
-Defensive measures applied
-9.2 API → UI Mapping Table
-
-For every endpoint:
-
-Endpoint
-Method
-Payload
-Response shape
-Consuming component(s)
-9.3 Error-Handling Strategy
-Loading states
-Empty states
-Failed request behavior
-Graceful degradation paths
-9.4 Explicit Risk Callouts
-
-Every risk must be labeled as one of:
-
-Potential App-Killer
-Unsafe Assumption
-Incomplete Integration Point 10. Source of Truth & Conflict Resolution
-
-Priority order:
-
-APIdoc.md
-Backend behavior
-Frontend assumptions
-
-Frontend assumptions must always yield.
-
-11. Success Criteria
-
-Integration is considered complete when:
-
-No runtime crashes occur
-No unsafe .map() usage exists
-Registration works end-to-end
-Lookup system is stable and cached
-Premium gating is enforced
-All use cases are implemented or explicitly flagged
+7) fix invoice details view modal layout

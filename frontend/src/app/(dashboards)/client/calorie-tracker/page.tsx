@@ -5,6 +5,7 @@ import Link from "next/link";
 import imageCompression from "browser-image-compression";
 import { isAxiosError } from "axios";
 import {
+  AlertTriangle,
   ArrowUpRight,
   Camera,
   Clock,
@@ -119,6 +120,12 @@ export default function CalorieTrackerPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableItems, setEditableItems] = useState<EditablePrediction[]>([]);
   const [confirmingAi, setConfirmingAi] = useState(false);
+  const [estimatedNutrition, setEstimatedNutrition] = useState<{
+    calories: number;
+    protein?: number;
+    carbs?: number;
+    fats?: number;
+  }>({ calories: 0 });
 
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [ingredientName, setIngredientName] = useState("");
@@ -220,6 +227,14 @@ export default function CalorieTrackerPage() {
         calories: prediction.calories,
       })),
     );
+    if (log.nutrition_preview) {
+      setEstimatedNutrition({
+        calories: log.nutrition_preview.total_calories || 0,
+        protein: log.nutrition_preview.total_protein,
+        carbs: log.nutrition_preview.total_carbs,
+        fats: log.nutrition_preview.total_fats,
+      });
+    }
     setIsModalOpen(true);
   };
 
@@ -260,26 +275,53 @@ export default function CalorieTrackerPage() {
         );
       } else {
         setError(errorMessage(submitError, "Failed to analyze image. Please try again."));
-      }
     } finally {
       setAiLoading(false);
       setAiStatusText(null);
     }
   };
 
+  const recalculateTotals = (items: EditablePrediction[]) => {
+    const totalCals = items.reduce((sum, item) => sum + (item.calories || 0), 0);
+    setEstimatedNutrition((prev) => ({ ...prev, calories: totalCals }));
+  };
+
   const handleItemChange = (id: string, field: "label" | "mass_grams", value: string) => {
-    setEditableItems((items) => items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+    setEditableItems((items) => {
+      const newItems = items.map((item) => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          if (field === "mass_grams" && item.calories !== undefined) {
+            const oldMass = Number(item.mass_grams) || 1;
+            const newMass = Number(value) || 0;
+            updated.calories = (item.calories / oldMass) * newMass;
+          }
+          return updated;
+        }
+        return item;
+      });
+      recalculateTotals(newItems);
+      return newItems;
+    });
   };
 
   const handleAddItem = () => {
-    setEditableItems((items) => [
-      ...items,
-      { id: `manual-${Date.now()}`, label: "New ingredient", mass_grams: "100" },
-    ]);
+    setEditableItems((items) => {
+      const newItems = [
+        ...items,
+        { id: `manual-${Date.now()}`, label: "New ingredient", mass_grams: "100", calories: 0 },
+      ];
+      recalculateTotals(newItems);
+      return newItems;
+    });
   };
 
   const handleRemoveItem = (id: string) => {
-    setEditableItems((items) => items.filter((item) => item.id !== id));
+    setEditableItems((items) => {
+      const newItems = items.filter((item) => item.id !== id);
+      recalculateTotals(newItems);
+      return newItems;
+    });
   };
 
   const handleSaveMeal = async () => {
@@ -385,9 +427,33 @@ export default function CalorieTrackerPage() {
                 </div>
               )}
 
-              <p className="text-sm font-medium text-muted-foreground">
-                Review the AI estimates before saving. The server recalculates nutrition from your final ingredient list.
-              </p>
+              <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium leading-relaxed">
+                  ⚠️ AI estimates are approximations. Actual nutritional values may vary. Review and adjust items before saving.
+                </p>
+              </div>
+
+              {estimatedNutrition.calories > 0 && (
+                <div className="grid grid-cols-4 gap-2 rounded-xl bg-primary/5 p-4 border border-primary/10">
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Calories</p>
+                    <p className="text-lg font-black text-primary">{estimatedNutrition.calories.toFixed(0)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Protein</p>
+                    <p className="text-lg font-black text-foreground">{estimatedNutrition.protein?.toFixed(1) ?? "--"}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Carbs</p>
+                    <p className="text-lg font-black text-foreground">{estimatedNutrition.carbs?.toFixed(1) ?? "--"}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Fats</p>
+                    <p className="text-lg font-black text-foreground">{estimatedNutrition.fats?.toFixed(1) ?? "--"}</p>
+                  </div>
+                </div>
+              )}
 
               {editableItems.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -589,6 +655,10 @@ export default function CalorieTrackerPage() {
                   <CardHeader>
                     <CardTitle className="text-card-foreground">AI Vision Tracker</CardTitle>
                     <CardDescription>Upload a photo and review AI results before saving to your tracker.</CardDescription>
+                    <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[12px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/10">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      AI estimates are approximations. Always review the results.
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-4">

@@ -174,6 +174,22 @@ export interface ClientConsultation {
   created_at?: string;
 }
 
+export interface MealPlanDayMeal {
+  name: string;
+  notes: string;
+  calories: number;
+  ingredients: string[];
+}
+
+export interface MealPlanDayContent {
+  day_index: number;
+  breakfast: MealPlanDayMeal;
+  lunch: MealPlanDayMeal;
+  dinner: MealPlanDayMeal;
+  snacks: MealPlanDayMeal; // single object
+  instructions: string;
+}
+
 export interface ClientUserPlan {
   id: number;
   plan_id?: number;
@@ -344,6 +360,20 @@ export async function getClientUserPlans(): Promise<ClientUserPlan[]> {
   return unwrapList(response.data);
 }
 
+export async function getMealPlanDayContent(userPlanId: number, dayIndex?: number): Promise<MealPlanDayContent> {
+  const response = await api.get<ApiEnvelope<MealPlanDayContent>>(`/client/user-plans/${userPlanId}/content/`, {
+    params: dayIndex !== undefined ? { day_index: dayIndex } : {},
+  });
+  return unwrapResponse(response.data);
+}
+
+export async function advanceMealPlanDay(userPlanId: number): Promise<{ day_index: number; status: string }> {
+  const response = await api.patch<ApiEnvelope<{ day_index: number; status: string }>>(
+    `/client/user-plans/${userPlanId}/advance/`,
+  );
+  return unwrapResponse(response.data);
+}
+
 export interface BookConsultationPayload {
   nutritionist_id: number;
   appointment_date: string;
@@ -357,6 +387,19 @@ export async function postBookConsultation(payload: BookConsultationPayload): Pr
     payload,
   );
   return unwrapResponse(response.data);
+}
+
+export interface ReviewPayload {
+  rating: number;
+  comment: string;
+}
+
+export async function postMealPlanReview(planId: number, payload: ReviewPayload): Promise<void> {
+  await api.post(`/client/reviews/meal-plans/${planId}/`, payload);
+}
+
+export async function postConsultationReview(consultationId: number, payload: ReviewPayload): Promise<void> {
+  await api.post(`/client/reviews/consultations/${consultationId}/`, payload);
 }
 
 export async function getNutritionistAvailability(nutritionistId: number, date: string): Promise<unknown> {

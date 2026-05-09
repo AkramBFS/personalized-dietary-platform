@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowRight, ClipboardList, Calendar } from "lucide-react";
+import { Loader2, ArrowRight, ClipboardList, Calendar, MessageSquare } from "lucide-react";
 import Link from "next/link";
+import ReviewModal from "@/components/ReviewModal";
 
 interface UserPlan {
   id: number;
@@ -30,6 +31,7 @@ interface UserPlan {
 export default function MealPlansPage() {
   const [plans, setPlans] = useState<UserPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewTarget, setReviewTarget] = useState<{ id: number; title: string } | null>(null);
 
   console.log(plans);
   useEffect(() => {
@@ -159,21 +161,38 @@ export default function MealPlansPage() {
                 </div>
               </CardContent>
 
-              <CardFooter className="bg-muted/30 p-4">
+              <CardFooter className="bg-muted/30 p-4 gap-2">
                 <Button
                   asChild
-                  className="w-full shadow-lg shadow-primary/20 group/btn"
+                  className="flex-1 shadow-lg shadow-primary/20 group/btn"
                 >
                   <Link href={`/client/meal-plans/${userPlan.id}`}>
-                    View Daily Schedule
+                    Daily Schedule
                     <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
+                {userPlan.status === "completed" && (
+                  <Button
+                    variant="outline"
+                    className="px-3 border-primary text-primary hover:bg-primary/5"
+                    onClick={() => setReviewTarget({ id: userPlan.plan_id, title: userPlan.plan_title })}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}
         </div>
       )}
+
+      <ReviewModal
+        isOpen={!!reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        type="meal-plan"
+        id={reviewTarget?.id || 0}
+        title={reviewTarget?.title || ""}
+      />
     </div>
   );
 }
