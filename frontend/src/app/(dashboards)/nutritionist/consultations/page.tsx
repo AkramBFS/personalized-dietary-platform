@@ -15,8 +15,11 @@ import {
   NutritionistConsultation,
   NutritionistPatientProfile,
   patchConsultationZoomLink,
+  patchConsultationStatus,
 } from "@/lib/nutritionist";
-import { X } from "lucide-react";
+import { X, CheckCircle, Ban } from "lucide-react";
+import { resolveApiUrl } from "@/lib/api";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 function statusBadge(status: NutritionistConsultation["status"]) {
   if (status === "scheduled") return <Badge variant="outline">Scheduled</Badge>;
@@ -99,6 +102,20 @@ export default function ConsultationsPage() {
     }
   };
 
+  const handleStatusUpdate = async (status: "finished" | "cancelled") => {
+    if (!selected) return;
+    try {
+      await patchConsultationStatus(selected.id, status);
+      setConsultations((prev) =>
+        prev.map((row) => (row.id === selected.id ? { ...row, status } : row)),
+      );
+      setSelected((prev) => (prev ? { ...prev, status } : prev));
+      toast.success(`Consultation marked as ${status}.`);
+    } catch {
+      toast.error(`Could not update consultation status to ${status}.`);
+    }
+  };
+
   if (isLoading) return <div className="text-sm text-muted-foreground">Loading consultations...</div>;
 
   return (
@@ -145,9 +162,14 @@ export default function ConsultationsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 py-6 backdrop-blur-sm">
           <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border-border">
             <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div>
-                <CardTitle>Consultation Workspace</CardTitle>
-                <CardDescription>Managing {selected.client_name}</CardDescription>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12 border">
+                  <AvatarFallback>{selected.client_name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle>Consultation Workspace</CardTitle>
+                  <CardDescription>Managing {selected.client_name}</CardDescription>
+                </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setSelected(null)}>
                 <X className="h-4 w-4" />
@@ -162,9 +184,30 @@ export default function ConsultationsPage() {
                   value={zoomLink}
                   onChange={(event) => setZoomLink(event.target.value)}
                 />
-                <Button onClick={saveZoomLink} disabled={isSavingZoom || !zoomLink.trim()}>
-                  {isSavingZoom ? "Saving..." : "Update & Notify"}
-                </Button>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button onClick={saveZoomLink} disabled={isSavingZoom || !zoomLink.trim()}>
+                    {isSavingZoom ? "Saving..." : "Update & Notify"}
+                  </Button>
+                  <div className="flex-1" />
+                  <Button
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary/10"
+                    onClick={() => handleStatusUpdate("finished")}
+                    disabled={selected.status === "finished"}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Mark Finished
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => handleStatusUpdate("cancelled")}
+                    disabled={selected.status === "cancelled"}
+                  >
+                    <Ban className="mr-2 h-4 w-4" />
+                    Cancel Appointment
+                  </Button>
+                </div>
               </div>
 
               {patientProfile ? (

@@ -18,7 +18,9 @@ import {
   User,
   DollarSign,
   CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
+import ReviewModal from "@/components/ReviewModal";
 
 export default function ConsultationsPage() {
   const [consultations, setConsultations] = useState<any[]>([]);
@@ -31,6 +33,7 @@ export default function ConsultationsPage() {
   const [availability, setAvailability] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingSlot, setBookingSlot] = useState<any | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ id: number; title: string } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -209,6 +212,19 @@ export default function ConsultationsPage() {
                         )}
                       </div>
                     )}
+
+                    {c.status === "finished" && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-lg border-primary text-primary hover:bg-primary/5"
+                          onClick={() => setReviewTarget({ id: c.id, title: `Consultation with ${c.nutritionist_name}` })}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Post Review
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -216,6 +232,14 @@ export default function ConsultationsPage() {
           )}
         </div>
       </div>
+
+      <ReviewModal
+        isOpen={!!reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        type="consultation"
+        id={reviewTarget?.id || 0}
+        title={reviewTarget?.title || ""}
+      />
     </div>
   );
 }

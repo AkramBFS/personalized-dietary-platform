@@ -395,8 +395,8 @@ export function groupTransactionsByMonth(
     const d = new Date(tx.created_at);
     const label = `${d.toLocaleString("en-US", { month: "short" })} ${d.getFullYear()}`;
     const entry = monthMap.get(label) ?? { gross: 0, net: 0 };
-    entry.gross += tx.total_paid;
-    entry.net += tx.net_earnings;
+    entry.gross += tx.total_paid || 0;
+    entry.net += tx.net_earnings || 0;
     monthMap.set(label, entry);
   }
 
