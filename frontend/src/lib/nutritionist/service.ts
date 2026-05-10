@@ -58,6 +58,7 @@ export interface NutritionistPatientSummary {
   username: string;
   patient_type: string;
   first_consultation_date?: string;
+  profile_picture_url?: string;
 }
 
 export interface PatientProgressSnapshot {
@@ -538,6 +539,7 @@ export async function getNutritionistPatients(): Promise<NutritionistPatientSumm
       username: p.client?.user?.username ?? p.username ?? "Unknown",
       patient_type: p.patient_type ?? "unknown",
       first_consultation_date: p.first_consultation_date,
+      profile_picture_url: p.client?.profile_photo_url ?? p.profile_picture_url,
     }));
   } catch (error) {
     if (hasNetworkError(error)) return mockPatients;

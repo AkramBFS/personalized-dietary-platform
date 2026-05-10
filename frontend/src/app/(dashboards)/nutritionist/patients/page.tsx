@@ -100,7 +100,7 @@ export default function ConsultationsAndPlansPage() {
           (Array.isArray(apiPatients) ? apiPatients : []).map((p) => ({
             client_id: p.client_id,
             name: p.username,
-            avatarUrl: `https://i.pravatar.cc/150?u=${p.client_id}`,
+            avatarUrl: p.profile_picture_url || `https://i.pravatar.cc/150?u=${p.client_id}`,
             age: 0,
             weight: 0,
             height: 0,
@@ -436,6 +436,8 @@ export default function ConsultationsAndPlansPage() {
                   <Button
                     onClick={() => setViewState("designer")}
                     className="shadow-md rounded-full px-6"
+                    disabled={selectedPatient.consultationDate === "N/A"}
+                    title={selectedPatient.consultationDate === "N/A" ? "Patient must have a consultation before a custom plan can be drafted" : ""}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     {selectedPatient.status === "completed"

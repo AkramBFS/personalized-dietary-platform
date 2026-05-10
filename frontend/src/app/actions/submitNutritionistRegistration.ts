@@ -15,6 +15,7 @@ type NutritionistPayload = {
   certification_ref: string;
   cert_image: File;
   language_ids: Array<number | string>;
+  profile_photo?: File;
 };
 
 
@@ -61,6 +62,10 @@ export async function submitNutritionistRegistration(rawData: NutritionistPayloa
   parsed.data.language_ids.forEach((languageId) => {
     body.append("language_ids", String(languageId));
   });
+
+  if (parsed.data.profile_photo) {
+    body.append("profile_photo", parsed.data.profile_photo);
+  }
 
   const response = await fetch(`${API_BASE_URL}auth/register/nutritionist/`, {
     method: "POST",

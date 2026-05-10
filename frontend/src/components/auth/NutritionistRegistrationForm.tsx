@@ -27,6 +27,7 @@ type FormState = {
   certification_ref: string;
   cert_image: File | null;
   language_ids: number[];
+  profile_photo: File | null;
 };
 
 const initialState: FormState = {
@@ -41,6 +42,7 @@ const initialState: FormState = {
   certification_ref: "",
   cert_image: null,
   language_ids: [],
+  profile_photo: null,
 };
 
 import GenericDropdown from "../ui/GenericDropdown";
@@ -236,6 +238,7 @@ export default function NutritionistRegistrationForm() {
       consultation_price: Number(formData.consultation_price),
       cert_image: formData.cert_image,
       language_ids: formData.language_ids,
+      profile_photo: formData.profile_photo,
     });
 
     if (result.success) {
@@ -315,6 +318,39 @@ export default function NutritionistRegistrationForm() {
             onSubmit={onSubmit}
             className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2"
           >
+            <div className="md:col-span-2 flex flex-col items-center mb-4">
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
+                  {formData.profile_photo ? (
+                    <img 
+                      src={URL.createObjectURL(formData.profile_photo)} 
+                      alt="Profile preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">PFP</span>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  id="profile_photo"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setFormData((prev) => ({ ...prev, profile_photo: file }));
+                  }}
+                />
+                <label 
+                  htmlFor="profile_photo"
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer rounded-full transition-opacity"
+                >
+                  CHANGE
+                </label>
+              </div>
+              <p className="text-[10px] mt-2 text-muted-foreground font-semibold uppercase tracking-wider">Profile Picture</p>
+              <FieldError name="profile_photo" />
+            </div>
             <label className="block">
               <span className="text-sm font-medium text-foreground">Username</span>
               <input

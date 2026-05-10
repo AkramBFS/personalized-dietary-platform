@@ -129,6 +129,15 @@ export const nutritionistRegistrationSchema = z.object({
   language_ids: z
     .array(z.coerce.number().int().positive("Language ID must be positive"))
     .min(1, "Please add at least one language ID"),
+  profile_photo: z
+    .custom<File | null | undefined>(
+      (value) => value == null || isFile(value),
+      "Profile photo must be an image file",
+    )
+    .refine((file) => !file || file.size <= MAX_PROFILE_PHOTO_BYTES, {
+      message: `Profile photo must be ${MAX_PROFILE_PHOTO_MB}MB or smaller`,
+    })
+    .optional(),
 });
 
 export type NutritionistRegistrationInput = z.infer<

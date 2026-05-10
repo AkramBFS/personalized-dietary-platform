@@ -63,7 +63,8 @@ export default function NutritionistOverviewPage() {
         ]);
 
         // Display name
-        setDisplayName(profile.user?.username ?? "Doctor");
+        const baseName = profile.user?.username ?? "Doctor";
+        setDisplayName(baseName.startsWith("Dr. ") ? baseName : `Dr. ${baseName}`);
 
         // Active patients count
         setActivePatients(Array.isArray(patients) ? patients.length : 0);

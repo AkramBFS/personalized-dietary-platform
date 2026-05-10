@@ -1,58 +1,28 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import api from "@/lib/api";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardFooter,
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Loader2, MessageCircle, Heart, Send } from "lucide-react";
+import { Loader2, Send, Trash2, Heart, MessageCircle } from "lucide-react";
+import { deleteCommunityPost, getClientOwnPosts, postCreateCommunityPost, type CommunityPost } from "@/lib/client/service";
 
 export default function CommunityPage() {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchPosts = async () => {
-      // Inside your useEffect's fetchPosts function:
       try {
-        const response = await api.get("/client/posts/mine/");
-        const fetchedData = response.data.results || response.data;
-
-        // Force it to be an array, otherwise default to an empty array
-        setPosts(Array.isArray(fetchedData) ? fetchedData : []);
+        const fetchedPosts = await getClientOwnPosts();
+        setPosts(fetchedPosts);
       } catch (error) {
-        // Mock fallback
-        setPosts([
-          {
-            id: 1,
-            content:
-              "Just started the Hormonal Balance plan and feeling great after week 1!",
-            status: "approved",
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 2,
-            content:
-              "Does anyone have good substitutes for almond milk in the recipes?",
-            status: "approved",
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-          },
-          {
-            id: 3,
-            content:
-              "Reviewing my calorie logs, I think I need to up my protein.",
-            status: "draft",
-            created_at: new Date(Date.now() - 172800000).toISOString(),
-          },
-        ]);
+        console.error("Failed to fetch posts:", error);
       } finally {
         setLoading(false);
       }
@@ -60,35 +30,33 @@ export default function CommunityPage() {
     fetchPosts();
   }, []);
 
+  const handleDeletePost = async (postId: number) => {
+    if (!confirm("Are you sure you want to delete this post?")) return;
+    try {
+      await deleteCommunityPost(postId);
+      setPosts(posts.filter((p) => p.id !== postId));
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      // Fallback for mock if API fails
+      setPosts(posts.filter((p) => p.id !== postId));
+    }
+  };
+
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost) return;
     setSubmitting(true);
     try {
-      await api.post("/client/posts/", { content: newPost });
+      await postCreateCommunityPost({ content: newPost });
       alert("Post submitted and is pending moderation!");
       setNewPost("");
-      setPosts([
-        {
-          id: Math.random(),
-          content: newPost,
-          status: "draft",
-          created_at: new Date().toISOString(),
-        },
-        ...posts,
-      ]);
+      
+      // Refresh posts
+      const updatedPosts = await getClientOwnPosts();
+      setPosts(updatedPosts);
     } catch (err) {
-      alert("Mock post submitted!");
-      setNewPost("");
-      setPosts([
-        {
-          id: Math.random(),
-          content: newPost,
-          status: "draft",
-          created_at: new Date().toISOString(),
-        },
-        ...posts,
-      ]);
+      console.error("Error creating post:", err);
+      alert("Failed to submit post. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -156,18 +124,31 @@ export default function CommunityPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-foreground">
-                        Souki
+                        {post.author_username}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(post.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded font-medium ${post.status === "approved" ? "bg-accent text-primary" : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500"}`}
-                  >
-                    {post.status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded font-medium ${
+                        ["approved", "published"].includes((post.status || "").toLowerCase()) 
+                          ? "bg-accent text-primary" 
+                          : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500"
+                      }`}
+                    >
+                      {(post.status || "PENDING").toUpperCase()}
+                    </span>
+                    <button
+                      onClick={() => handleDeletePost(post.id)}
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      title="Delete post"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
                   {post.content}
