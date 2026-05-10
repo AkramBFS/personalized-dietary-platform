@@ -2,7 +2,7 @@ from django.db import models
 from users.models import User
 from client.models import Client
 from nutritionist.models import Nutritionist
-
+import uuid
 
 class Plan(models.Model):
     PLAN_TYPE_CHOICES = [
@@ -142,3 +142,45 @@ class ServiceReview(models.Model):
 
     class Meta:
         db_table = 'service_reviews'
+
+
+
+class CheckoutSession(models.Model):
+    ITEM_TYPE_CHOICES = [
+        ('MEAL_PLAN',     'Meal Plan'),
+        ('CONSULTATION',  'Consultation'),
+        ('SUBSCRIPTION',  'Subscription'),
+    ]
+    STATUS_CHOICES = [
+        ('pending',   'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('expired',   'Expired'),
+    ]
+
+    checkout_id     = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user            = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    item_type       = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES)
+    item_id         = models.IntegerField()
+    resolved_price  = models.FloatField()
+    currency        = models.CharField(max_length=10, default='USD')
+    status          = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    expires_at      = models.DateTimeField()
+    metadata        = models.JSONField(null=True, blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'checkout_sessions'
+
+    def __str__(self):
+        return f"Checkout {self.checkout_id} - {self.item_type} - {self.status}"
+
+    def is_expired(self):
+        from django.utils import timezone
+        expires_at = self.expires_at
+        if timezone.is_naive(expires_at):
+            from django.utils.timezone import make_aware
+            expires_at = make_aware(expires_at)
+        return timezone.now() > expires_at
+
+    def is_valid(self):
+        return self.status == 'pending' and not self.is_expired()
