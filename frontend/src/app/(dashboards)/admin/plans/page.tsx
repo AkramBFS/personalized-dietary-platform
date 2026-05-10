@@ -54,8 +54,8 @@ export default function AdminPlansPage() {
       try {
         const plans = await getModerationPlans();
         setPendingPlans(plans.filter((p) => p.status === "pending"));
-        setLivePlans(plans.filter((p) => p.status === "approved" && !p.title.toLowerCase().includes("seasonal") && !p.title.toLowerCase().includes("holiday")));
-        setSeasonalPlans(plans.filter((p) => p.status === "approved" && (p.title.toLowerCase().includes("seasonal") || p.title.toLowerCase().includes("holiday"))));
+        setLivePlans(plans.filter((p) => p.status === "approved" && p.category !== "seasonal"));
+        setSeasonalPlans(plans.filter((p) => p.status === "approved" && p.category === "seasonal"));
       } catch (error) {
         toast.error("Failed to fetch plans");
       } finally {

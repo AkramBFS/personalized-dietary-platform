@@ -331,7 +331,6 @@ export default function MarketplacePlansPage() {
                     onChange={(value) => setPlanData({ ...planData, category: value as PlanCategory })}
                     options={[
                       { label: "Predefined", value: "predefined" },
-                      { label: "Personalized", value: "personalized" },
                       { label: "Seasonal", value: "seasonal" },
                     ]}
                     placeholder="Select a category"

@@ -168,6 +168,7 @@ const featuredPlans = [
       rating: 4.5,
       reviews: 124,
     },
+    category: "predefined",
   },
   {
     slug: "plant-based-vitality",
@@ -188,6 +189,7 @@ const featuredPlans = [
       rating: 5,
       reviews: 89,
     },
+    category: "predefined",
   },
   {
     slug: "performance-macros",
@@ -207,6 +209,64 @@ const featuredPlans = [
       rating: 4,
       reviews: 210,
     },
+    category: "predefined",
+  },
+];
+
+const seasonalPlans = [
+  {
+    slug: "spring-detox",
+    title: "Spring Detox Protocol",
+    price: "$39",
+    description: "Refresh your system with seasonal greens and liver-supporting nutrients.",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80",
+    badge: {
+      icon: <Utensils className="w-4 h-4 mr-1.5" />,
+      text: "Seasonal",
+    },
+    author: {
+      name: "Dr. Sarah Jenkins",
+      image: "https://i.pravatar.cc/150?u=sarah",
+      rating: 4.7,
+      reviews: 56,
+    },
+    category: "seasonal",
+  },
+  {
+    slug: "summer-hydration",
+    title: "Summer Hydration Plan",
+    price: "$29",
+    description: "Stay hydrated and energized during the hot summer months.",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    badge: {
+      icon: <Utensils className="w-4 h-4 mr-1.5" />,
+      text: "Seasonal",
+    },
+    author: {
+      name: "Marcus Chen, RD",
+      image: "https://i.pravatar.cc/150?u=marcus",
+      rating: 4.9,
+      reviews: 32,
+    },
+    category: "seasonal",
+  },
+  {
+    slug: "winter-immunity",
+    title: "Winter Immunity Boost",
+    price: "$45",
+    description: "Strengthen your immune system with Vitamin C rich seasonal foods.",
+    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=800&q=80",
+    badge: {
+      icon: <Utensils className="w-4 h-4 mr-1.5" />,
+      text: "Seasonal",
+    },
+    author: {
+      name: "Elena Rodriguez, CNS",
+      image: "https://i.pravatar.cc/150?u=elena",
+      rating: 4.6,
+      reviews: 78,
+    },
+    category: "seasonal",
   },
 ];
 
@@ -330,6 +390,7 @@ export default function ClinicalNutritionPlans() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
               className="group flex items-center gap-3 bg-button-primary bg-btn-primary text-button-primary-foreground px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-all duration-300 shadow-brand"
+              id="explore-plans-btn"
             >
               Explore Plans
               <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -415,67 +476,144 @@ export default function ClinicalNutritionPlans() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredPlans.map((plan, index) => (
-  <Link key={plan.slug} href={`/marketplace/${plan.slug}`}> {/* [2] Wrap the card in Link */}
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.15 }}
-      className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
-    >
-                <div className="relative h-60 overflow-hidden bg-muted">
-                  <img
-                    alt={plan.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    src={plan.image}
-                  />
-                  <div
-                    className={`absolute top-4 left-4 ${plan.badge.bgClass || "bg-card/95 text-foreground"} backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm`}
-                  >
-                    {plan.badge.icon}
-                    {plan.badge.text}
+              <Link key={plan.slug} href={`/marketplace/${plan.slug}`} id={`plan-card-${plan.slug}`}>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.15 }}
+                  className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
+                >
+                  <div className="relative h-60 overflow-hidden bg-muted">
+                    <img
+                      alt={plan.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      src={plan.image}
+                    />
+                    <div
+                      className={`absolute top-4 left-4 ${plan.badge.bgClass || "bg-card/95 text-foreground"} backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm`}
+                    >
+                      {plan.badge.icon}
+                      {plan.badge.text}
+                    </div>
                   </div>
-                </div>
 
-                <div className="p-6 flex-grow flex flex-col">
-                  <div className="flex justify-between items-start mb-3 gap-4">
-                    <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight">
-                      {plan.title}
-                    </h3>
-                    <span className="text-lg font-bold text-primary shrink-0">
-                      {plan.price}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground mb-6 line-clamp-2 leading-relaxed">
-                    {plan.description}
-                  </p>
+                  <div className="p-6 flex-grow flex flex-col">
+                    <div className="flex justify-between items-start mb-3 gap-4">
+                      <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight">
+                        {plan.title}
+                      </h3>
+                      <span className="text-lg font-bold text-primary shrink-0">
+                        {plan.price}
+                      </span>
+                    </div>
+                    <p className="text-muted-foreground mb-6 line-clamp-2 leading-relaxed">
+                      {plan.description}
+                    </p>
 
-                  <div className="mt-auto pt-5 border-t border-border flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
-                        <img
-                          alt={plan.author.name}
-                          className="w-full h-full object-cover"
-                          src={plan.author.image}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">
-                          {plan.author.name}
-                        </p>
-                        <div className="flex items-center mt-0.5">
-                          {renderStars(plan.author.rating)}
-                          <span className="text-xs font-medium ml-2 text-muted-foreground">
-                            ({plan.author.reviews})
-                          </span>
+                    <div className="mt-auto pt-5 border-t border-border flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
+                          <img
+                            alt={plan.author.name}
+                            className="w-full h-full object-cover"
+                            src={plan.author.image}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-foreground">
+                            {plan.author.name}
+                          </p>
+                          <div className="flex items-center mt-0.5">
+                            {renderStars(plan.author.rating)}
+                            <span className="text-xs font-medium ml-2 text-muted-foreground">
+                              ({plan.author.reviews})
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
               </Link>
             ))}
+          </div>
+
+          {/* Seasonal Offerings Section */}
+          <div className="mt-20">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">
+                  Seasonal Offerings
+                </h2>
+                <p className="text-muted-foreground mt-2 text-lg">
+                  Limited-time protocols tailored for the current season.
+                </p>
+              </motion.div>
+            </div>
+
+            <div className="flex overflow-x-auto pb-8 gap-8 no-scrollbar -mx-4 px-4">
+              {seasonalPlans.map((plan, index) => (
+                <Link key={plan.slug} href={`/marketplace/${plan.slug}`} className="min-w-[300px] md:min-w-[350px] flex-shrink-0" id={`seasonal-plan-card-${plan.slug}`}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.15 }}
+                    className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
+                  >
+                    <div className="relative h-48 overflow-hidden bg-muted">
+                      <img
+                        alt={plan.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        src={plan.image}
+                      />
+                      <div
+                        className={`absolute top-4 left-4 bg-card/95 text-foreground backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm`}
+                      >
+                        {plan.badge.icon}
+                        {plan.badge.text}
+                      </div>
+                    </div>
+
+                    <div className="p-6 flex-grow flex flex-col">
+                      <div className="flex justify-between items-start mb-3 gap-4">
+                        <h3 className="text-lg font-bold text-foreground line-clamp-2 leading-tight">
+                          {plan.title}
+                        </h3>
+                        <span className="text-base font-bold text-primary shrink-0">
+                          {plan.price}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-6 line-clamp-2 leading-relaxed">
+                        {plan.description}
+                      </p>
+
+                      <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
+                            <img
+                              alt={plan.author.name}
+                              className="w-full h-full object-cover"
+                              src={plan.author.image}
+                            />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-foreground">
+                              {plan.author.name}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Styled Load More Button */}
@@ -485,7 +623,10 @@ export default function ClinicalNutritionPlans() {
             viewport={{ once: true }}
             className="flex justify-center mt-16"
           >
-            <button className="group relative inline-flex items-center justify-center gap-2 px-10 py-3.5 text-base font-semibold text-primary transition-all duration-300 bg-card border-2 border-primary rounded-full hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+            <button 
+              className="group relative inline-flex items-center justify-center gap-2 px-10 py-3.5 text-base font-semibold text-primary transition-all duration-300 bg-card border-2 border-primary rounded-full hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              id="load-more-plans-btn"
+            >
               <span>Load More Plans</span>
               <Loader2 className="w-5 h-5 transition-transform duration-500 group-hover:rotate-180" />
             </button>

@@ -211,12 +211,13 @@ export interface ClientUserPlan {
 
 export interface CommunityPost {
   id: number;
-  title: string;
-  content?: string;
-  author?: string;
-  status: "pending" | "approved" | "rejected";
-  created_at?: string;
-  updated_at?: string;
+  author_username: string;
+  content: string;
+  image_url?: string | null;
+  status: "draft" | "published" | "removed" | "pending" | "approved" | "rejected" | string;
+  is_approved: boolean;
+  created_at: string;
+  comments?: any[];
 }
 
 export interface ClientInvoice {
@@ -418,7 +419,7 @@ export async function getCommunityPosts(page?: number): Promise<CommunityPost[]>
 }
 
 export interface CreatePostPayload {
-  title: string;
+  title?: string;
   content: string;
   tags?: string[];
 }
@@ -436,7 +437,7 @@ export async function getClientOwnPosts(page?: number): Promise<CommunityPost[]>
   return unwrapList(response.data);
 }
 
-export async function deleteClientPost(postId: number): Promise<void> {
+export async function deleteCommunityPost(postId: number): Promise<void> {
   await api.delete(`/client/posts/${postId}/`);
 }
 
