@@ -15,46 +15,41 @@ def process_ai_image(image_file) -> dict:
         response = requests.post(
             f"{AI_SERVICE_URL}/segment?visualize=true",
             files={"file": (image_file.name, image_file, image_file.content_type)},
-            timeout=30
+            timeout=60   # ← increased from 30 to 60 for CUDA warmup
         )
         response.raise_for_status()
-
-        # ── Fix: explicitly parse JSON ─────────────────────────────────────────
         data = response.json()
 
-        # Verify it's actually a dict
         if not isinstance(data, dict):
             raise Exception(f"Unexpected response from AI service: {type(data)}")
 
     except requests.exceptions.ConnectionError:
         raise Exception("AI service is not running. Start FastAPI on port 8001.")
     except requests.exceptions.Timeout:
-        raise Exception("AI service timed out.")
+        raise Exception("AI service timed out. Try a smaller image.")
     except requests.exceptions.HTTPError as e:
         raise Exception(f"AI service HTTP error: {str(e)}")
     except ValueError as e:
         raise Exception(f"AI service returned invalid JSON: {str(e)}")
 
-    ingredients = data.get('ingredients', [])
-    nutrition   = data.get('nutrition', {})
-    visual_b64  = data.get('visual', None)
+    ingredients    = data.get('ingredients', [])
+    nutrition      = data.get('nutrition', {})
+    visual_b64     = data.get('visual', None)
 
-    # ── Debug print to see what FastAPI actually returned ──────────────────────
     print("DEBUG AI response keys:", list(data.keys()))
     print("DEBUG ingredients count:", len(ingredients))
     print("DEBUG nutrition type:", type(nutrition))
 
-    # Handle nutrition being a dict or string
-    if isinstance(nutrition, str):
-        import json
-        try:
-            nutrition = json.loads(nutrition)
-        except Exception:
-            nutrition = {}
-
+    # ── Handle nutrition response ──────────────────────────────────────────────
+    # New app.py sends all items in one query → returns {"items": [...]}
+    # or {"error": "..."}
     nutrition_items = []
+
     if isinstance(nutrition, dict):
-        nutrition_items = nutrition.get('items', [])
+        if 'items' in nutrition:
+            nutrition_items = nutrition['items']
+        elif 'error' in nutrition:
+            print(f"Warning: Nutrition API error: {nutrition['error']}")
     elif isinstance(nutrition, list):
         nutrition_items = nutrition
 
