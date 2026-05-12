@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition, useEffect, useRef } from "react";
+import {
+  FormEvent,
+  useMemo,
+  useState,
+  useTransition,
+  useEffect,
+  useRef,
+} from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { submitNutritionistRegistration } from "@/app/actions/submitNutritionistRegistration";
@@ -45,7 +52,6 @@ const initialState: FormState = {
   language_ids: [],
   profile_photo: null,
 };
-
 
 /* ─── Multi-select dropdown for languages ─────────────────────────────── */
 interface MultiSelectDropdownProps {
@@ -131,9 +137,7 @@ function MultiSelectDropdown({
                   key={opt.value}
                   onClick={() => toggleId(opt.value)}
                   className={`flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium transition-colors hover:bg-brand hover:text-primary-foreground ${
-                    isSelected
-                      ? "bg-brand/10 text-brand"
-                      : "text-foreground"
+                    isSelected ? "bg-brand/10 text-brand" : "text-foreground"
                   }`}
                 >
                   <span
@@ -304,7 +308,7 @@ export default function NutritionistRegistrationForm() {
     ) : null;
 
   const inputClasses =
-    "mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand";
+    "mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand size-14";
 
   return (
     <main className="min-h-screen bg-background text-foreground px-4 py-8">
@@ -338,9 +342,9 @@ export default function NutritionistRegistrationForm() {
               <div className="relative group">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
                   {previewUrl ? (
-                    <img 
-                      src={previewUrl} 
-                      alt="Profile preview" 
+                    <img
+                      src={previewUrl}
+                      alt="Profile preview"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -357,18 +361,22 @@ export default function NutritionistRegistrationForm() {
                     setFormData((prev) => ({ ...prev, profile_photo: file }));
                   }}
                 />
-                <label 
+                <label
                   htmlFor="profile_photo"
                   className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer rounded-full transition-opacity"
                 >
                   CHANGE
                 </label>
               </div>
-              <p className="text-[10px] mt-2 text-muted-foreground font-semibold uppercase tracking-wider">Profile Picture</p>
+              <p className="text-[10px] mt-2 text-muted-foreground font-semibold uppercase tracking-wider">
+                Profile Picture
+              </p>
               <FieldError name="profile_photo" />
             </div>
             <label className="block">
-              <span className="text-sm font-medium text-foreground">Username</span>
+              <span className="text-sm font-medium text-foreground">
+                Username
+              </span>
               <input
                 type="text"
                 value={formData.username}
@@ -394,7 +402,9 @@ export default function NutritionistRegistrationForm() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-foreground">Password</span>
+              <span className="text-sm font-medium text-foreground">
+                Password
+              </span>
               <input
                 type="password"
                 value={formData.password}
@@ -549,7 +559,7 @@ export default function NutritionistRegistrationForm() {
                     cert_image: file,
                   }));
                 }}
-                className="mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand file:mr-4 file:rounded-md file:border-0 file:bg-button-primary file:px-3 file:py-1 file:text-sm file:text-button-primary-foreground"
+                className="mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand file:mr-4 file:rounded-md file:border-0 file:bg-button-primary file:px-3 file:py-1 file:text-sm file:text-button-primary-foreground size-14"
               />
               <FieldError name="cert_image" />
             </label>

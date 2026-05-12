@@ -43,7 +43,7 @@ export default function GenericDropdown({
 
   const selectClasses = `
     w-full flex items-center justify-between
-    bg-card/40 backdrop-blur-md 
+    bg-input/40 backdrop-blur-md 
     border border-border
     text-foreground font-medium
     py-4 px-6 rounded-2xl 
@@ -56,7 +56,7 @@ export default function GenericDropdown({
 
   const dropdownMenuClasses = `
     absolute z-20 w-full mt-2 
-    bg-card/90 backdrop-blur-xl border border-border
+    bg-input/90 backdrop-blur-xl border border-border
     shadow-2xl rounded-2xl overflow-hidden py-2
     animate-in fade-in slide-in-from-top-2 duration-200
     max-h-60 overflow-y-auto
@@ -64,7 +64,7 @@ export default function GenericDropdown({
 
   const getLabel = (val: any) => {
     const option = options.find((opt) =>
-      typeof opt === "string" ? opt === val : opt.value === val
+      typeof opt === "string" ? opt === val : opt.value === val,
     );
     if (!option) return val || placeholder;
     return typeof option === "string" ? option : option.label;
@@ -103,8 +103,10 @@ export default function GenericDropdown({
         <ul className={dropdownMenuClasses}>
           {options.length > 0 ? (
             options.map((option, idx) => {
-              const optLabel = typeof option === "string" ? option : option.label;
-              const optValue = typeof option === "string" ? option : option.value;
+              const optLabel =
+                typeof option === "string" ? option : option.label;
+              const optValue =
+                typeof option === "string" ? option : option.value;
               return (
                 <li
                   key={idx}
