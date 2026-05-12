@@ -14,6 +14,7 @@ import {
   LookupItem,
 } from "@/lib/lookups";
 import { ThemeToggle } from "../ui/theme-toggle";
+import GenericDropdown from "../ui/GenericDropdown";
 
 type FormState = {
   username: string;
@@ -45,7 +46,6 @@ const initialState: FormState = {
   profile_photo: null,
 };
 
-import GenericDropdown from "../ui/GenericDropdown";
 
 /* ─── Multi-select dropdown for languages ─────────────────────────────── */
 interface MultiSelectDropdownProps {
@@ -209,6 +209,7 @@ export default function NutritionistRegistrationForm() {
   const [languages, setLanguages] = useState<LookupItem[]>([]);
   const [isLoadingLookups, setIsLoadingLookups] = useState(true);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { setTheme, resolvedTheme } = useTheme();
 
   // Bootstrap lookup data on component mount
@@ -228,6 +229,17 @@ export default function NutritionistRegistrationForm() {
 
     loadLookups();
   }, []);
+
+  // Update profile photo preview URL
+  useEffect(() => {
+    if (!formData.profile_photo) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(formData.profile_photo);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.profile_photo]);
 
   const validate = () => {
     const result = nutritionistRegistrationSchema.safeParse({
@@ -268,7 +280,11 @@ export default function NutritionistRegistrationForm() {
 
     startTransition(async () => {
       try {
-        await submitNutritionistRegistration(parsedData);
+        // Fix type mismatch for profile_photo (null vs undefined)
+        await submitNutritionistRegistration({
+          ...parsedData,
+          profile_photo: parsedData.profile_photo || undefined,
+        });
         setShowSuccessModal(true);
         setFormData(initialState);
         setErrors({});
@@ -321,9 +337,9 @@ export default function NutritionistRegistrationForm() {
             <div className="md:col-span-2 flex flex-col items-center mb-4">
               <div className="relative group">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
-                  {formData.profile_photo ? (
+                  {previewUrl ? (
                     <img 
-                      src={URL.createObjectURL(formData.profile_photo)} 
+                      src={previewUrl} 
                       alt="Profile preview" 
                       className="w-full h-full object-cover"
                     />

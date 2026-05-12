@@ -91,13 +91,140 @@ export default api;
 // Marketplace / Nutritionist API Services
 // ============================================
 
+export interface MarketplacePlanIngredient {
+  name: string;
+  amount: string;
+  unit: string;
+}
+
+export interface MarketplacePlanMeal {
+  name: string;
+  notes: string;
+  calories: number;
+  ingredients: MarketplacePlanIngredient[];
+}
+
+export interface MarketplacePlanDayContent {
+  day_index: number;
+  breakfast: MarketplacePlanMeal;
+  lunch: MarketplacePlanMeal;
+  dinner: MarketplacePlanMeal;
+  snacks: MarketplacePlanMeal;
+  instructions: string;
+}
+
+export interface MarketplacePlanListItem {
+  id: number;
+  title: string;
+  description: string;
+  plan_type: "public-predefined" | string;
+  status: "approved" | string;
+  category?: "seasonal" | "predefined" | "personalized" | string;
+  price: number;
+  duration_days: number;
+  free_consultations_per_week: number;
+  rating_avg: number;
+  cover_image_url: string | null;
+  nutritionist_id: number;
+  nutritionist_username: string;
+  specialization_name?: string;
+  created_at: string;
+}
+
+export interface MarketplacePlanDetail extends MarketplacePlanListItem {
+  content_json: MarketplacePlanDayContent[];
+  country_name?: string;
+}
+
+export interface MarketplacePlanPurchasePayload {
+  transaction_number: string;
+  amount_paid: number;
+}
+
+export interface MarketplacePlanPurchaseResult {
+  user_plan: {
+    id: number;
+    plan: number;
+    plan_title: string;
+    plan_cover: string | null;
+    plan_duration: number;
+    current_day_index: number;
+    status: string;
+    free_consultations_used: number;
+    purchased_at: string;
+  };
+  transaction_number: string;
+  net_earnings: number;
+}
+
+export interface MarketplacePlansPage {
+  count: number;
+  page: number;
+  results: MarketplacePlanListItem[];
+}
+
+export interface MarketplacePlansParams {
+  page?: number;
+  page_size?: number;
+  specialization_id?: number;
+  min_price?: number;
+  max_price?: number;
+  sort?: "rating_desc" | "price_asc" | "price_desc" | "newest";
+}
+
+export interface MarketplaceNutritionistProfile {
+  nutritionist_id: number;
+  username?: string;
+  bio?: string;
+  years_experience?: number;
+  consultation_price?: number;
+  profile_photo_url?: string | null;
+  specialization_name?: string;
+  country_name?: string;
+  languages?: string[];
+  rating?: number;
+  user?: {
+    username?: string;
+    email?: string;
+  };
+}
+
+export interface SubscriptionPurchasePayload {
+  plan_type: "monthly" | "yearly";
+  amount_paid: number;
+  transaction_number: string;
+}
+
+export function slugifyPlanTitle(title: string): string {
+  return title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+export function buildMarketplacePlanHref(plan: Pick<MarketplacePlanListItem, "id" | "title">): string {
+  const slug = slugifyPlanTitle(plan.title);
+  return `/marketplace/${plan.id}${slug ? `-${slug}` : ""}`;
+}
+
+export function parseMarketplacePlanIdFromSlug(slug: string): number | null {
+  const match = slug.match(/^(\d+)(?:-|$)/);
+  if (!match) return null;
+
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 /**
  * GET /marketplace/nutritionists/{id}/
  * Fetch a nutritionist's full profile
  */
-export const getNutritionistProfile = async (id: string) => {
+export const getNutritionistProfile = async (id: string | number): Promise<MarketplaceNutritionistProfile> => {
   const response = await api.get(`marketplace/nutritionists/${id}/`);
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 /**
@@ -161,6 +288,57 @@ export const getNutritionists = async (params?: {
 }) => {
   const response = await api.get("marketplace/nutritionists/", { params });
   return response.data;
+};
+
+/**
+ * GET /marketplace/plans/
+ * Fetch public marketplace plans with pagination and server-side filters.
+ */
+export const getMarketplacePlans = async (params?: MarketplacePlansParams): Promise<MarketplacePlansPage> => {
+  const response = await api.get<ApiEnvelope<MarketplacePlansPage> | MarketplacePlansPage>("marketplace/plans/", {
+    params,
+  });
+  return unwrapResponse(response.data);
+};
+
+/**
+ * GET /marketplace/plans/{id}/
+ * Fetch a single public marketplace plan detail.
+ */
+export const getMarketplacePlanDetail = async (id: number): Promise<MarketplacePlanDetail> => {
+  const response = await api.get<ApiEnvelope<MarketplacePlanDetail> | MarketplacePlanDetail>(`marketplace/plans/${id}/`);
+  return unwrapResponse(response.data);
+};
+
+/**
+ * POST /marketplace/plans/{id}/purchase/
+ * Purchase a public marketplace plan.
+ */
+export const purchaseMarketplacePlan = async (
+  id: number,
+  payload: MarketplacePlanPurchasePayload,
+): Promise<MarketplacePlanPurchaseResult> => {
+  const response = await api.post<
+    ApiEnvelope<MarketplacePlanPurchaseResult> | MarketplacePlanPurchaseResult
+  >(`marketplace/plans/${id}/purchase/`, payload);
+  return unwrapResponse(response.data);
+};
+
+/**
+ * POST /client/subscriptions/purchase/
+ * Purchase a premium subscription using a simulated payment payload.
+ */
+export const purchaseClientSubscription = async (
+  payload: SubscriptionPurchasePayload,
+): Promise<{ status?: string; message?: string; subscription?: unknown }> => {
+  const response = await api.post<
+    ApiEnvelope<{ status?: string; message?: string; subscription?: unknown }> | {
+      status?: string;
+      message?: string;
+      subscription?: unknown;
+    }
+  >("/lookup/client/subscriptions/purchase/", payload);
+  return unwrapResponse(response.data);
 };
 
 // ============================================

@@ -101,6 +101,40 @@ export interface NutritionistPatientProfile {
   progress: PatientProgressSnapshot;
 }
 
+interface NutritionistPatientApiRecord {
+  id?: number;
+  client_id?: number;
+  username?: string;
+  patient_type?: string;
+  first_consultation_date?: string;
+  profile_picture_url?: string;
+  client?: {
+    client_id?: number;
+    profile_photo_url?: string;
+    user?: {
+      username?: string;
+    };
+    age?: number;
+    weight?: number;
+    height?: number;
+    bmi?: number;
+    bmr?: number;
+    health_history?: string;
+    goal?: {
+      name?: string;
+    };
+  };
+  age?: number;
+  weight?: number;
+  height?: number;
+  bmi?: number;
+  bmr?: number;
+  health_history?: string;
+  goal_name?: string;
+  notes?: Array<{ note_content?: string } | string>;
+  progress?: PatientProgressSnapshot;
+}
+
 export interface CreatePatientNotePayload {
   note_content: string;
 }
@@ -141,7 +175,9 @@ export interface NutritionistPlan {
   status: PlanStatus;
   price: number;
   duration_days: number;
+  free_consultations_per_week?: number;
   rating_avg?: number;
+  cover_image_url?: string | null;
   created_at: string;
   target_client_id?: number;
   content_json: DailyMealContent[];
@@ -157,6 +193,7 @@ export interface CreatePlanPayload {
   duration_days: number;
   free_consultations_per_week?: number;
   content_json: DailyMealContent[];
+  cover_image?: File;
 }
 
 export type UpdatePlanPayload = Partial<CreatePlanPayload>;
@@ -353,6 +390,21 @@ function hasNetworkError(error: unknown): boolean {
   return error instanceof Error;
 }
 
+function appendPlanPayloadToFormData(formData: FormData, payload: CreatePlanPayload | UpdatePlanPayload) {
+  if (payload.title !== undefined) formData.append("title", payload.title);
+  if (payload.description !== undefined) formData.append("description", payload.description);
+  if (payload.plan_type !== undefined) formData.append("plan_type", payload.plan_type);
+  if (payload.target_client_id !== undefined) formData.append("target_client_id", String(payload.target_client_id));
+  if (payload.price !== undefined) formData.append("price", String(payload.price));
+  if (payload.duration_days !== undefined) formData.append("duration_days", String(payload.duration_days));
+  if (payload.free_consultations_per_week !== undefined) {
+    formData.append("free_consultations_per_week", String(payload.free_consultations_per_week));
+  }
+  if (payload.content_json !== undefined) formData.append("content_json", JSON.stringify(payload.content_json));
+  if (payload.category !== undefined) formData.append("category", payload.category);
+  if (payload.cover_image) formData.append("cover_image", payload.cover_image);
+}
+
 // ── Helper: create an empty MealContent ──────────────────────────────────
 export function createEmptyMeal(): MealContent {
   return { name: "", ingredients: [], calories: 0, notes: "" };
@@ -531,9 +583,9 @@ export async function getNutritionistPatients(): Promise<NutritionistPatientSumm
   if (useBackendMocks) return mockPatients;
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientSummary[]> | NutritionistPatientSummary[]>("/nutritionist/patients/");
-    const data = unwrapResponse(response.data) as any;
+    const data = unwrapResponse(response.data) as NutritionistPatientApiRecord[] | NutritionistPatientSummary[];
     // Normalize API response: extract nested client data if present
-    return (Array.isArray(data) ? data : []).map((p: any) => ({
+    return (Array.isArray(data) ? data : []).map((p) => ({
       id: p.id ?? p.client_id,
       client_id: p.client?.client_id ?? p.client_id,
       username: p.client?.user?.username ?? p.username ?? "Unknown",
@@ -551,7 +603,7 @@ export async function getNutritionistPatientProfile(clientId: number): Promise<N
   if (useBackendMocks) return { ...mockPatientProfile, client_id: clientId };
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientProfile> | NutritionistPatientProfile>(`/nutritionist/patients/${clientId}/`);
-    const raw: any = unwrapResponse(response.data);
+    const raw = unwrapResponse(response.data) as NutritionistPatientApiRecord;
     // Normalize nested client fields from the API response
     return {
       client_id: raw.client?.client_id ?? raw.client_id ?? clientId,
@@ -625,11 +677,17 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
       status: payload.plan_type === "public-predefined" ? "pending" : "approved",
       created_at: new Date().toISOString(),
       category: "predefined",
+      cover_image_url: payload.cover_image ? URL.createObjectURL(payload.cover_image) : null,
       ...payload,
     };
   }
   try {
-    const response = await api.post<ApiEnvelope<NutritionistPlan> | NutritionistPlan>("/nutritionist/plans/", payload);
+    const formData = new FormData();
+    appendPlanPayloadToFormData(formData, payload);
+
+    const response = await api.post<ApiEnvelope<NutritionistPlan> | NutritionistPlan>("/nutritionist/plans/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return unwrapResponse(response.data);
   } catch (error) {
     if (hasNetworkError(error)) {
@@ -638,6 +696,7 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
         status: payload.plan_type === "public-predefined" ? "pending" : "approved",
         created_at: new Date().toISOString(),
         category: "predefined",
+        cover_image_url: payload.cover_image ? URL.createObjectURL(payload.cover_image) : null,
         ...payload,
       };
     }
@@ -648,6 +707,15 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
 export async function updateNutritionistPlan(planId: number, payload: UpdatePlanPayload): Promise<void> {
   if (useBackendMocks) return;
   try {
+    if (payload.cover_image) {
+      const formData = new FormData();
+      appendPlanPayloadToFormData(formData, payload);
+      await api.patch(`/nutritionist/plans/${planId}/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return;
+    }
+
     await api.patch(`/nutritionist/plans/${planId}/`, payload);
   } catch (error) {
     if (hasNetworkError(error)) return;

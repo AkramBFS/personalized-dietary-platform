@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,139 +17,157 @@ import {
 import { format, addDays, isSameDay, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
-  getNutritionistProfile,
   getNutritionistAvailability,
-  bookConsultation,
+  getNutritionistProfile,
+  MarketplaceNutritionistProfile,
 } from "@/lib/api";
+import { buildPaymentUrl } from "@/lib/payment";
 import NutritionistProfileModal from "./NutritionistProfileModal";
 
-// --- API Mapping Interfaces ---
 interface TimeSlot {
-  start_time: string; // HH:MM
-  end_time: string; // HH:MM
+  start_time: string;
+  end_time: string;
   is_available: boolean;
 }
 
-/** Internal display model — normalised from the flat marketplace API response */
 interface NutritionistProfile {
   id: string | number;
-  name: string;         // ← API: username
-  specialization: string; // ← API: specialization_name
-  tags: string[];       // ← built from languages[] + specialization_name
+  name: string;
+  specialization: string;
+  tags: string[];
   bio: string;
   consultation_price: number;
-  profile_image: string; // ← API: profile_photo_url (resolved)
+  profile_image: string;
 }
 
-// Props Interface
+type AvailabilityPayload = TimeSlot[] | {
+  available_slots?: TimeSlot[];
+  results?: TimeSlot[];
+};
+
 interface ScheduleProps {
   nutritionistId: string;
+}
+
+function mapNutritionistProfile(
+  profile: MarketplaceNutritionistProfile,
+  fallbackId: string,
+): NutritionistProfile {
+  return {
+    id: profile.nutritionist_id ?? fallbackId,
+    name: profile.username ?? "Unknown",
+    specialization: profile.specialization_name ?? "",
+    tags: [
+      profile.specialization_name,
+      ...(Array.isArray(profile.languages) ? profile.languages : []),
+    ].filter(Boolean) as string[],
+    bio: profile.bio ?? "",
+    consultation_price: Number(profile.consultation_price ?? 0),
+    profile_image: profile.profile_photo_url
+      ? profile.profile_photo_url.startsWith("http")
+        ? profile.profile_photo_url
+        : `http://127.0.0.1:8000/${profile.profile_photo_url}`
+      : "/placeholder-avatar.png",
+  };
 }
 
 export default function ScheduleConsultation({
   nutritionistId,
 }: ScheduleProps) {
-  // 1. State for API Integration
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [consultationType, setConsultationType] = useState<
-    "advice_only" | "plan_included"
-  >("advice_only");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Profile and Availability State
-  const [nutritionist, setNutritionist] = useState<NutritionistProfile | null>(
-    null,
-  );
+  const [consultationType, setConsultationType] = useState<"advice_only" | "plan_included">("advice_only");
+  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
+  const [nutritionist, setNutritionist] = useState<NutritionistProfile | null>(null);
   const [availability, setAvailability] = useState<TimeSlot[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // 2. Fetch Profile on Mount — normalize flat marketplace API response
   useEffect(() => {
+    let isMounted = true;
+
     const fetchProfile = async () => {
       try {
         setIsPageLoading(true);
-        const raw = await getNutritionistProfile(nutritionistId);
-        // unwrap { status, data } envelope if present
-        const d: any = raw?.data ?? raw;
-        setNutritionist({
-          id: d.nutritionist_id ?? nutritionistId,
-          name: d.username ?? "Unknown",
-          specialization: d.specialization_name ?? "",
-          tags: [
-            d.specialization_name,
-            ...(Array.isArray(d.languages) ? d.languages : []),
-          ].filter(Boolean) as string[],
-          bio: d.bio ?? "",
-          consultation_price: d.consultation_price ?? 0,
-          profile_image: d.profile_photo_url
-            ? d.profile_photo_url.startsWith("http")
-              ? d.profile_photo_url
-              : `http://127.0.0.1:8000/${d.profile_photo_url}`
-            : "/placeholder-avatar.png",
-        });
+        const profile = await getNutritionistProfile(nutritionistId);
+        if (!isMounted) return;
+        setNutritionist(mapNutritionistProfile(profile, nutritionistId));
         setError(null);
       } catch (err) {
         console.error("Failed to load profile", err);
-        setError("Failed to load nutritionist profile");
+        if (isMounted) {
+          setError("Failed to load nutritionist profile");
+        }
       } finally {
-        setIsPageLoading(false);
+        if (isMounted) {
+          setIsPageLoading(false);
+        }
       }
     };
-    fetchProfile();
+
+    void fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
   }, [nutritionistId]);
 
-  // 3. Fetch Availability when Date changes
   useEffect(() => {
-    const fetchSlots = async () => {
-      if (!nutritionist) return;
+    if (!nutritionist) return;
+    let isMounted = true;
 
+    const fetchSlots = async () => {
       setIsSlotsLoading(true);
       try {
         const formattedDate = format(selectedDate, "yyyy-MM-dd");
-        const raw = await getNutritionistAvailability(
-          nutritionistId,
-          formattedDate,
-        );
-        // API returns: { status, data: { is_holiday, available_slots } }
-        const payload: any = raw?.data ?? raw;
-        const slots: TimeSlot[] = Array.isArray(payload)
+        const raw = await getNutritionistAvailability(nutritionistId, formattedDate);
+        if (!isMounted) return;
+
+        const payload: AvailabilityPayload =
+          raw && typeof raw === "object" ? (raw as AvailabilityPayload) : [];
+        const slots = Array.isArray(payload)
           ? payload
-          : Array.isArray(payload?.available_slots)
+          : Array.isArray(payload.available_slots)
           ? payload.available_slots
-          : Array.isArray(payload?.results)
+          : Array.isArray(payload.results)
           ? payload.results
           : [];
         setAvailability(slots);
       } catch (err) {
         console.error("Failed to load slots", err);
-        setAvailability([]);
+        if (isMounted) {
+          setAvailability([]);
+        }
       } finally {
-        setIsSlotsLoading(false);
+        if (isMounted) {
+          setIsSlotsLoading(false);
+        }
       }
     };
-    fetchSlots();
-  }, [nutritionistId, selectedDate, nutritionist]);
 
-  // 4. Generate Week Ribbon (Next 14 days)
+    void fetchSlots();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [nutritionist, nutritionistId, selectedDate]);
+
   const days = useMemo(() => {
-    return Array.from({ length: 14 }).map((_, i) =>
-      addDays(startOfDay(new Date()), i),
+    return Array.from({ length: 14 }).map((_, index) =>
+      addDays(startOfDay(new Date()), index),
     );
   }, []);
 
-  // Filter slots by time of day
   const morningSlots = availability.filter(
-    (s) => parseInt(s.start_time.split(":")[0]) < 12,
+    (slot) => parseInt(slot.start_time.split(":")[0], 10) < 12,
   );
   const afternoonSlots = availability.filter(
-    (s) => parseInt(s.start_time.split(":")[0]) >= 12,
+    (slot) => parseInt(slot.start_time.split(":")[0], 10) >= 12,
   );
 
-  // 5. Handle Loading State
   if (isPageLoading) {
     return (
       <div className="w-full h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -160,7 +179,6 @@ export default function ScheduleConsultation({
     );
   }
 
-  // 6. Handle Error/Not Found State
   if (error && !nutritionist) {
     return (
       <div className="text-center py-24">
@@ -169,10 +187,9 @@ export default function ScheduleConsultation({
     );
   }
 
-  // Use fallback data while nutritionist state is being populated
   const currentNutritionist = nutritionist ?? {
     id: nutritionistId,
-    name: "Loading…",
+    name: "Loading...",
     specialization: "",
     tags: [],
     bio: "",
@@ -180,36 +197,24 @@ export default function ScheduleConsultation({
     profile_image: "/placeholder-avatar.png",
   };
 
-  // 7. Booking Handler (Connects to POST /client/consultations/book/)
-  const handleBooking = async () => {
+  const handleContinueToPayment = () => {
     if (!selectedSlot || !nutritionist) return;
 
-    setIsLoading(true);
-    const payload = {
-      // API requires nutritionist_id as a string per the bookConsultation signature
-      nutritionist_id: String(nutritionist.id),
-      appointment_date: format(selectedDate, "yyyy-MM-dd"),
-      start_time: selectedSlot.start_time,
-      end_time: selectedSlot.end_time,
-      consultation_type: consultationType,
-      is_free_from_plan: false,
-    };
-
-    try {
-      await bookConsultation(payload);
-      console.log("Booking submitted successfully!");
-      // Could add success notification or redirect here
-    } catch (err) {
-      console.error("Failed to book consultation", err);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsRedirectingToPayment(true);
+    const paymentHref = buildPaymentUrl({
+      type: "consultation",
+      nutritionistId: Number(nutritionist.id),
+      appointmentDate: format(selectedDate, "yyyy-MM-dd"),
+      startTime: selectedSlot.start_time,
+      endTime: selectedSlot.end_time,
+      consultationType,
+    });
+    router.push(paymentHref);
   };
 
   return (
     <main className="flex-grow pt-12 pb-24 px-6 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-        {/* Left Column: Selection */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           <div className="flex flex-col gap-2">
             <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-foreground">
@@ -220,7 +225,6 @@ export default function ScheduleConsultation({
             </p>
           </div>
 
-          {/* Provider Card (API Mapped) */}
           <section className="bg-card rounded-2xl border border-border p-6 flex flex-col sm:flex-row gap-6 items-start shadow-brand">
             <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary/20">
               <img
@@ -239,7 +243,7 @@ export default function ScheduleConsultation({
                     {currentNutritionist.specialization}
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsProfileModalOpen(true)}
                   className="text-sm font-semibold text-button-primary bg-accent hover:bg-primary hover:text-primary-foreground rounded-lg px-4 py-2 transition-all w-full sm:w-auto"
                 >
@@ -247,7 +251,7 @@ export default function ScheduleConsultation({
                 </button>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {Array.isArray(currentNutritionist.tags) && currentNutritionist.tags.map((tag) => (
+                {currentNutritionist.tags.map((tag) => (
                   <span
                     key={tag}
                     className="bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-full"
@@ -262,14 +266,12 @@ export default function ScheduleConsultation({
             </div>
           </section>
 
-          {/* Scheduler Section */}
           <section className="flex flex-col gap-4 mt-2">
             <h3 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2">
               <Clock className="w-6 h-6 text-primary" /> Choose a Time Slot
             </h3>
 
             <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-              {/* Date Selector Ribbon */}
               <div className="border-b border-border p-4 flex items-center justify-between bg-muted/30">
                 <button className="p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground">
                   <ChevronLeft className="w-5 h-5" />
@@ -315,7 +317,6 @@ export default function ScheduleConsultation({
                 </button>
               </div>
 
-              {/* Time Slots Grids */}
               <div className="p-6 flex flex-col gap-8 min-h-[300px]">
                 {isSlotsLoading ? (
                   <div className="flex items-center justify-center py-12">
@@ -326,7 +327,6 @@ export default function ScheduleConsultation({
                   </div>
                 ) : (
                   <>
-                    {/* Morning */}
                     <div>
                       <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                         <Sun className="w-5 h-5 text-amber-500" /> Morning
@@ -359,7 +359,6 @@ export default function ScheduleConsultation({
                       </div>
                     </div>
 
-                    {/* Afternoon */}
                     <div>
                       <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                         <Sunset className="w-5 h-5 text-orange-500" /> Afternoon
@@ -398,14 +397,12 @@ export default function ScheduleConsultation({
           </section>
         </div>
 
-        {/* Right Column: Summary & API Gating */}
         <div className="lg:col-span-4 flex flex-col gap-8">
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm sticky top-8 flex flex-col gap-6">
             <h3 className="font-serif text-xl font-bold text-foreground border-b border-border pb-4">
               Booking Summary
             </h3>
 
-            {/* Consultation Type Toggle (Required for POST body) */}
             <div className="flex flex-col gap-3">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Session Type
@@ -459,23 +456,20 @@ export default function ScheduleConsultation({
                   Total Due Today
                 </span>
                 <span className="font-serif text-3xl text-foreground font-bold">
-                  $
-                  {consultationType === "plan_included"
-                    ? currentNutritionist.consultation_price + 50
-                    : currentNutritionist.consultation_price}
+                  ${currentNutritionist.consultation_price.toFixed(2)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground text-right mt-1">
-                Includes platform service fee.
+                Final payment happens on the next secure checkout step.
               </p>
             </div>
 
             <button
-              disabled={!selectedSlot || isLoading}
-              onClick={handleBooking}
+              disabled={!selectedSlot || isRedirectingToPayment}
+              onClick={handleContinueToPayment}
               className="bg-button-primary bg-btn-primary text-button-primary-foreground font-bold text-base py-4 px-6 rounded-xl w-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {isRedirectingToPayment ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 "Confirm & Proceed to Payment"
