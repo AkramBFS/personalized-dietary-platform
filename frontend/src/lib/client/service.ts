@@ -40,6 +40,13 @@ export interface ClientProfilePatchPayload {
   profile_photo?: File;
 }
 
+export interface ClientProgressTargetsPayload {
+  target_calories: number;
+  target_protein: number;
+  target_carbs: number;
+  target_fats: number;
+}
+
 export interface ClientSubscription {
   id: number;
   plan_type?: "monthly" | "yearly" | string;
@@ -349,6 +356,16 @@ export async function getClientProgress(startDate: string, endDate: string): Pro
     params: { start_date: startDate, end_date: endDate },
   });
   return unwrapList(response.data);
+}
+
+export async function patchClientProgressTargets(
+  payload: ClientProgressTargetsPayload,
+): Promise<ClientProgress> {
+  const response = await api.patch<ApiEnvelope<ClientProgress> | ClientProgress>(
+    "/client/progress/targets/",
+    payload,
+  );
+  return unwrapResponse(response.data);
 }
 
 export async function getClientConsultations(): Promise<ClientConsultation[]> {

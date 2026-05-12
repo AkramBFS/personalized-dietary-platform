@@ -56,11 +56,13 @@ export default function ClientDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [profileName, setProfileName] = useState("there");
   const [activePlan, setActivePlan] = useState<ClientUserPlan | null>(null);
-  const [nextConsultation, setNextConsultation] = useState<ClientConsultation | null>(null);
+  const [nextConsultation, setNextConsultation] =
+    useState<ClientConsultation | null>(null);
   const [todayIntake, setTodayIntake] = useState(0);
-  const [dailyTarget, setDailyTarget] = useState(2000);
+  const [dailyTarget, setDailyTarget] = useState<number | null>(null);
   const [goalAchieved, setGoalAchieved] = useState(false);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  const [showTargetsReminder, setShowTargetsReminder] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -82,7 +84,8 @@ export default function ClientDashboardPage() {
 
         setProfileName(profile.username || "there");
 
-        const currentPlan = plans.find((plan) => plan.status === "active") ?? null;
+        const currentPlan =
+          plans.find((plan) => plan.status === "active") ?? null;
         setActivePlan(currentPlan);
 
         const upcoming =
@@ -90,19 +93,36 @@ export default function ClientDashboardPage() {
             .filter((consultation) => consultation.status === "scheduled")
             .sort(
               (a, b) =>
-                new Date(`${a.appointment_date}T${a.start_time ?? "00:00"}`).getTime() -
-                new Date(`${b.appointment_date}T${b.start_time ?? "00:00"}`).getTime(),
+                new Date(
+                  `${a.appointment_date}T${a.start_time ?? "00:00"}`,
+                ).getTime() -
+                new Date(
+                  `${b.appointment_date}T${b.start_time ?? "00:00"}`,
+                ).getTime(),
             )[0] ?? null;
         setNextConsultation(upcoming);
 
         const todayStr = formatDateParam(today);
-        const progressByDate = new Map(progress.map((log) => [log.log_date, log]));
+        const progressByDate = new Map(
+          progress.map((log) => [log.log_date, log]),
+        );
         const todayLog = progressByDate.get(todayStr);
-        const target = todayLog?.target_calories ?? profile.target_calories ?? 2000;
+        const resolvedTargets = {
+          calories:
+            todayLog?.target_calories ?? profile.target_calories ?? null,
+          protein: todayLog?.target_protein ?? profile.target_protein ?? null,
+          carbs: todayLog?.target_carbs ?? profile.target_carbs ?? null,
+          fats: todayLog?.target_fats ?? profile.target_fats ?? null,
+        };
 
         setTodayIntake(todayLog?.total_calories_consumed ?? 0);
-        setDailyTarget(target || 2000);
+        setDailyTarget(resolvedTargets.calories);
         setGoalAchieved(todayLog?.is_goal_achieved ?? false);
+        setShowTargetsReminder(
+          Object.values(resolvedTargets).some(
+            (value) => value === null || value === undefined || value <= 0,
+          ),
+        );
 
         const points: ChartPoint[] = [];
         for (let offset = -6; offset <= 0; offset += 1) {
@@ -130,7 +150,8 @@ export default function ClientDashboardPage() {
     };
   }, []);
 
-  const remainingCalories = Math.max(0, dailyTarget - todayIntake);
+  const remainingCalories =
+    dailyTarget !== null ? Math.max(0, dailyTarget - todayIntake) : null;
   const progressPercentage = useMemo(() => {
     if (!dailyTarget) return 0;
     return Math.min(100, (todayIntake / dailyTarget) * 100);
@@ -146,6 +167,33 @@ export default function ClientDashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-8 pb-10">
+      {showTargetsReminder && (
+        <Card className="border-accent/50 bg-accent/20 shadow-sm transition-all">
+          <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3 md:items-center">
+              {/* Using the accent-foreground color for the icon to make it pop */}
+              <div className="rounded-full bg-accent-foreground/10 p-2 text-accent-foreground">
+                <Target className="h-5 w-5" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold uppercase tracking-widest text-accent-foreground">
+                  Daily Targets Missing
+                </p>
+                <p className="text-sm text-foreground/80">
+                  Set your calorie, protein, carbs, and fat goals to unlock full
+                  progress tracking.
+                </p>
+              </div>
+            </div>
+
+            {/* Using the standard primary button which adapts to each theme */}
+            <Button asChild className="w-full font-semibold md:w-auto">
+              <Link href="/client/profile">Set Targets</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
           Good morning, {profileName}!
@@ -169,9 +217,13 @@ export default function ClientDashboardPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Current Plan
                 </p>
-                <p className="truncate text-lg font-bold text-foreground">{getPlanTitle(activePlan)}</p>
+                <p className="truncate text-lg font-bold text-foreground">
+                  {getPlanTitle(activePlan)}
+                </p>
                 <p className="text-sm font-medium text-primary">
-                  {activePlan ? `${activePlan.progress_percent ?? 0}% Completed` : "Browse Marketplace"}
+                  {activePlan
+                    ? `${activePlan.progress_percent ?? 0}% Completed`
+                    : "Browse Marketplace"}
                 </p>
               </div>
             </div>
@@ -188,13 +240,26 @@ export default function ClientDashboardPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Calories Today
                 </p>
-                <p className="text-lg font-bold text-foreground">{todayIntake.toFixed(0)} kcal</p>
-                <div className="mt-2 flex w-full items-center gap-3">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                    <div className="h-full bg-primary" style={{ width: `${progressPercentage}%` }} />
+                <p className="text-lg font-bold text-foreground">
+                  {todayIntake.toFixed(0)} kcal
+                </p>
+                {dailyTarget ? (
+                  <div className="mt-2 flex w-full items-center gap-3">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: `${progressPercentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {progressPercentage.toFixed(0)}%
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{progressPercentage.toFixed(0)}%</span>
-                </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Set a daily target to track progress.
+                  </p>
+                )}
                 {goalAchieved && (
                   <p className="flex items-center gap-1 text-xs font-medium text-primary">
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -216,8 +281,16 @@ export default function ClientDashboardPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Remaining
                 </p>
-                <p className="text-lg font-bold text-foreground">{remainingCalories.toFixed(0)} kcal</p>
-                <p className="text-sm text-muted-foreground">Daily goal: {dailyTarget.toFixed(0)} kcal</p>
+                <p className="text-lg font-bold text-foreground">
+                  {remainingCalories !== null
+                    ? `${remainingCalories.toFixed(0)} kcal`
+                    : "Target not set"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {dailyTarget !== null
+                    ? `Daily goal: ${dailyTarget.toFixed(0)} kcal`
+                    : "Add your daily targets in your profile."}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -236,20 +309,33 @@ export default function ClientDashboardPage() {
                 {nextConsultation ? (
                   <>
                     <p className="truncate text-lg font-bold text-foreground">
-                      {new Date(`${nextConsultation.appointment_date}T00:00`).toLocaleDateString("en-US", {
+                      {new Date(
+                        `${nextConsultation.appointment_date}T00:00`,
+                      ).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                       })}
-                      {nextConsultation.start_time ? `, ${nextConsultation.start_time}` : ""}
+                      {nextConsultation.start_time
+                        ? `, ${nextConsultation.start_time}`
+                        : ""}
                     </p>
-                    <p className={`text-sm font-medium ${nextConsultation.zoom_link ? "text-blue-500" : "text-amber-500"}`}>
-                      {nextConsultation.zoom_link ? "Zoom Link Ready" : "Pending Link"}
+                    <p
+                      className={`text-sm font-medium ${nextConsultation.zoom_link ? "text-blue-500" : "text-amber-500"}`}
+                    >
+                      {nextConsultation.zoom_link
+                        ? "Zoom Link Ready"
+                        : "Pending Link"}
                     </p>
                   </>
                 ) : (
                   <>
-                    <p className="text-lg font-bold text-foreground">None Scheduled</p>
-                    <Link href="/client/consultations" className="text-sm font-medium text-primary hover:underline">
+                    <p className="text-lg font-bold text-foreground">
+                      None Scheduled
+                    </p>
+                    <Link
+                      href="/client/consultations"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
                       Book now
                     </Link>
                   </>
@@ -268,8 +354,16 @@ export default function ClientDashboardPage() {
             </h2>
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" className="opacity-30" />
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="var(--border)"
+                    className="opacity-30"
+                  />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
@@ -289,20 +383,27 @@ export default function ClientDashboardPage() {
                       borderRadius: "8px",
                       color: "var(--card-foreground)",
                     }}
-                    formatter={(value) => [`${Number(value).toFixed(0)} kcal`, "Intake"]}
-                    labelFormatter={(_, payload) => payload?.[0]?.payload?.date ?? ""}
+                    formatter={(value) => [
+                      `${Number(value).toFixed(0)} kcal`,
+                      "Intake",
+                    ]}
+                    labelFormatter={(_, payload) =>
+                      payload?.[0]?.payload?.date ?? ""
+                    }
                   />
-                  <ReferenceLine
-                    y={dailyTarget}
-                    stroke="var(--muted-foreground)"
-                    strokeDasharray="3 3"
-                    label={{
-                      position: "insideTopLeft",
-                      value: "Target",
-                      fill: "var(--muted-foreground)",
-                      fontSize: 13,
-                    }}
-                  />
+                  {dailyTarget !== null && (
+                    <ReferenceLine
+                      y={dailyTarget}
+                      stroke="var(--muted-foreground)"
+                      strokeDasharray="3 3"
+                      label={{
+                        position: "insideTopLeft",
+                        value: "Target",
+                        fill: "var(--muted-foreground)",
+                        fontSize: 13,
+                      }}
+                    />
+                  )}
                   <Line
                     type="monotone"
                     dataKey="intake"
@@ -321,19 +422,28 @@ export default function ClientDashboardPage() {
           <h2 className="mb-2 mt-4 text-xl font-bold tracking-wide text-foreground lg:mb-1 lg:mt-0">
             Quick Actions
           </h2>
-          <Button asChild className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm">
+          <Button
+            asChild
+            className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm"
+          >
             <Link href="/client/calorie-tracker">
               <Camera className="mb-1 h-8 w-8" />
               <span className="text-base font-semibold">Upload Meal</span>
             </Link>
           </Button>
-          <Button asChild className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm">
+          <Button
+            asChild
+            className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm"
+          >
             <Link href="/client/consultations">
               <Calendar className="mb-1 h-8 w-8" />
               <span className="text-base font-semibold">Book Consultation</span>
             </Link>
           </Button>
-          <Button asChild className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm">
+          <Button
+            asChild
+            className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm"
+          >
             <Link href="/client/meal-plans">
               <ListTodo className="mb-1 h-8 w-8" />
               <span className="text-base font-semibold">View Digital Plan</span>

@@ -130,7 +130,7 @@ export default function AdminUsersPage() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9 h-12"
+              className="pl-9 h-14"
               placeholder="Search users..."
             />
           </div>
