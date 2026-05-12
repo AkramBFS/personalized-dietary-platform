@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, Crown, Loader2, Shield, Sparkles, XCircle, Zap, CreditCard } from "lucide-react";
+import { CheckCircle2, Crown, Loader2, Shield, Sparkles, XCircle, Zap, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ClientSubscriptionStatus, getClientSubscriptionStatus } from "@/lib/client";
-import api from "@/lib/api";
+import { purchaseClientSubscription } from "@/lib/api";
+import { generateTransactionNumber, getSubscriptionAmount } from "@/lib/payment";
 import { toast } from "sonner";
 
 const PREMIUM_FEATURES = [
@@ -67,7 +67,11 @@ export default function SubscriptionPage() {
     try {
       // Simulate bank delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-      await api.post("/client/subscriptions/purchase/", { plan_type: selectedPlan });
+      await purchaseClientSubscription({
+        plan_type: selectedPlan,
+        amount_paid: getSubscriptionAmount(selectedPlan),
+        transaction_number: generateTransactionNumber("subscription"),
+      });
       toast.success(`Successfully upgraded to ${selectedPlan} plan!`);
       setShowPaymentModal(false);
       // Reload status
