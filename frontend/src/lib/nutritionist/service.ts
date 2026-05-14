@@ -58,6 +58,7 @@ export interface NutritionistPatientSummary {
   username: string;
   patient_type: string;
   first_consultation_date?: string;
+  profile_picture_url?: string;
 }
 
 export interface PatientProgressSnapshot {
@@ -100,6 +101,40 @@ export interface NutritionistPatientProfile {
   progress: PatientProgressSnapshot;
 }
 
+interface NutritionistPatientApiRecord {
+  id?: number;
+  client_id?: number;
+  username?: string;
+  patient_type?: string;
+  first_consultation_date?: string;
+  profile_picture_url?: string;
+  client?: {
+    client_id?: number;
+    profile_photo_url?: string;
+    user?: {
+      username?: string;
+    };
+    age?: number;
+    weight?: number;
+    height?: number;
+    bmi?: number;
+    bmr?: number;
+    health_history?: string;
+    goal?: {
+      name?: string;
+    };
+  };
+  age?: number;
+  weight?: number;
+  height?: number;
+  bmi?: number;
+  bmr?: number;
+  health_history?: string;
+  goal_name?: string;
+  notes?: Array<{ note_content?: string } | string>;
+  progress?: PatientProgressSnapshot;
+}
+
 export interface CreatePatientNotePayload {
   note_content: string;
 }
@@ -140,7 +175,9 @@ export interface NutritionistPlan {
   status: PlanStatus;
   price: number;
   duration_days: number;
+  free_consultations_per_week?: number;
   rating_avg?: number;
+  cover_image_url?: string | null;
   created_at: string;
   target_client_id?: number;
   content_json: DailyMealContent[];
@@ -156,6 +193,7 @@ export interface CreatePlanPayload {
   duration_days: number;
   free_consultations_per_week?: number;
   content_json: DailyMealContent[];
+  cover_image?: File;
 }
 
 export type UpdatePlanPayload = Partial<CreatePlanPayload>;
@@ -352,6 +390,21 @@ function hasNetworkError(error: unknown): boolean {
   return error instanceof Error;
 }
 
+function appendPlanPayloadToFormData(formData: FormData, payload: CreatePlanPayload | UpdatePlanPayload) {
+  if (payload.title !== undefined) formData.append("title", payload.title);
+  if (payload.description !== undefined) formData.append("description", payload.description);
+  if (payload.plan_type !== undefined) formData.append("plan_type", payload.plan_type);
+  if (payload.target_client_id !== undefined) formData.append("target_client_id", String(payload.target_client_id));
+  if (payload.price !== undefined) formData.append("price", String(payload.price));
+  if (payload.duration_days !== undefined) formData.append("duration_days", String(payload.duration_days));
+  if (payload.free_consultations_per_week !== undefined) {
+    formData.append("free_consultations_per_week", String(payload.free_consultations_per_week));
+  }
+  if (payload.content_json !== undefined) formData.append("content_json", JSON.stringify(payload.content_json));
+  if (payload.category !== undefined) formData.append("category", payload.category);
+  if (payload.cover_image) formData.append("cover_image", payload.cover_image);
+}
+
 // ── Helper: create an empty MealContent ──────────────────────────────────
 export function createEmptyMeal(): MealContent {
   return { name: "", ingredients: [], calories: 0, notes: "" };
@@ -395,8 +448,8 @@ export function groupTransactionsByMonth(
     const d = new Date(tx.created_at);
     const label = `${d.toLocaleString("en-US", { month: "short" })} ${d.getFullYear()}`;
     const entry = monthMap.get(label) ?? { gross: 0, net: 0 };
-    entry.gross += tx.total_paid;
-    entry.net += tx.net_earnings;
+    entry.gross += tx.total_paid || 0;
+    entry.net += tx.net_earnings || 0;
     monthMap.set(label, entry);
   }
 
@@ -424,7 +477,12 @@ export async function getNutritionistProfile(): Promise<NutritionistProfile> {
 
 export async function patchNutritionistProfile(payload: ProfilePatchPayload): Promise<NutritionistProfile> {
   if (useBackendMocks) {
-    return { ...mockProfile, ...payload, profile_photo_url: payload.profile_photo ? URL.createObjectURL(payload.profile_photo) : mockProfile.profile_photo_url };
+    const { profile_photo, ...rest } = payload;
+    return {
+      ...mockProfile,
+      ...rest,
+      profile_photo_url: profile_photo ? URL.createObjectURL(profile_photo) : mockProfile.profile_photo_url,
+    } as NutritionistProfile;
   }
 
   const formData = new FormData();
@@ -443,7 +501,12 @@ export async function patchNutritionistProfile(payload: ProfilePatchPayload): Pr
     return unwrapResponse(response.data);
   } catch (error) {
     if (hasNetworkError(error)) {
-      return { ...mockProfile, ...payload, profile_photo_url: payload.profile_photo ? URL.createObjectURL(payload.profile_photo) : mockProfile.profile_photo_url };
+      const { profile_photo, ...rest } = payload;
+      return {
+        ...mockProfile,
+        ...rest,
+        profile_photo_url: profile_photo ? URL.createObjectURL(profile_photo) : mockProfile.profile_photo_url,
+      } as NutritionistProfile;
     }
     throw error;
   }
@@ -530,14 +593,15 @@ export async function getNutritionistPatients(): Promise<NutritionistPatientSumm
   if (useBackendMocks) return mockPatients;
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientSummary[]> | NutritionistPatientSummary[]>("/nutritionist/patients/");
-    const data = unwrapResponse(response.data) as any;
+    const data = unwrapResponse(response.data) as any[];
     // Normalize API response: extract nested client data if present
-    return (Array.isArray(data) ? data : []).map((p: any) => ({
+    return (Array.isArray(data) ? data : []).map((p) => ({
       id: p.id ?? p.client_id,
       client_id: p.client?.client_id ?? p.client_id,
       username: p.client?.user?.username ?? p.username ?? "Unknown",
       patient_type: p.patient_type ?? "unknown",
       first_consultation_date: p.first_consultation_date,
+      profile_picture_url: p.client?.profile_photo_url ?? p.profile_picture_url,
     }));
   } catch (error) {
     if (hasNetworkError(error)) return mockPatients;
@@ -549,7 +613,7 @@ export async function getNutritionistPatientProfile(clientId: number): Promise<N
   if (useBackendMocks) return { ...mockPatientProfile, client_id: clientId };
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientProfile> | NutritionistPatientProfile>(`/nutritionist/patients/${clientId}/`);
-    const raw: any = unwrapResponse(response.data);
+    const raw = unwrapResponse(response.data) as NutritionistPatientApiRecord;
     // Normalize nested client fields from the API response
     return {
       client_id: raw.client?.client_id ?? raw.client_id ?? clientId,
@@ -623,11 +687,22 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
       status: payload.plan_type === "public-predefined" ? "pending" : "approved",
       created_at: new Date().toISOString(),
       category: "predefined",
-      ...payload,
-    };
+      cover_image_url: payload.cover_image ? URL.createObjectURL(payload.cover_image) : null,
+      title: payload.title,
+      description: payload.description,
+      plan_type: payload.plan_type,
+      price: payload.price,
+      duration_days: payload.duration_days,
+      content_json: payload.content_json,
+    } as NutritionistPlan;
   }
   try {
-    const response = await api.post<ApiEnvelope<NutritionistPlan> | NutritionistPlan>("/nutritionist/plans/", payload);
+    const formData = new FormData();
+    appendPlanPayloadToFormData(formData, payload);
+
+    const response = await api.post<ApiEnvelope<NutritionistPlan> | NutritionistPlan>("/nutritionist/plans/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return unwrapResponse(response.data);
   } catch (error) {
     if (hasNetworkError(error)) {
@@ -636,8 +711,14 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
         status: payload.plan_type === "public-predefined" ? "pending" : "approved",
         created_at: new Date().toISOString(),
         category: "predefined",
-        ...payload,
-      };
+        cover_image_url: payload.cover_image ? URL.createObjectURL(payload.cover_image) : null,
+        title: payload.title,
+        description: payload.description,
+        plan_type: payload.plan_type,
+        price: payload.price,
+        duration_days: payload.duration_days,
+        content_json: payload.content_json,
+      } as NutritionistPlan;
     }
     throw error;
   }
@@ -646,6 +727,15 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
 export async function updateNutritionistPlan(planId: number, payload: UpdatePlanPayload): Promise<void> {
   if (useBackendMocks) return;
   try {
+    if (payload.cover_image) {
+      const formData = new FormData();
+      appendPlanPayloadToFormData(formData, payload);
+      await api.patch(`/nutritionist/plans/${planId}/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return;
+    }
+
     await api.patch(`/nutritionist/plans/${planId}/`, payload);
   } catch (error) {
     if (hasNetworkError(error)) return;

@@ -22,7 +22,14 @@ export function resolveApiUrl(url?: string | null): string | undefined {
 
   const apiUrl = new URL(API_BASE_URL);
   const origin = `${apiUrl.protocol}//${apiUrl.host}`;
-  return new URL(url.replace(/^\/+/, ""), `${origin}/`).toString();
+  
+  // Ensure we have /media/ prefix for relative paths if it's not already there
+  let normalizedPath = url.replace(/^\/+/, "");
+  if (!normalizedPath.startsWith("media/")) {
+    normalizedPath = `media/${normalizedPath}`;
+  }
+  
+  return new URL(normalizedPath, `${origin}/`).toString();
 }
 
 const api = axios.create({
@@ -84,13 +91,140 @@ export default api;
 // Marketplace / Nutritionist API Services
 // ============================================
 
+export interface MarketplacePlanIngredient {
+  name: string;
+  amount: string;
+  unit: string;
+}
+
+export interface MarketplacePlanMeal {
+  name: string;
+  notes: string;
+  calories: number;
+  ingredients: MarketplacePlanIngredient[];
+}
+
+export interface MarketplacePlanDayContent {
+  day_index: number;
+  breakfast: MarketplacePlanMeal;
+  lunch: MarketplacePlanMeal;
+  dinner: MarketplacePlanMeal;
+  snacks: MarketplacePlanMeal;
+  instructions: string;
+}
+
+export interface MarketplacePlanListItem {
+  id: number;
+  title: string;
+  description: string;
+  plan_type: "public-predefined" | string;
+  status: "approved" | string;
+  category?: "seasonal" | "predefined" | "personalized" | string;
+  price: number;
+  duration_days: number;
+  free_consultations_per_week: number;
+  rating_avg: number;
+  cover_image_url: string | null;
+  nutritionist_id: number;
+  nutritionist_username: string;
+  specialization_name?: string;
+  created_at: string;
+}
+
+export interface MarketplacePlanDetail extends MarketplacePlanListItem {
+  content_json: MarketplacePlanDayContent[];
+  country_name?: string;
+}
+
+export interface MarketplacePlanPurchasePayload {
+  transaction_number: string;
+  amount_paid: number;
+}
+
+export interface MarketplacePlanPurchaseResult {
+  user_plan: {
+    id: number;
+    plan: number;
+    plan_title: string;
+    plan_cover: string | null;
+    plan_duration: number;
+    current_day_index: number;
+    status: string;
+    free_consultations_used: number;
+    purchased_at: string;
+  };
+  transaction_number: string;
+  net_earnings: number;
+}
+
+export interface MarketplacePlansPage {
+  count: number;
+  page: number;
+  results: MarketplacePlanListItem[];
+}
+
+export interface MarketplacePlansParams {
+  page?: number;
+  page_size?: number;
+  specialization_id?: number;
+  min_price?: number;
+  max_price?: number;
+  sort?: "rating_desc" | "price_asc" | "price_desc" | "newest";
+}
+
+export interface MarketplaceNutritionistProfile {
+  nutritionist_id: number;
+  username?: string;
+  bio?: string;
+  years_experience?: number;
+  consultation_price?: number;
+  profile_photo_url?: string | null;
+  specialization_name?: string;
+  country_name?: string;
+  languages?: string[];
+  rating?: number;
+  user?: {
+    username?: string;
+    email?: string;
+  };
+}
+
+export interface SubscriptionPurchasePayload {
+  plan_type: "monthly" | "yearly";
+  amount_paid: number;
+  transaction_number: string;
+}
+
+export function slugifyPlanTitle(title: string): string {
+  return title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+export function buildMarketplacePlanHref(plan: Pick<MarketplacePlanListItem, "id" | "title">): string {
+  const slug = slugifyPlanTitle(plan.title);
+  return `/marketplace/${plan.id}${slug ? `-${slug}` : ""}`;
+}
+
+export function parseMarketplacePlanIdFromSlug(slug: string): number | null {
+  const match = slug.match(/^(\d+)(?:-|$)/);
+  if (!match) return null;
+
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 /**
  * GET /marketplace/nutritionists/{id}/
  * Fetch a nutritionist's full profile
  */
-export const getNutritionistProfile = async (id: string) => {
+export const getNutritionistProfile = async (id: string | number): Promise<MarketplaceNutritionistProfile> => {
   const response = await api.get(`marketplace/nutritionists/${id}/`);
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 /**
@@ -103,7 +237,7 @@ export const getNutritionistAvailability = async (id: string, date: string) => {
   const response = await api.get(`marketplace/nutritionists/${id}/availability/`, {
     params: { date }
   });
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 /**
@@ -116,10 +250,11 @@ export const bookConsultation = async (payload: {
   start_time: string;
   end_time: string;
   consultation_type: "advice_only" | "plan_included";
+  user_plan_id?: number;
   is_free_from_plan: boolean;
 }) => {
   const response = await api.post("client/consultations/book/", payload);
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 // ============================================
@@ -153,7 +288,58 @@ export const getNutritionists = async (params?: {
   sort?: string;
 }) => {
   const response = await api.get("marketplace/nutritionists/", { params });
-  return response.data;
+  return unwrapResponse(response.data);
+};
+
+/**
+ * GET /marketplace/plans/
+ * Fetch public marketplace plans with pagination and server-side filters.
+ */
+export const getMarketplacePlans = async (params?: MarketplacePlansParams): Promise<MarketplacePlansPage> => {
+  const response = await api.get<ApiEnvelope<MarketplacePlansPage> | MarketplacePlansPage>("marketplace/plans/", {
+    params,
+  });
+  return unwrapResponse(response.data);
+};
+
+/**
+ * GET /marketplace/plans/{id}/
+ * Fetch a single public marketplace plan detail.
+ */
+export const getMarketplacePlanDetail = async (id: number): Promise<MarketplacePlanDetail> => {
+  const response = await api.get<ApiEnvelope<MarketplacePlanDetail> | MarketplacePlanDetail>(`marketplace/plans/${id}/`);
+  return unwrapResponse(response.data);
+};
+
+/**
+ * POST /marketplace/plans/{id}/purchase/
+ * Purchase a public marketplace plan.
+ */
+export const purchaseMarketplacePlan = async (
+  id: number,
+  payload: MarketplacePlanPurchasePayload,
+): Promise<MarketplacePlanPurchaseResult> => {
+  const response = await api.post<
+    ApiEnvelope<MarketplacePlanPurchaseResult> | MarketplacePlanPurchaseResult
+  >(`marketplace/plans/${id}/purchase/`, payload);
+  return unwrapResponse(response.data);
+};
+
+/**
+ * POST /client/subscriptions/purchase/
+ * Purchase a premium subscription using a simulated payment payload.
+ */
+export const purchaseClientSubscription = async (
+  payload: SubscriptionPurchasePayload,
+): Promise<{ status?: string; message?: string; subscription?: unknown }> => {
+  const response = await api.post<
+    ApiEnvelope<{ status?: string; message?: string; subscription?: unknown }> | {
+      status?: string;
+      message?: string;
+      subscription?: unknown;
+    }
+  >("/lookup/client/subscriptions/purchase/", payload);
+  return unwrapResponse(response.data);
 };
 
 // ============================================
@@ -164,18 +350,13 @@ export interface NutritionistInvoice {
   id: number;
   transaction_number: string;
   total_paid: number;
-  commission_rate: number;
-  net_earnings: number;
-  item_type: "plan" | "consultation_advice" | "consultation_custom";
+  item_type: string;
   created_at: string;
-  client: {
-    username: string;
-  };
-  nutritionist: {
-    user: {
-      username: string;
-    };
-  };
+  // Change these to match the API response you logged
+  client_username: string; 
+  nutritionist_username: string;
+  net_earnings?: number;
+  commission_rate?: number;
 }
 
 /**
@@ -194,6 +375,6 @@ export const getNutritionistInvoices = async (): Promise<NutritionistInvoice[]> 
  * Based on the request, nutritionist might use the same detailed view as client.
  */
 export const getInvoiceDetail = async (id: number): Promise<NutritionistInvoice> => {
-  const response = await api.get(`invoices/${id}/`);
+  const response = await api.get(`client/invoices/${id}/`);
   return unwrapResponse(response.data);
 };

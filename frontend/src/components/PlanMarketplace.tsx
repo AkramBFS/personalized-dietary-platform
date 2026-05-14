@@ -1,290 +1,338 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Utensils,
-  Target,
-  Stethoscope,
-  Wallet,
-  BadgeCheck,
-  Leaf,
-  Dumbbell,
-  Star,
-  StarHalf,
   ArrowRight,
+  BadgeCheck,
+  Calendar,
+  DollarSign,
+  Filter,
+  Leaf,
   Loader2,
-  ChevronDown,
+  Search,
+  Star,
+  Stethoscope,
+  UserRound,
 } from "lucide-react";
+import {
+  buildMarketplacePlanHref,
+  getMarketplacePlans,
+  MarketplacePlanListItem,
+  resolveApiUrl,
+} from "@/lib/api";
+import { bootstrapLookups, getSpecializations, LookupItem } from "@/lib/lookups";
+import { Input } from "@/components/ui/Input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// --- Data Models with Popover Options ---
-const filterCategories = [
-  {
-    id: "diet",
-    label: "Diet",
-    icon: <Utensils className="w-8 h-8" />,
-    options: [
-      {
-        label: "Keto",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Vegan",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Paleo",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Low Carb",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Mediterranean",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Intermittent",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-    ],
-  },
-  {
-    id: "health-goals",
-    label: "Health Goals",
-    icon: <Target className="w-8 h-8" />,
-    options: [
-      {
-        label: "Weight Loss",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Muscle Gain",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Better Sleep",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Energy Boost",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Longevity",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Digestion",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-    ],
-  },
-  {
-    id: "medical",
-    label: "Medical Conditions",
-    icon: <Stethoscope className="w-8 h-8" />,
-    options: [
-      {
-        label: "Diabetes",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "PCOS",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Hypertension",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Thyroid",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Celiac",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "IBS/IBD",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-    ],
-  },
-  {
-    id: "price",
-    label: "Price Range",
-    icon: <Wallet className="w-8 h-8" />,
-    options: [
-      {
-        label: "Price: Low to High",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-      {
-        label: "Price: High to Low",
-        image:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&h=200&auto=format&fit=crop",
-      },
-    ],
-  },
+const REGULAR_PAGE_SIZE = 9;
+const SEASONAL_PAGE_SIZE = 12;
+const SEASONAL_LIMIT = 6;
+
+type SortOption = "newest" | "rating_desc" | "price_asc" | "price_desc";
+
+const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
+  { value: "newest", label: "Newest" },
+  { value: "rating_desc", label: "Top Rated" },
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
 ];
 
-const featuredPlans = [
-  {
-    slug: "metabolic-reset",
-    title: "28-Day Metabolic Reset",
-    price: "$49",
-    description:
-      "A comprehensive protocol designed to optimize insulin sensitivity and support sustainable fat loss.",
-    image:
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
-    badge: {
-      icon: <BadgeCheck className="w-4 h-4 mr-1.5" />,
-      text: "Clinical Grade",
-    },
-    author: {
-      name: "Dr. Sarah Jenkins",
-      image: "https://i.pravatar.cc/150?u=sarah",
-      rating: 4.5,
-      reviews: 124,
-    },
-  },
-  {
-    slug: "plant-based-vitality",
-    title: "Plant-Based Vitality Protocol",
-    price: "$35",
-    description:
-      "Ensure complete nutrient absorption and protein synthesis while following a strict vegan diet.",
-    image:
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80",
-    badge: {
-      icon: <Leaf className="w-4 h-4 mr-1.5" />,
-      text: "Vegetarian",
-      bgClass: "bg-accent text-accent-foreground",
-    },
-    author: {
-      name: "Marcus Chen, RD",
-      image: "https://i.pravatar.cc/150?u=marcus",
-      rating: 5,
-      reviews: 89,
-    },
-  },
-  {
-    slug: "performance-macros",
-    title: "Performance Macros Guide",
-    price: "$55",
-    description:
-      "Advanced macronutrient cycling for athletes looking to build lean mass without excess fat gain.",
-    image:
-      "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=800&q=80",
-    badge: {
-      icon: <Dumbbell className="w-4 h-4 mr-1.5" />,
-      text: "Muscle Gain",
-    },
-    author: {
-      name: "Elena Rodriguez, CNS",
-      image: "https://i.pravatar.cc/150?u=elena",
-      rating: 4,
-      reviews: 210,
-    },
-  },
-];
+const FALLBACK_CARD_IMAGE =
+  "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=1200&q=80";
 
-// Icon Mapping Helpers
-const getCategoryIcon = (iconName: string) => {
-  switch (iconName) {
-    case "restaurant":
-      return (
-        <Utensils className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
-      );
-    case "track_changes":
-      return (
-        <Target className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
-      );
-    case "medical_services":
-      return (
-        <Stethoscope className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
-      );
-    case "payments":
-      return (
-        <Wallet className="w-8 h-8 transition-transform duration-300 group-hover:scale-110 group-hover:text-primary" />
-      );
-    default:
-      return <Target className="w-8 h-8" />;
-  }
-};
+function isSeasonalPlan(plan: MarketplacePlanListItem) {
+  return plan.category === "seasonal";
+}
 
-const getBadgeIcon = (iconName: string) => {
-  switch (iconName) {
-    case "verified":
-      return <BadgeCheck className="w-4 h-4 mr-1.5" />;
-    case "eco":
-      return <Leaf className="w-4 h-4 mr-1.5" />;
-    case "fitness_center":
-      return <Dumbbell className="w-4 h-4 mr-1.5" />;
-    default:
-      return <BadgeCheck className="w-4 h-4 mr-1.5" />;
-  }
-};
+function formatPrice(price: number) {
+  return `$${price.toFixed(2)}`;
+}
 
-export default function ClinicalNutritionPlans() {
-  // Enhanced Star Rendering
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      if (i <= rating) {
-        stars.push(
-          <Star
-            key={i}
-            className="w-3.5 h-3.5 fill-primary text-primary"
-          />,
-        );
-      } else if (i - 0.5 === rating) {
-        stars.push(
-          <StarHalf
-            key={i}
-            className="w-3.5 h-3.5 fill-primary text-primary"
-          />,
-        );
+function formatDuration(days: number) {
+  return `${days} Day${days === 1 ? "" : "s"}`;
+}
+
+function planMatchesSearch(plan: MarketplacePlanListItem, query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  return [plan.title, plan.description, plan.specialization_name, plan.nutritionist_username]
+    .filter(Boolean)
+    .some((value) => value!.toLowerCase().includes(normalized));
+}
+
+function PlanCard({
+  plan,
+  compact = false,
+}: {
+  plan: MarketplacePlanListItem;
+  compact?: boolean;
+}) {
+  const imageSrc = resolveApiUrl(plan.cover_image_url) ?? FALLBACK_CARD_IMAGE;
+  const href = buildMarketplacePlanHref(plan);
+  const badgeText = isSeasonalPlan(plan) ? "Seasonal" : plan.specialization_name || "Clinical Plan";
+
+  return (
+    <Link
+      href={href}
+      className={compact ? "h-full" : ""}
+      id={`${compact ? "seasonal" : "plan"}-card-${plan.id}`}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
+      >
+        <div className={compact ? "relative h-48 overflow-hidden bg-muted" : "relative h-60 overflow-hidden bg-muted"}>
+          <img
+            alt={plan.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            src={imageSrc}
+          />
+          <div className="absolute top-4 left-4 bg-card/95 text-foreground backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm gap-1.5">
+            {isSeasonalPlan(plan) ? <Leaf className="w-4 h-4" /> : <BadgeCheck className="w-4 h-4" />}
+            {badgeText}
+          </div>
+        </div>
+
+        <div className="p-6 flex-grow flex flex-col">
+          <div className="flex justify-between items-start mb-3 gap-4">
+            <h3 className={compact ? "text-lg font-bold text-foreground line-clamp-2 leading-tight" : "text-xl font-bold text-foreground line-clamp-2 leading-tight"}>
+              {plan.title}
+            </h3>
+            <span className={compact ? "text-base font-bold text-primary shrink-0" : "text-lg font-bold text-primary shrink-0"}>
+              {formatPrice(plan.price)}
+            </span>
+          </div>
+
+          <p className={compact ? "text-sm text-muted-foreground mb-5 line-clamp-3 leading-relaxed" : "text-muted-foreground mb-6 line-clamp-3 leading-relaxed"}>
+            {plan.description}
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground mb-5">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-brand" />
+              <span>{formatDuration(plan.duration_days)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-brand" />
+              <span>{plan.free_consultations_per_week} free consults/week</span>
+            </div>
+          </div>
+
+          <div className="mt-auto pt-5 border-t border-border flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground truncate">
+                {plan.nutritionist_username}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {plan.specialization_name || "Nutritionist"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Star className="w-4 h-4 fill-primary text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground">
+                {plan.rating_avg.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
+
+export default function PlanMarketplace() {
+  const [regularPlans, setRegularPlans] = useState<MarketplacePlanListItem[]>([]);
+  const [seasonalPlans, setSeasonalPlans] = useState<MarketplacePlanListItem[]>([]);
+  const [specializations, setSpecializations] = useState<LookupItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSpecialization, setSelectedSpecialization] = useState("all");
+  const [minPriceInput, setMinPriceInput] = useState("");
+  const [maxPriceInput, setMaxPriceInput] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
+  const [nextRegularPage, setNextRegularPage] = useState(1);
+  const [hasMoreRegular, setHasMoreRegular] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSeasonalLoading, setIsSeasonalLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const regularPlansRef = useRef<MarketplacePlanListItem[]>([]);
+  const nextRegularPageRef = useRef(1);
+  const regularRequestIdRef = useRef(0);
+  const seasonalRequestIdRef = useRef(0);
+
+  const parsedSpecializationId =
+    selectedSpecialization !== "all" ? Number(selectedSpecialization) : undefined;
+  const parsedMinPrice = minPriceInput ? Number(minPriceInput) : undefined;
+  const parsedMaxPrice = maxPriceInput ? Number(maxPriceInput) : undefined;
+
+  useEffect(() => {
+    regularPlansRef.current = regularPlans;
+  }, [regularPlans]);
+
+  useEffect(() => {
+    nextRegularPageRef.current = nextRegularPage;
+  }, [nextRegularPage]);
+
+  useEffect(() => {
+    const loadSpecializations = async () => {
+      await bootstrapLookups();
+      setSpecializations(getSpecializations());
+    };
+
+    void loadSpecializations();
+  }, []);
+
+  const loadRegularPlans = useCallback(
+    async (reset: boolean) => {
+      const requestId = regularRequestIdRef.current + 1;
+      regularRequestIdRef.current = requestId;
+      const startingPage = reset ? 1 : nextRegularPageRef.current;
+      let pageToFetch = startingPage;
+      let lastKnownTotalPages = startingPage;
+      let didFindRegularPlans = false;
+      const accumulated = reset ? [] : [...regularPlansRef.current];
+      const knownIds = new Set(accumulated.map((plan) => plan.id));
+
+      if (reset) {
+        setIsInitialLoading(true);
       } else {
-        stars.push(<Star key={i} className="w-3.5 h-3.5 text-muted-foreground/40" />);
+        setIsLoadingMore(true);
       }
-    }
-    return <div className="flex items-center gap-0.5">{stars}</div>;
-  };
+
+      setError(null);
+
+      try {
+        while (!didFindRegularPlans) {
+          const payload = await getMarketplacePlans({
+            page: pageToFetch,
+            page_size: REGULAR_PAGE_SIZE,
+            specialization_id: parsedSpecializationId,
+            min_price: parsedMinPrice,
+            max_price: parsedMaxPrice,
+            sort: sortOption,
+          });
+
+          lastKnownTotalPages = Math.max(1, Math.ceil(payload.count / REGULAR_PAGE_SIZE));
+
+          const newRegularPlans = payload.results.filter(
+            (plan) => !isSeasonalPlan(plan) && !knownIds.has(plan.id),
+          );
+
+          if (newRegularPlans.length > 0) {
+            accumulated.push(...newRegularPlans);
+            newRegularPlans.forEach((plan) => knownIds.add(plan.id));
+            didFindRegularPlans = true;
+          }
+
+          if (pageToFetch >= lastKnownTotalPages) {
+            break;
+          }
+
+          pageToFetch += 1;
+        }
+
+        if (requestId !== regularRequestIdRef.current) return;
+
+        setRegularPlans(accumulated);
+        setNextRegularPage(pageToFetch + 1);
+        setHasMoreRegular(pageToFetch < lastKnownTotalPages);
+      } catch (loadError) {
+        if (requestId !== regularRequestIdRef.current) return;
+        console.error("Failed to load marketplace plans", loadError);
+        setError("We couldn't load marketplace plans right now. Please try again shortly.");
+        if (reset) {
+          setRegularPlans([]);
+          setHasMoreRegular(false);
+        }
+      } finally {
+        if (requestId !== regularRequestIdRef.current) return;
+        setIsInitialLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [parsedMaxPrice, parsedMinPrice, parsedSpecializationId, sortOption],
+  );
+
+  useEffect(() => {
+    setRegularPlans([]);
+    setNextRegularPage(1);
+    setHasMoreRegular(false);
+    void loadRegularPlans(true);
+  }, [loadRegularPlans]);
+
+  useEffect(() => {
+    const loadSeasonalPlans = async () => {
+      const requestId = seasonalRequestIdRef.current + 1;
+      seasonalRequestIdRef.current = requestId;
+      setIsSeasonalLoading(true);
+
+      try {
+        const collected: MarketplacePlanListItem[] = [];
+        const knownIds = new Set<number>();
+        let page = 1;
+        let totalPages = 1;
+
+        while (collected.length < SEASONAL_LIMIT && page <= totalPages) {
+          const payload = await getMarketplacePlans({
+            page,
+            page_size: SEASONAL_PAGE_SIZE,
+            sort: "newest",
+          });
+
+          totalPages = Math.max(1, Math.ceil(payload.count / SEASONAL_PAGE_SIZE));
+
+          for (const plan of payload.results) {
+            if (!isSeasonalPlan(plan) || knownIds.has(plan.id)) continue;
+            collected.push(plan);
+            knownIds.add(plan.id);
+
+            if (collected.length >= SEASONAL_LIMIT) break;
+          }
+
+          page += 1;
+        }
+
+        if (requestId !== seasonalRequestIdRef.current) return;
+        setSeasonalPlans(collected);
+      } catch (loadError) {
+        if (requestId !== seasonalRequestIdRef.current) return;
+        console.error("Failed to load seasonal marketplace plans", loadError);
+        setSeasonalPlans([]);
+      } finally {
+        if (requestId !== seasonalRequestIdRef.current) return;
+        setIsSeasonalLoading(false);
+      }
+    };
+
+    void loadSeasonalPlans();
+  }, []);
+
+  const visibleRegularPlans = useMemo(
+    () => regularPlans.filter((plan) => planMatchesSearch(plan, searchQuery)),
+    [regularPlans, searchQuery],
+  );
 
   return (
     <div className="bg-background text-foreground font-sans min-h-screen flex flex-col">
       <main className="flex-grow w-full max-w-[1280px] mx-auto px-6 md:px-8 py-12 flex flex-col gap-20 mt-8">
-        {/* Improved Hero Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="relative rounded-3xl overflow-hidden min-h-[480px] flex items-center shadow-xl group bg-secondary"
         >
-          {/* Enhanced Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent z-10 pointer-events-none" />
 
           <img
             alt="Fresh healthy salad spread placeholder"
@@ -325,79 +373,21 @@ export default function ClinicalNutritionPlans() {
               dietitians and medical experts to meet your specific health goals.
             </motion.p>
 
-            <motion.button
+            <motion.a
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="group flex items-center gap-3 bg-button-primary bg-btn-primary text-button-primary-foreground px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-all duration-300 shadow-brand"
+              className="group inline-flex items-center gap-3 bg-button-primary bg-btn-primary text-button-primary-foreground px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-all duration-300 shadow-brand"
+              href="#regular-marketplace-plans"
+              id="explore-plans-btn"
             >
               Explore Plans
               <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-            </motion.button>
+            </motion.a>
           </div>
         </motion.section>
 
-        {/* --- Etsy Style Category Circles with Popovers --- */}
-        <section className="relative">
-          <h2 className="text-2xl font-bold text-foreground mb-10 tracking-tight flex items-center gap-3">
-            Browse through filters
-            <ChevronDown className="w-5 h-5 text-muted-foreground" />
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {filterCategories.map((category) => (
-              <div
-                key={category.id}
-                className="relative group/popover flex flex-col items-center"
-              >
-                {/* Main Trigger Button */}
-                <a
-                  href="#"
-                  className="flex flex-col items-center gap-4 group cursor-pointer"
-                >
-                  <div className="w-24 h-24 rounded-full bg-card shadow-sm border border-border flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:border-brand/30 group-hover:text-brand transition-all duration-300 hover:scale-105 active:scale-95">
-                    {category.icon}
-                  </div>
-                  <span className="font-semibold text-foreground group-hover:text-brand transition-colors">
-                    {category.label}
-                  </span>
-                </a>
-
-                {/* Pop-over Menu */}
-                <div className="absolute top-[80%] left-1/2 -translate-x-1/2 pt-8 z-50 opacity-0 invisible group-hover/popover:opacity-100 group-hover/popover:visible transition-all duration-300 w-[500px]">
-                  <div className="bg-card rounded-2xl shadow-2xl border border-border p-8 relative">
-                    {/* Arrow Decor */}
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card rotate-45 border-t border-l border-border"></div>
-
-                    <div className="grid grid-cols-3 gap-6">
-                      {category.options.map((opt, idx) => (
-                        <a
-                          key={idx}
-                          href="#"
-                          className="flex flex-col items-center gap-3 group/item"
-                        >
-                          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-transparent group-hover/item:border-brand group-hover/item:shadow-lg group-hover/item:shadow-brand/20 transition-all duration-300 bg-muted">
-                            <img
-                              alt={opt.label}
-                              className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500 opacity-90"
-                              src={opt.image}
-                            />
-                          </div>
-                          <span className="text-sm font-bold text-foreground group-hover/item:text-brand transition-colors">
-                            {opt.label}
-                          </span>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Featured Plans Grid */}
-        <section>
+        <section id="regular-marketplace-plans">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -408,88 +398,227 @@ export default function ClinicalNutritionPlans() {
                 Featured Clinical Plans
               </h2>
               <p className="text-muted-foreground mt-2 text-lg">
-                Top-rated protocols verified by our medical board.
+                Browse approved plans from nutritionists across the marketplace.
               </p>
             </motion.div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredPlans.map((plan, index) => (
-  <Link key={plan.slug} href={`/marketplace/${plan.slug}`}> {/* [2] Wrap the card in Link */}
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.15 }}
-      className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
-    >
-                <div className="relative h-60 overflow-hidden bg-muted">
-                  <img
-                    alt={plan.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    src={plan.image}
+          <div className="bg-card rounded-3xl border border-border shadow-sm p-6 md:p-8 mb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <Filter className="w-5 h-5 text-brand" />
+              <h3 className="text-xl font-bold text-foreground">Refine Plans</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+              <div className="xl:col-span-2">
+                <label className="text-sm font-semibold text-foreground mb-2 block" htmlFor="marketplace-search">
+                  Search loaded plans
+                </label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    id="marketplace-search"
+                    className="pl-10 h-11 bg-background"
+                    placeholder="Search by title, description, specialization..."
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
                   />
-                  <div
-                    className={`absolute top-4 left-4 ${plan.badge.bgClass || "bg-card/95 text-foreground"} backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm`}
-                  >
-                    {plan.badge.icon}
-                    {plan.badge.text}
-                  </div>
                 </div>
+              </div>
 
-                <div className="p-6 flex-grow flex flex-col">
-                  <div className="flex justify-between items-start mb-3 gap-4">
-                    <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight">
-                      {plan.title}
-                    </h3>
-                    <span className="text-lg font-bold text-primary shrink-0">
-                      {plan.price}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground mb-6 line-clamp-2 leading-relaxed">
-                    {plan.description}
-                  </p>
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-2 block">Specialization</label>
+                <Select value={selectedSpecialization} onValueChange={setSelectedSpecialization}>
+                  <SelectTrigger className="w-full h-11 bg-background">
+                    <SelectValue placeholder="All specializations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All specializations</SelectItem>
+                    {specializations.map((specialization) => (
+                      <SelectItem key={specialization.id} value={String(specialization.id)}>
+                        {specialization.name || specialization.label || specialization.value || `Specialization ${specialization.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div className="mt-auto pt-5 border-t border-border flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
-                        <img
-                          alt={plan.author.name}
-                          className="w-full h-full object-cover"
-                          src={plan.author.image}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">
-                          {plan.author.name}
-                        </p>
-                        <div className="flex items-center mt-0.5">
-                          {renderStars(plan.author.rating)}
-                          <span className="text-xs font-medium ml-2 text-muted-foreground">
-                            ({plan.author.reviews})
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-              </Link>
-            ))}
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-2 block" htmlFor="marketplace-min-price">
+                  Min Price
+                </label>
+                <Input
+                  id="marketplace-min-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="h-11 bg-background"
+                  placeholder="0.00"
+                  value={minPriceInput}
+                  onChange={(event) => setMinPriceInput(event.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-2 block" htmlFor="marketplace-max-price">
+                  Max Price
+                </label>
+                <Input
+                  id="marketplace-max-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="h-11 bg-background"
+                  placeholder="200.00"
+                  value={maxPriceInput}
+                  onChange={(event) => setMaxPriceInput(event.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-2 block">Sort</label>
+                <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+                  <SelectTrigger className="w-full h-11 bg-background">
+                    <SelectValue placeholder="Newest" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          {/* Styled Load More Button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="flex justify-center mt-16"
-          >
-            <button className="group relative inline-flex items-center justify-center gap-2 px-10 py-3.5 text-base font-semibold text-primary transition-all duration-300 bg-card border-2 border-primary rounded-full hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-              <span>Load More Plans</span>
-              <Loader2 className="w-5 h-5 transition-transform duration-500 group-hover:rotate-180" />
-            </button>
-          </motion.div>
+          {error ? (
+            <div className="bg-card rounded-2xl border border-destructive/20 p-8 text-center">
+              <p className="text-destructive font-semibold">{error}</p>
+            </div>
+          ) : isInitialLoading ? (
+            <div className="bg-card rounded-2xl border border-border p-12 flex flex-col items-center justify-center gap-4">
+              <Loader2 className="w-10 h-10 text-brand animate-spin" />
+              <p className="text-muted-foreground">Loading marketplace plans...</p>
+            </div>
+          ) : visibleRegularPlans.length === 0 ? (
+            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+              <p className="text-lg font-semibold text-foreground mb-2">No plans match your current filters.</p>
+              <p className="text-muted-foreground">Try adjusting the price range, specialization, or search terms.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {visibleRegularPlans.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="flex justify-center mt-16"
+              >
+                {hasMoreRegular ? (
+                  <button
+                    className="group relative inline-flex items-center justify-center gap-2 px-10 py-3.5 text-base font-semibold text-primary transition-all duration-300 bg-card border-2 border-primary rounded-full hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    id="load-more-plans-btn"
+                    onClick={() => void loadRegularPlans(false)}
+                    disabled={isLoadingMore}
+                    type="button"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Loading More</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Load More Plans</span>
+                        <Loader2 className="w-5 h-5 transition-transform duration-500 group-hover:rotate-180" />
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">You’ve reached the end of the currently available regular plans.</p>
+                )}
+              </motion.div>
+            </>
+          )}
+        </section>
+
+        <section>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">
+                Seasonal Offerings
+              </h2>
+              <p className="text-muted-foreground mt-2 text-lg">
+                Limited-time protocols curated around seasonal nutrition needs.
+              </p>
+            </motion.div>
+          </div>
+
+          {isSeasonalLoading ? (
+            <div className="bg-card rounded-2xl border border-border p-10 flex items-center justify-center gap-3">
+              <Loader2 className="w-6 h-6 text-brand animate-spin" />
+              <p className="text-muted-foreground">Loading seasonal plans...</p>
+            </div>
+          ) : seasonalPlans.length === 0 ? (
+            <div className="bg-card rounded-2xl border border-border p-10 text-center">
+              <p className="text-muted-foreground">No seasonal plans are available right now.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {seasonalPlans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} compact />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="bg-card rounded-3xl border border-border p-8 md:p-10 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center">
+                <Stethoscope className="w-6 h-6 text-brand" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground mb-1">Professional Guidance</h3>
+                <p className="text-sm text-muted-foreground">
+                  Every listed plan comes from an approved nutrition professional.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center">
+                <UserRound className="w-6 h-6 text-brand" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground mb-1">Visible Expertise</h3>
+                <p className="text-sm text-muted-foreground">
+                  Compare specialties, ratings, pricing, and free consultations before choosing.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center">
+                <BadgeCheck className="w-6 h-6 text-brand" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground mb-1">Structured Meal Plans</h3>
+                <p className="text-sm text-muted-foreground">
+                  Review full plan details, day-by-day meals, and included guidance before payment.
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>

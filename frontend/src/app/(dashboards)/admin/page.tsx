@@ -50,26 +50,26 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           title="Total Users"
-          value={resolved.total_users.toLocaleString()}
-          description="Registered accounts"
+          value={(resolved.total_users ?? 0).toLocaleString()}
+          description="Active accounts"
           icon={Users}
         />
         <StatCard
           title="Active Nutritionists"
-          value={resolved.active_nutritionists.toLocaleString()}
-          description="Currently active experts"
+          value={(resolved.total_nutritionists ?? 0).toLocaleString()}
+          description="Verified experts"
           icon={UserCheck}
         />
         <StatCard
-          title="Pending Approvals"
-          value={resolved.pending_approvals.toLocaleString()}
-          description="Require admin review"
+          title="Pending Plans"
+          value={(resolved.pending_plans ?? 0).toLocaleString()}
+          description="Require moderation"
           icon={ShieldAlert}
         />
         <StatCard
-          title="Total Revenue"
-          value={`$${resolved.total_revenue.toLocaleString()}`}
-          description="All-time gross revenue"
+          title="Open Inquiries"
+          value={(resolved.unresolved_inquiries ?? 0).toLocaleString()}
+          description="Support tickets"
           icon={DollarSign}
         />
       </div>
@@ -80,17 +80,21 @@ export default function AdminOverviewPage() {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {resolved.recent_activity.map((item) => (
-              <div
-                key={item.id}
-                className="p-3 rounded-lg border bg-background/70"
-              >
-                <p className="text-sm font-medium">{item.text}</p>
-                <Badge variant="outline" className="mt-2 text-xs">
-                  {new Date(item.created_at).toLocaleString()}
-                </Badge>
-              </div>
-            ))}
+            {resolved.recent_activity.length > 0 ? (
+              resolved.recent_activity.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded-lg border bg-background/70"
+                >
+                  <p className="text-sm font-medium">{item.text}</p>
+                  <Badge variant="outline" className="mt-2 text-xs">
+                    {new Date(item.created_at).toLocaleString()}
+                  </Badge>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground py-4">No recent activity to display.</p>
+            )}
           </CardContent>
         </Card>
       </div>

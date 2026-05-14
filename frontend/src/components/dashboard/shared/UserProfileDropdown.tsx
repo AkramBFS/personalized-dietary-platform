@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronDown, User, Settings, LogOut, Sun, Moon, Palette } from "lucide-react";
+import { ChevronDown, User, Settings, LogOut, Sun, Moon, Palette, LayoutDashboard } from "lucide-react";
 import { useTheme } from "next-themes";
 import { clearAuthSession } from "@/lib/auth";
 
@@ -72,6 +72,19 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-border" />
+        <DropdownMenuItem
+          asChild
+          className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
+        >
+          <Link
+            href={`/${role === "high_admin" ? "admin" : role}`}
+            className="flex items-center w-full"
+          >
+            <LayoutDashboard className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span>Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
+
         {role !== "high_admin" ? (
           <DropdownMenuItem
             asChild

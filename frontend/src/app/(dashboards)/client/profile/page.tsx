@@ -1,29 +1,47 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
 import { Loader2, User, Save, Activity, Camera } from "lucide-react";
 import { toast } from "sonner";
-import { ClientProfile, getClientProfile, patchClientProfile } from "@/lib/client";
-import { bootstrapLookups, getActivityLevels, getCountries, getDiets, getGoals, LookupItem } from "@/lib/lookups";
+import {
+  ClientProfile,
+  getClientProfile,
+  patchClientProgressTargets,
+  patchClientProfile,
+} from "@/lib/client";
+import {
+  bootstrapLookups,
+  getActivityLevels,
+  getCountries,
+  getDiets,
+  getGoals,
+  LookupItem,
+} from "@/lib/lookups";
 import { resolveApiUrl } from "@/lib/api";
 import GenericDropdown from "@/components/ui/GenericDropdown";
 
-const ACTIVITY_FALLBACK = [
-  { value: "sedentary", label: "Sedentary" },
-  { value: "moderate", label: "Moderate" },
-  { value: "very active", label: "Very Active" },
+const ACTIVITY_FALLBACK: LookupItem[] = [
+  { id: -1, value: "sedentary", label: "Sedentary" },
+  { id: -2, value: "moderate", label: "Moderate" },
+  { id: -3, value: "very active", label: "Very Active" },
 ];
 
-const DIET_FALLBACK = [
-  { value: "omnivore", label: "Omnivore" },
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: "vegan", label: "Vegan" },
-  { value: "keto", label: "Keto" },
-  { value: "paleo", label: "Paleo" },
+const DIET_FALLBACK: LookupItem[] = [
+  { id: -1, value: "omnivore", label: "Omnivore" },
+  { id: -2, value: "vegetarian", label: "Vegetarian" },
+  { id: -3, value: "vegan", label: "Vegan" },
+  { id: -4, value: "keto", label: "Keto" },
+  { id: -5, value: "paleo", label: "Paleo" },
 ];
 
 function optionLabel(item: LookupItem): string {
@@ -52,6 +70,10 @@ export default function ProfilePage() {
     activity_level: "",
     diet: "",
     health_history: "",
+    target_calories: "",
+    target_protein: "",
+    target_carbs: "",
+    target_fats: "",
   });
 
   const loadProfile = async () => {
@@ -67,6 +89,10 @@ export default function ProfilePage() {
       activity_level: loadedProfile.activity_level ?? "",
       diet: loadedProfile.diet ?? "",
       health_history: loadedProfile.health_history ?? "",
+      target_calories: loadedProfile.target_calories?.toString() ?? "",
+      target_protein: loadedProfile.target_protein?.toString() ?? "",
+      target_carbs: loadedProfile.target_carbs?.toString() ?? "",
+      target_fats: loadedProfile.target_fats?.toString() ?? "",
     });
   };
 
@@ -97,9 +123,16 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const avatarUrl = useMemo(() => resolveApiUrl(profile?.profile_photo_url), [profile?.profile_photo_url]);
+  const avatarUrl = useMemo(
+    () => resolveApiUrl(profile?.profile_photo_url),
+    [profile?.profile_photo_url],
+  );
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -109,6 +142,20 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
+      const targetFields = [
+        form.target_calories,
+        form.target_protein,
+        form.target_carbs,
+        form.target_fats,
+      ];
+      const hasAnyTargetValue = targetFields.some((value) => value.trim() !== "");
+      const hasAllTargetValues = targetFields.every((value) => value.trim() !== "");
+
+      if (hasAnyTargetValue && !hasAllTargetValues) {
+        toast.error("Set calories, protein, carbs, and fat targets together.");
+        return;
+      }
+
       await patchClientProfile({
         age: form.age ? Number(form.age) : undefined,
         weight: form.weight ? Number(form.weight) : undefined,
@@ -120,6 +167,16 @@ export default function ProfilePage() {
         diet: form.diet || undefined,
         profile_photo: selectedPhoto ?? undefined,
       });
+
+      if (hasAllTargetValues) {
+        await patchClientProgressTargets({
+          target_calories: Number(form.target_calories),
+          target_protein: Number(form.target_protein),
+          target_carbs: Number(form.target_carbs),
+          target_fats: Number(form.target_fats),
+        });
+      }
+
       await loadProfile();
       toast.success("Profile updated successfully.");
     } catch {
@@ -130,18 +187,30 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div className="p-12 text-center text-sm text-muted-foreground">Profile unavailable.</div>;
+    return (
+      <div className="p-12 text-center text-sm text-muted-foreground">
+        Profile unavailable.
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">User Profile</h1>
-        <p className="text-muted-foreground">Manage your health metrics and profile details.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          User Profile
+        </h1>
+        <p className="text-muted-foreground">
+          Manage your health metrics and profile details.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -151,13 +220,21 @@ export default function ProfilePage() {
               <div className="mx-auto mb-2 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-card bg-background text-muted-foreground shadow-sm">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt={profile.username} className="h-full w-full object-cover" />
+                  <img
+                    src={avatarUrl}
+                    alt={profile.username}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <User className="h-12 w-12" />
                 )}
               </div>
-              <CardTitle className="text-center text-card-foreground">{profile.username}</CardTitle>
-              <CardDescription className="text-center">{profile.email}</CardDescription>
+              <CardTitle className="text-center text-card-foreground">
+                {profile.username}
+              </CardTitle>
+              <CardDescription className="text-center">
+                {profile.email}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3 rounded-xl border border-accent bg-accent p-4">
@@ -166,25 +243,57 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-primary/80">BMI</span>
-                  <span className="font-bold text-foreground">{profile.bmi ?? "N/A"}</span>
+                  <span className="font-bold text-foreground">
+                    {profile.bmi ?? "N/A"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-primary/80">Est. BMR</span>
-                  <span className="font-bold text-foreground">{profile.bmr ?? "N/A"} <span className="text-xs font-normal">kcal</span></span>
+                  <span className="font-bold text-foreground">
+                    {profile.bmr ?? "N/A"}{" "}
+                    <span className="text-xs font-normal">kcal</span>
+                  </span>
                 </div>
               </div>
-              <div className="space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
+                <div className="space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Goal</span>
-                  <span className="text-right font-medium">{profile.goal_name ?? "Not set"}</span>
+                  <span className="text-right font-medium">
+                    {profile.goal_name ?? "Not set"}
+                  </span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Country</span>
-                  <span className="text-right font-medium">{profile.country_name ?? "Not set"}</span>
+                  <span className="text-right font-medium">
+                    {profile.country_name ?? "Not set"}
+                  </span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Calories</span>
-                  <span className="text-right font-medium">{profile.target_calories ?? "Not set"}</span>
+                  <span className="text-right font-medium">
+                    {profile.target_calories ?? "Not set"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Protein</span>
+                  <span className="text-right font-medium">
+                    {profile.target_protein ?? "Not set"}
+                    {profile.target_protein ? " g" : ""}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Carbs</span>
+                  <span className="text-right font-medium">
+                    {profile.target_carbs ?? "Not set"}
+                    {profile.target_carbs ? " g" : ""}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Fat</span>
+                  <span className="text-right font-medium">
+                    {profile.target_fats ?? "Not set"}
+                    {profile.target_fats ? " g" : ""}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -194,14 +303,21 @@ export default function ProfilePage() {
         <div className="md:col-span-2">
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-card-foreground">Edit Information</CardTitle>
-              <CardDescription>Updates to height or weight will refresh BMI and BMR from the server.</CardDescription>
+              <CardTitle className="text-card-foreground">
+                Edit Information
+              </CardTitle>
+              <CardDescription>
+                Updates to height or weight will refresh BMI and BMR from the
+                server.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSave} className="space-y-5">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-3">
-                    <Label htmlFor="age" className="font-bold ml-1">Age</Label>
+                    <Label htmlFor="age" className="font-bold ml-1">
+                      Age
+                    </Label>
                     <Input
                       id="age"
                       type="number"
@@ -213,7 +329,9 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="height" className="font-bold ml-1">Height (cm)</Label>
+                    <Label htmlFor="height" className="font-bold ml-1">
+                      Height (cm)
+                    </Label>
                     <Input
                       id="height"
                       type="number"
@@ -225,7 +343,9 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="weight" className="font-bold ml-1">Weight (kg)</Label>
+                    <Label htmlFor="weight" className="font-bold ml-1">
+                      Weight (kg)
+                    </Label>
                     <Input
                       id="weight"
                       type="number"
@@ -301,32 +421,124 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="health_history" className="font-bold ml-1">Health History</Label>
+                  <Label htmlFor="health_history" className="font-bold ml-1">
+                    Health History
+                  </Label>
                   <textarea
                     id="health_history"
                     name="health_history"
                     value={form.health_history}
                     onChange={handleChange}
-                    className="min-h-[120px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-4 px-6 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300 hover:bg-accent/50"
+                    className="min-h-[120px] w-full rounded-2xl border border-border bg-input/40 backdrop-blur-md p-4 px-6 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300 hover:bg-accent/50"
                     placeholder="Enter any medical conditions or dietary restrictions..."
                   />
                 </div>
 
+                <div className="space-y-4 rounded-2xl border border-border bg-card/50 p-5">
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">
+                      Daily Targets
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      These values power your calorie and macro tracking across
+                      the dashboard.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <Label htmlFor="target_calories" className="font-bold ml-1">
+                        Target Calories (kcal)
+                      </Label>
+                      <Input
+                        id="target_calories"
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        name="target_calories"
+                        value={form.target_calories}
+                        onChange={handleChange}
+                        className="h-auto rounded-2xl border-border bg-card/40 px-6 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="target_protein" className="font-bold ml-1">
+                        Target Protein (g)
+                      </Label>
+                      <Input
+                        id="target_protein"
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        name="target_protein"
+                        value={form.target_protein}
+                        onChange={handleChange}
+                        className="h-auto rounded-2xl border-border bg-card/40 px-6 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="target_carbs" className="font-bold ml-1">
+                        Target Carbs (g)
+                      </Label>
+                      <Input
+                        id="target_carbs"
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        name="target_carbs"
+                        value={form.target_carbs}
+                        onChange={handleChange}
+                        className="h-auto rounded-2xl border-border bg-card/40 px-6 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="target_fats" className="font-bold ml-1">
+                        Target Fat (g)
+                      </Label>
+                      <Input
+                        id="target_fats"
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        name="target_fats"
+                        value={form.target_fats}
+                        onChange={handleChange}
+                        className="h-auto rounded-2xl border-border bg-card/40 px-6 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
-                  <Label htmlFor="profile_photo" className="font-bold ml-1">Profile Photo</Label>
+                  <Label htmlFor="profile_photo" className="font-bold ml-1">
+                    Profile Photo
+                  </Label>
                   <Input
                     id="profile_photo"
                     type="file"
                     accept="image/*"
-                    onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
+                    onChange={(event) =>
+                      setSelectedPhoto(event.target.files?.[0] ?? null)
+                    }
                     className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   />
                 </div>
-
-                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : selectedPhoto ? <Camera className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                  Save Changes
-                </Button>
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full sm:w-auto"
+                  >
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : selectedPhoto ? (
+                      <Camera className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
