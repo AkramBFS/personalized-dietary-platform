@@ -5,6 +5,7 @@ import Link from "next/link";
 import imageCompression from "browser-image-compression";
 import { isAxiosError } from "axios";
 import {
+  AlertTriangle,
   ArrowUpRight,
   Camera,
   Clock,
@@ -21,7 +22,13 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { resolveApiUrl } from "@/lib/api";
 import GenericDropdown from "@/components/ui/GenericDropdown";
@@ -29,11 +36,14 @@ import {
   AICalorieLog,
   AIPrediction,
   CalorieLog,
+  ClientProfile,
+  ClientProgress,
   MEAL_TYPES,
   MealType,
   formatDateParam,
   getAICalorieLog,
   getCalorieLogs,
+  getClientProfile,
   getClientProgress,
   getClientSubscriptionStatus,
   getIngredientName,
@@ -67,7 +77,10 @@ function getToday(): string {
 function extractPredictions(log: AICalorieLog): AIPrediction[] {
   if (Array.isArray(log.predictions)) return log.predictions;
   if (Array.isArray(log.ai_raw_prediction)) return log.ai_raw_prediction;
-  if (log.ai_raw_prediction && Array.isArray(log.ai_raw_prediction.predictions)) {
+  if (
+    log.ai_raw_prediction &&
+    Array.isArray(log.ai_raw_prediction.predictions)
+  ) {
     return log.ai_raw_prediction.predictions;
   }
   return [];
@@ -84,7 +97,9 @@ function predictionMass(prediction: AIPrediction): number {
 function errorCode(error: unknown): string | undefined {
   if (!isAxiosError(error)) return undefined;
   const data = error.response?.data;
-  return typeof data === "object" && data !== null && "code" in data ? String(data.code) : undefined;
+  return typeof data === "object" && data !== null && "code" in data
+    ? String(data.code)
+    : undefined;
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -97,7 +112,32 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 function mealSummary(logs: CalorieLog[], mealType: MealType): CalorieLog[] {
-  return logs.filter((log) => log.meal_type === mealType && log.status === "saved");
+  return logs.filter(
+    (log) => log.meal_type === mealType && log.status === "saved",
+  );
+}
+
+function getTodayTotals(logs: CalorieLog[], progress: ClientProgress | null) {
+  if (progress) {
+    return {
+      calories: progress.total_calories_consumed ?? 0,
+      protein: progress.total_protein_consumed ?? 0,
+      carbs: progress.total_carbs_consumed ?? 0,
+      fats: progress.total_fats_consumed ?? 0,
+    };
+  }
+
+  return logs.reduce(
+    (totals, log) => {
+      if (log.status !== "saved") return totals;
+      totals.calories += log.total_calories ?? 0;
+      totals.protein += log.total_protein ?? 0;
+      totals.carbs += log.total_carbs ?? 0;
+      totals.fats += log.total_fats ?? 0;
+      return totals;
+    },
+    { calories: 0, protein: 0, carbs: 0, fats: 0 },
+  );
 }
 
 export default function CalorieTrackerPage() {
@@ -105,6 +145,8 @@ export default function CalorieTrackerPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [todayLogs, setTodayLogs] = useState<CalorieLog[]>([]);
+  const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [todayProgress, setTodayProgress] = useState<ClientProgress | null>(null);
   const [logsLoading, setLogsLoading] = useState(true);
   const [dailyTarget, setDailyTarget] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -112,31 +154,46 @@ export default function CalorieTrackerPage() {
 
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [aiPreview, setAiPreview] = useState<string | null>(null);
-  const [segmentedImageUrl, setSegmentedImageUrl] = useState<string | null>(null);
+  const [segmentedImageUrl, setSegmentedImageUrl] = useState<string | null>(
+    null,
+  );
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStatusText, setAiStatusText] = useState<string | null>(null);
   const [aiLogId, setAiLogId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableItems, setEditableItems] = useState<EditablePrediction[]>([]);
   const [confirmingAi, setConfirmingAi] = useState(false);
+  const [estimatedNutrition, setEstimatedNutrition] = useState<{
+    calories: number;
+    protein?: number;
+    carbs?: number;
+    fats?: number;
+  }>({ calories: 0 });
 
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [ingredientName, setIngredientName] = useState("");
   const [ingredientMass, setIngredientMass] = useState("");
-  const [ingredients, setIngredients] = useState<{ name: string; mass_grams: number }[]>([]);
+  const [ingredients, setIngredients] = useState<
+    { name: string; mass_grams: number }[]
+  >([]);
   const [manualSubmitting, setManualSubmitting] = useState(false);
 
   const loadToday = useCallback(async () => {
     const today = getToday();
     setLogsLoading(true);
     try {
-      const [logs, progress] = await Promise.all([
+      const [logs, progress, profileData] = await Promise.all([
         getCalorieLogs(today),
         getClientProgress(today, today).catch(() => []),
+        getClientProfile().catch(() => null),
       ]);
       setTodayLogs(logs);
       const todayProgress = progress.find((entry) => entry.log_date === today);
-      setDailyTarget(todayProgress?.target_calories ?? null);
+      setTodayProgress(todayProgress ?? null);
+      setProfile(profileData);
+      setDailyTarget(
+        todayProgress?.target_calories ?? profileData?.target_calories ?? null,
+      );
     } catch (loadError) {
       console.error("Failed to load calorie logs", loadError);
       setError("Could not load today's calorie log.");
@@ -175,8 +232,25 @@ export default function CalorieTrackerPage() {
   }, [aiPreview]);
 
   const totalToday = useMemo(
-    () => todayLogs.reduce((sum, log) => sum + (log.status === "saved" ? log.total_calories ?? 0 : 0), 0),
+    () =>
+      todayLogs.reduce(
+        (sum, log) =>
+          sum + (log.status === "saved" ? (log.total_calories ?? 0) : 0),
+        0,
+      ),
     [todayLogs],
+  );
+  const todayTotals = useMemo(
+    () => getTodayTotals(todayLogs, todayProgress),
+    [todayLogs, todayProgress],
+  );
+  const macroTargets = useMemo(
+    () => ({
+      protein: todayProgress?.target_protein ?? profile?.target_protein ?? null,
+      carbs: todayProgress?.target_carbs ?? profile?.target_carbs ?? null,
+      fats: todayProgress?.target_fats ?? profile?.target_fats ?? null,
+    }),
+    [profile, todayProgress],
   );
 
   const handleAiUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,6 +294,14 @@ export default function CalorieTrackerPage() {
         calories: prediction.calories,
       })),
     );
+    if (log.nutrition_preview) {
+      setEstimatedNutrition({
+        calories: log.nutrition_preview.total_calories || 0,
+        protein: log.nutrition_preview.total_protein,
+        carbs: log.nutrition_preview.total_carbs,
+        fats: log.nutrition_preview.total_fats,
+      });
+    }
     setIsModalOpen(true);
   };
 
@@ -234,7 +316,11 @@ export default function CalorieTrackerPage() {
     try {
       let log = await postAICalorieLog({ meal_type: mealType, image: aiFile });
 
-      for (let attempt = 0; attempt < 30 && log.status === "processing"; attempt += 1) {
+      for (
+        let attempt = 0;
+        attempt < 30 && log.status === "processing";
+        attempt += 1
+      ) {
         setAiStatusText("AI is still analyzing your meal...");
         await delay(3000);
         log = await getAICalorieLog(log.log_id);
@@ -243,9 +329,13 @@ export default function CalorieTrackerPage() {
       if (log.status === "pending_user_review") {
         openReviewModal(log);
       } else if (log.status === "failed") {
-        setError("AI analysis failed. Please try another image or use manual entry.");
+        setError(
+          "AI analysis failed. Please try another image or use manual entry.",
+        );
       } else if (log.status === "processing") {
-        setError("AI analysis is taking longer than expected. Please try again shortly.");
+        setError(
+          "AI analysis is taking longer than expected. Please try again shortly.",
+        );
       } else {
         setError("AI returned an unexpected status. Please try again.");
       }
@@ -259,7 +349,12 @@ export default function CalorieTrackerPage() {
             : "This feature is only available to premium clients.",
         );
       } else {
-        setError(errorMessage(submitError, "Failed to analyze image. Please try again."));
+        setError(
+          errorMessage(
+            submitError,
+            "Failed to analyze image. Please try again.",
+          ),
+        );
       }
     } finally {
       setAiLoading(false);
@@ -267,19 +362,59 @@ export default function CalorieTrackerPage() {
     }
   };
 
-  const handleItemChange = (id: string, field: "label" | "mass_grams", value: string) => {
-    setEditableItems((items) => items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+  const recalculateTotals = (items: EditablePrediction[]) => {
+    const totalCals = items.reduce(
+      (sum, item) => sum + (item.calories || 0),
+      0,
+    );
+    setEstimatedNutrition((prev) => ({ ...prev, calories: totalCals }));
+  };
+
+  const handleItemChange = (
+    id: string,
+    field: "label" | "mass_grams",
+    value: string,
+  ) => {
+    setEditableItems((items) => {
+      const newItems = items.map((item) => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          if (field === "mass_grams" && item.calories !== undefined) {
+            const oldMass = Number(item.mass_grams) || 1;
+            const newMass = Number(value) || 0;
+            updated.calories = (item.calories / oldMass) * newMass;
+          }
+          return updated;
+        }
+        return item;
+      });
+      recalculateTotals(newItems);
+      return newItems;
+    });
   };
 
   const handleAddItem = () => {
-    setEditableItems((items) => [
-      ...items,
-      { id: `manual-${Date.now()}`, label: "New ingredient", mass_grams: "100" },
-    ]);
+    setEditableItems((items) => {
+      const newItems = [
+        ...items,
+        {
+          id: `manual-${Date.now()}`,
+          label: "New ingredient",
+          mass_grams: "100",
+          calories: 0,
+        },
+      ];
+      recalculateTotals(newItems);
+      return newItems;
+    });
   };
 
   const handleRemoveItem = (id: string) => {
-    setEditableItems((items) => items.filter((item) => item.id !== id));
+    setEditableItems((items) => {
+      const newItems = items.filter((item) => item.id !== id);
+      recalculateTotals(newItems);
+      return newItems;
+    });
   };
 
   const handleSaveMeal = async () => {
@@ -290,7 +425,10 @@ export default function CalorieTrackerPage() {
         label: item.label.trim(),
         mass_grams: Number(item.mass_grams),
       }))
-      .filter((item) => item.label && Number.isFinite(item.mass_grams) && item.mass_grams > 0);
+      .filter(
+        (item) =>
+          item.label && Number.isFinite(item.mass_grams) && item.mass_grams > 0,
+      );
 
     if (userFinalLog.length === 0) {
       setError("Please keep at least one valid ingredient before saving.");
@@ -300,7 +438,10 @@ export default function CalorieTrackerPage() {
     setConfirmingAi(true);
     setError(null);
     try {
-      await confirmAICalorieLog(aiLogId, { meal_type: mealType, user_final_log: userFinalLog });
+      await confirmAICalorieLog(aiLogId, {
+        meal_type: mealType,
+        user_final_log: userFinalLog,
+      });
       setIsModalOpen(false);
       setAiLogId(null);
       setAiFile(null);
@@ -311,7 +452,12 @@ export default function CalorieTrackerPage() {
       await loadToday();
     } catch (confirmError) {
       console.error("Failed to confirm AI meal", confirmError);
-      setError(errorMessage(confirmError, "Could not save the AI meal. Please review the ingredients and try again."));
+      setError(
+        errorMessage(
+          confirmError,
+          "Could not save the AI meal. Please review the ingredients and try again.",
+        ),
+      );
     } finally {
       setConfirmingAi(false);
     }
@@ -324,14 +470,19 @@ export default function CalorieTrackerPage() {
       return;
     }
 
-    setIngredients((items) => [...items, { name: ingredientName.trim(), mass_grams: mass }]);
+    setIngredients((items) => [
+      ...items,
+      { name: ingredientName.trim(), mass_grams: mass },
+    ]);
     setIngredientName("");
     setIngredientMass("");
     setError(null);
   };
 
   const removeManualIngredient = (indexToRemove: number) => {
-    setIngredients((items) => items.filter((_, index) => index !== indexToRemove));
+    setIngredients((items) =>
+      items.filter((_, index) => index !== indexToRemove),
+    );
   };
 
   const submitManualLog = async (event: React.FormEvent) => {
@@ -351,7 +502,9 @@ export default function CalorieTrackerPage() {
       await loadToday();
     } catch (submitError) {
       console.error("Failed to log manual meal", submitError);
-      setError(errorMessage(submitError, "Could not log this meal. Please try again."));
+      setError(
+        errorMessage(submitError, "Could not log this meal. Please try again."),
+      );
     } finally {
       setManualSubmitting(false);
     }
@@ -381,27 +534,85 @@ export default function CalorieTrackerPage() {
               {segmentedImageUrl && (
                 <div className="overflow-hidden rounded-lg border border-border bg-card">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={segmentedImageUrl} alt="AI segmented meal" className="max-h-72 w-full object-contain" />
+                  <img
+                    src={segmentedImageUrl}
+                    alt="AI segmented meal"
+                    className="max-h-72 w-full object-contain"
+                  />
                 </div>
               )}
 
-              <p className="text-sm font-medium text-muted-foreground">
-                Review the AI estimates before saving. The server recalculates nutrition from your final ingredient list.
-              </p>
+              <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium leading-relaxed">
+                  ⚠️ AI estimates are approximations. Actual nutritional values
+                  may vary. Review and adjust items before saving.
+                </p>
+              </div>
+
+              {estimatedNutrition.calories > 0 && (
+                <div className="grid grid-cols-4 gap-2 rounded-xl bg-primary/5 p-4 border border-primary/10">
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Calories
+                    </p>
+                    <p className="text-lg font-black text-primary">
+                      {estimatedNutrition.calories.toFixed(0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Protein
+                    </p>
+                    <p className="text-lg font-black text-foreground">
+                      {estimatedNutrition.protein?.toFixed(1) ?? "--"}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Carbs
+                    </p>
+                    <p className="text-lg font-black text-foreground">
+                      {estimatedNutrition.carbs?.toFixed(1) ?? "--"}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Fats
+                    </p>
+                    <p className="text-lg font-black text-foreground">
+                      {estimatedNutrition.fats?.toFixed(1) ?? "--"}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {editableItems.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                  No AI items were returned. Add ingredients manually before saving.
+                  No AI items were returned. Add ingredients manually before
+                  saving.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {editableItems.map((item) => (
-                    <div key={item.id} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4">
+                    <div
+                      key={item.id}
+                      className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4"
+                    >
                       <div className="min-w-[200px] flex-1">
                         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Food Type
                         </label>
-                        <Input value={item.label} onChange={(event) => handleItemChange(item.id, "label", event.target.value)} />
+                        <Input
+                          value={item.label}
+                          onChange={(event) =>
+                            handleItemChange(
+                              item.id,
+                              "label",
+                              event.target.value,
+                            )
+                          }
+                        />
                       </div>
                       <div className="w-32">
                         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -411,13 +622,26 @@ export default function CalorieTrackerPage() {
                           type="number"
                           min="0"
                           value={item.mass_grams}
-                          onChange={(event) => handleItemChange(item.id, "mass_grams", event.target.value)}
+                          onChange={(event) =>
+                            handleItemChange(
+                              item.id,
+                              "mass_grams",
+                              event.target.value,
+                            )
+                          }
                         />
                       </div>
                       {item.calories !== undefined && (
-                        <div className="pb-2 text-right text-sm font-semibold text-foreground">{item.calories} kcal</div>
+                        <div className="pb-2 text-right text-sm font-semibold text-foreground">
+                          {item.calories} kcal
+                        </div>
                       )}
-                      <Button type="button" variant="ghost" onClick={() => handleRemoveItem(item.id)} className="px-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="px-3"
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -425,18 +649,36 @@ export default function CalorieTrackerPage() {
                 </div>
               )}
 
-              <Button type="button" onClick={handleAddItem} variant="outline" className="w-full border-dashed py-6">
+              <Button
+                type="button"
+                onClick={handleAddItem}
+                variant="outline"
+                className="w-full border-dashed py-6"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Ingredient
               </Button>
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-card p-6">
-              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={confirmingAi}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+                disabled={confirmingAi}
+              >
                 Cancel
               </Button>
-              <Button type="button" onClick={handleSaveMeal} disabled={confirmingAi}>
-                {confirmingAi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              <Button
+                type="button"
+                onClick={handleSaveMeal}
+                disabled={confirmingAi}
+              >
+                {confirmingAi ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
                 Save Meal to Tracker
               </Button>
             </div>
@@ -445,14 +687,20 @@ export default function CalorieTrackerPage() {
       )}
 
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Calorie Tracker</h1>
-        <p className="text-muted-foreground">Log your meals manually or use premium AI tracking.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Calorie Tracker
+        </h1>
+        <p className="text-muted-foreground">
+          Log your meals manually or use premium AI tracking.
+        </p>
       </div>
 
       {(message || error) && (
         <div
           className={`rounded-lg border px-4 py-3 text-sm ${
-            error ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-primary/30 bg-primary/10 text-primary"
+            error
+              ? "border-destructive/40 bg-destructive/10 text-destructive"
+              : "border-primary/30 bg-primary/10 text-primary"
           }`}
         >
           {error ?? message}
@@ -464,7 +712,9 @@ export default function CalorieTrackerPage() {
           type="button"
           onClick={() => setActiveTab("manual")}
           className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "manual" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            activeTab === "manual"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Salad className="h-4 w-4" /> Manual Entry
@@ -473,7 +723,9 @@ export default function CalorieTrackerPage() {
           type="button"
           onClick={() => setActiveTab("ai")}
           className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "ai" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            activeTab === "ai"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Camera className="h-4 w-4" /> AI Tracking
@@ -498,12 +750,20 @@ export default function CalorieTrackerPage() {
                 <div className="space-y-4">
                   {MEAL_TYPES.map((type) => {
                     const logs = mealSummary(todayLogs, type);
-                    const calories = logs.reduce((sum, log) => sum + (log.total_calories ?? 0), 0);
+                    const calories = logs.reduce(
+                      (sum, log) => sum + (log.total_calories ?? 0),
+                      0,
+                    );
                     return (
-                      <div key={type} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                      <div
+                        key={type}
+                        className="border-b border-border pb-3 last:border-0 last:pb-0"
+                      >
                         <div className="mb-1 flex items-start justify-between gap-3">
                           <div>
-                            <h4 className="text-sm font-semibold text-foreground">{MEAL_LABELS[type]}</h4>
+                            <h4 className="text-sm font-semibold text-foreground">
+                              {MEAL_LABELS[type]}
+                            </h4>
                             <p className="mt-0.5 text-xs text-muted-foreground">
                               {logs.length > 0
                                 ? logs
@@ -523,22 +783,75 @@ export default function CalorieTrackerPage() {
                     );
                   })}
                   <div className="flex items-center justify-between pt-2 text-sm">
-                    <span className="font-medium text-muted-foreground">Total Today</span>
+                    <span className="font-medium text-muted-foreground">
+                      Total Today
+                    </span>
                     <span className="font-bold text-foreground">
                       {totalToday.toFixed(0)}
                       {dailyTarget ? (
-                        <span className="text-xs font-normal text-muted-foreground"> / {dailyTarget.toFixed(0)} kcal</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {" "}
+                          / {dailyTarget.toFixed(0)} kcal
+                        </span>
                       ) : (
-                        <span className="text-xs font-normal text-muted-foreground"> kcal</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {" "}
+                          kcal
+                        </span>
                       )}
                     </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 border-t border-border pt-3">
+                    <div className="rounded-lg bg-background px-3 py-2 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Protein
+                      </p>
+                      <p className="text-sm font-bold text-foreground">
+                        {todayTotals.protein.toFixed(0)}g
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {macroTargets.protein
+                          ? `/ ${macroTargets.protein.toFixed(0)}g`
+                          : "No target"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-background px-3 py-2 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Carbs
+                      </p>
+                      <p className="text-sm font-bold text-foreground">
+                        {todayTotals.carbs.toFixed(0)}g
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {macroTargets.carbs
+                          ? `/ ${macroTargets.carbs.toFixed(0)}g`
+                          : "No target"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-background px-3 py-2 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Fat
+                      </p>
+                      <p className="text-sm font-bold text-foreground">
+                        {todayTotals.fats.toFixed(0)}g
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {macroTargets.fats
+                          ? `/ ${macroTargets.fats.toFixed(0)}g`
+                          : "No target"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Button variant="outline" asChild className="flex w-full items-center justify-center gap-2 py-6 shadow-sm">
+          <Button
+            variant="outline"
+            asChild
+            className="flex w-full items-center justify-center gap-2 py-6 shadow-sm"
+          >
             <Link href="/client/calorie-tracker/history">
               <History className="h-5 w-5" /> View Full History
             </Link>
@@ -556,9 +869,12 @@ export default function CalorieTrackerPage() {
                 <>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-card-foreground">
-                      <Crown className="h-5 w-5 text-amber-500" /> AI Vision Tracker
+                      <Crown className="h-5 w-5 text-amber-500" /> AI Vision
+                      Tracker
                     </CardTitle>
-                    <CardDescription>This feature requires a premium subscription.</CardDescription>
+                    <CardDescription>
+                      This feature requires a premium subscription.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
@@ -571,14 +887,21 @@ export default function CalorieTrackerPage() {
                         </div>
                       </div>
                       <div className="max-w-sm space-y-2">
-                        <h3 className="text-xl font-bold text-foreground">Unlock AI-Powered Tracking</h3>
+                        <h3 className="text-xl font-bold text-foreground">
+                          Unlock AI-Powered Tracking
+                        </h3>
                         <p className="text-sm leading-relaxed text-muted-foreground">
-                          Snap a photo of your meal, review the detected ingredients, and save the corrected log.
+                          Snap a photo of your meal, review the detected
+                          ingredients, and save the corrected log.
                         </p>
                       </div>
-                      <Button asChild className="rounded-xl px-8 py-6 text-base shadow-sm">
+                      <Button
+                        asChild
+                        className="rounded-xl px-8 py-6 text-base shadow-sm"
+                      >
                         <Link href="/client/subscription">
-                          <ArrowUpRight className="mr-2 h-5 w-5" /> Upgrade to Premium
+                          <ArrowUpRight className="mr-2 h-5 w-5" /> Upgrade to
+                          Premium
                         </Link>
                       </Button>
                     </div>
@@ -587,11 +910,32 @@ export default function CalorieTrackerPage() {
               ) : (
                 <>
                   <CardHeader>
-                    <CardTitle className="text-card-foreground">AI Vision Tracker</CardTitle>
-                    <CardDescription>Upload a photo and review AI results before saving to your tracker.</CardDescription>
+                    <CardTitle className="text-card-foreground">
+                      AI Vision Tracker
+                    </CardTitle>
+                    <CardDescription>
+                      Upload a photo and review AI results before saving to your
+                      tracker.
+                    </CardDescription>
+                    <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[12px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/10">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      AI estimates are approximations. Always review the
+                      results.
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-4">
+                      <div className="space-y-1">
+                        <GenericDropdown
+                          label="Meal Type"
+                          value={mealType}
+                          onChange={(val) => setMealType(val as MealType)}
+                          options={MEAL_TYPES.map((type) => ({
+                            label: MEAL_LABELS[type],
+                            value: type,
+                          }))}
+                        />
+                      </div>
                       <label
                         className={`relative flex h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors hover:bg-accent ${
                           aiPreview ? "border-primary/50" : "border-border"
@@ -600,9 +944,15 @@ export default function CalorieTrackerPage() {
                         {aiPreview ? (
                           <>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={aiPreview} alt="Meal preview" className="h-full w-full object-cover opacity-80" />
+                            <img
+                              src={aiPreview}
+                              alt="Meal preview"
+                              className="h-full w-full object-cover opacity-80"
+                            />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                              <span className="rounded-lg bg-black/50 px-4 py-2 font-medium text-white">Change Image</span>
+                              <span className="rounded-lg bg-black/50 px-4 py-2 font-medium text-white">
+                                Change Image
+                              </span>
                             </div>
                           </>
                         ) : (
@@ -610,13 +960,26 @@ export default function CalorieTrackerPage() {
                             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                               <ImageIcon className="h-6 w-6" />
                             </div>
-                            <p className="font-medium text-foreground">Click to upload a meal photo</p>
-                            <p className="text-sm text-muted-foreground">JPG or PNG, max 10MB</p>
+                            <p className="font-medium text-foreground">
+                              Click to upload a meal photo
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              JPG or PNG, max 10MB
+                            </p>
                           </div>
                         )}
-                        <input type="file" accept="image/*" className="hidden" onChange={handleAiUpload} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAiUpload}
+                        />
                       </label>
-                      <Button onClick={submitAiAnalysis} disabled={!aiFile || aiLoading} className="w-full rounded-xl py-6 text-lg shadow-sm">
+                      <Button
+                        onClick={submitAiAnalysis}
+                        disabled={!aiFile || aiLoading}
+                        className="w-full rounded-xl py-6 text-lg shadow-sm"
+                      >
                         {aiLoading ? (
                           <>
                             <Loader2 className="mr-3 h-5 w-5 animate-spin" />
@@ -636,8 +999,12 @@ export default function CalorieTrackerPage() {
           ) : (
             <>
               <CardHeader>
-                <CardTitle className="text-card-foreground">Manual Entry</CardTitle>
-                <CardDescription>Add each ingredient and let the server calculate nutrition.</CardDescription>
+                <CardTitle className="text-card-foreground">
+                  Manual Entry
+                </CardTitle>
+                <CardDescription>
+                  Add each ingredient and let the server calculate nutrition.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={submitManualLog} className="space-y-6">
@@ -653,13 +1020,17 @@ export default function CalorieTrackerPage() {
                     />
                   </div>
 
-                  <div className="space-y-3 rounded-xl border border-border bg-background p-4">
-                    <label className="text-sm font-medium text-foreground">Add Ingredient</label>
+                  <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+                    <label className="text-sm font-medium text-foreground">
+                      Add Ingredient
+                    </label>
                     <div className="flex gap-2">
                       <Input
                         placeholder="e.g. Avocado"
                         value={ingredientName}
-                        onChange={(event) => setIngredientName(event.target.value)}
+                        onChange={(event) =>
+                          setIngredientName(event.target.value)
+                        }
                         className="flex-1"
                       />
                       <Input
@@ -668,10 +1039,17 @@ export default function CalorieTrackerPage() {
                         step="0.1"
                         placeholder="Grams"
                         value={ingredientMass}
-                        onChange={(event) => setIngredientMass(event.target.value)}
+                        onChange={(event) =>
+                          setIngredientMass(event.target.value)
+                        }
                         className="w-28"
                       />
-                      <Button type="button" variant="secondary" onClick={addManualIngredient} aria-label="Add ingredient">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={addManualIngredient}
+                        aria-label="Add ingredient"
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -679,11 +1057,23 @@ export default function CalorieTrackerPage() {
                     {ingredients.length > 0 && (
                       <ul className="mt-4 space-y-2">
                         {ingredients.map((ingredient, index) => (
-                          <li key={`${ingredient.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm">
-                            <span className="font-medium text-foreground">{ingredient.name}</span>
+                          <li
+                            key={`${ingredient.name}-${index}`}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                          >
+                            <span className="font-medium text-foreground">
+                              {ingredient.name}
+                            </span>
                             <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">{ingredient.mass_grams}g</span>
-                              <Button type="button" variant="ghost" onClick={() => removeManualIngredient(index)} className="h-8 px-2">
+                              <span className="text-muted-foreground">
+                                {ingredient.mass_grams}g
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => removeManualIngredient(index)}
+                                className="h-8 px-2"
+                              >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
@@ -693,8 +1083,16 @@ export default function CalorieTrackerPage() {
                     )}
                   </div>
 
-                  <Button type="submit" disabled={manualSubmitting || ingredients.length === 0} className="w-full rounded-xl py-6">
-                    {manualSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                  <Button
+                    type="submit"
+                    disabled={manualSubmitting || ingredients.length === 0}
+                    className="w-full rounded-xl py-6"
+                  >
+                    {manualSubmitting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
                     Log {MEAL_LABELS[mealType]}
                   </Button>
                 </form>

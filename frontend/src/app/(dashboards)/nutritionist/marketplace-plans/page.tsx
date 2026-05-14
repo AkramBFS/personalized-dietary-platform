@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, ImagePlus, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import {
   createNutritionistPlan,
   deleteNutritionistPlan,
@@ -21,6 +20,7 @@ import {
   MealIngredient,
   createEmptyMeal,
 } from "@/lib/nutritionist";
+import { resolveApiUrl } from "@/lib/api";
 import GenericDropdown from "@/components/ui/GenericDropdown";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -64,22 +64,39 @@ export default function MarketplacePlansPage() {
     instructions: "",
   });
 
+  const revokePreviewUrl = (url?: string) => {
+    if (url && url.startsWith("blob:")) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const [planData, setPlanData] = useState({
     title: "",
     description: "",
     duration: 7,
     price: 0,
     category: "predefined" as PlanCategory,
+    coverImageFile: null as File | null,
+    coverImagePreviewUrl: "",
     days: [freshDay()],
   });
 
+  useEffect(() => {
+    return () => {
+      revokePreviewUrl(planData.coverImagePreviewUrl);
+    };
+  }, [planData.coverImagePreviewUrl]);
+
   const resetForm = () => {
+    revokePreviewUrl(planData.coverImagePreviewUrl);
     setPlanData({
       title: "",
       description: "",
       duration: 7,
       price: 0,
       category: "predefined",
+      coverImageFile: null,
+      coverImagePreviewUrl: "",
       days: [freshDay()],
     });
     setEditingPlanId(null);
@@ -101,6 +118,7 @@ export default function MarketplacePlansPage() {
         price: planData.price,
         duration_days: planData.duration,
         category: planData.category,
+        cover_image: planData.coverImageFile || undefined,
         content_json: planData.days.map((day, index) => ({
           day_index: index,
           breakfast: day.breakfast,
@@ -122,6 +140,7 @@ export default function MarketplacePlansPage() {
                   duration_days: payload.duration_days,
                   price: payload.price,
                   category: payload.category,
+                  cover_image_url: planData.coverImagePreviewUrl || plan.cover_image_url,
                   content_json: payload.content_json,
                 }
               : plan,
@@ -143,6 +162,7 @@ export default function MarketplacePlansPage() {
   };
 
   const startEdit = (plan: NutritionistPlan) => {
+    revokePreviewUrl(planData.coverImagePreviewUrl);
     setEditingPlanId(plan.id);
     setPlanData({
       title: plan.title,
@@ -150,6 +170,8 @@ export default function MarketplacePlansPage() {
       duration: plan.duration_days,
       price: plan.price,
       category: plan.category,
+      coverImageFile: null,
+      coverImagePreviewUrl: resolveApiUrl(plan.cover_image_url) || "",
       days:
         plan.content_json.length > 0
           ? plan.content_json.map((day) => ({
@@ -331,12 +353,78 @@ export default function MarketplacePlansPage() {
                     onChange={(value) => setPlanData({ ...planData, category: value as PlanCategory })}
                     options={[
                       { label: "Predefined", value: "predefined" },
-                      { label: "Personalized", value: "personalized" },
                       { label: "Seasonal", value: "seasonal" },
                     ]}
                     placeholder="Select a category"
                     className="h-11 py-2 px-4"
                   />
+                </div>
+                <div className="space-y-2 md:col-span-3">
+                  <Label htmlFor="cover-image">Plan Cover Image</Label>
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-5">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                      <div className="relative h-36 w-full overflow-hidden rounded-xl border border-border bg-background md:w-60">
+                        {planData.coverImagePreviewUrl ? (
+                          <img
+                            src={planData.coverImagePreviewUrl}
+                            alt="Plan cover preview"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                            <ImagePlus className="h-8 w-8" />
+                            <span className="text-sm">No cover image selected</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-3">
+                        <Input
+                          id="cover-image"
+                          type="file"
+                          accept="image/*"
+                          className="h-11 cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            if (file && file.size > 5 * 1024 * 1024) {
+                              toast.error("Plan cover image must be under 5MB.");
+                              e.target.value = "";
+                              return;
+                            }
+
+                            const nextPreviewUrl = file ? URL.createObjectURL(file) : "";
+                            revokePreviewUrl(planData.coverImagePreviewUrl);
+                            setPlanData((prev) => ({
+                              ...prev,
+                              coverImageFile: file,
+                              coverImagePreviewUrl: nextPreviewUrl,
+                            }));
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Optional. This file will be sent as the backend `cover_image` multipart field.
+                        </p>
+                        {planData.coverImagePreviewUrl ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-fit"
+                            onClick={() => {
+                              revokePreviewUrl(planData.coverImagePreviewUrl);
+                              setPlanData((prev) => ({
+                                ...prev,
+                                coverImageFile: null,
+                                coverImagePreviewUrl: "",
+                              }));
+                            }}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Remove image
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

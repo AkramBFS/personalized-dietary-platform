@@ -40,6 +40,13 @@ export interface ClientProfilePatchPayload {
   profile_photo?: File;
 }
 
+export interface ClientProgressTargetsPayload {
+  target_calories: number;
+  target_protein: number;
+  target_carbs: number;
+  target_fats: number;
+}
+
 export interface ClientSubscription {
   id: number;
   plan_type?: "monthly" | "yearly" | string;
@@ -171,7 +178,25 @@ export interface ClientConsultation {
   status: "scheduled" | "finished" | "cancelled" | string;
   consultation_type?: string;
   zoom_link?: string | null;
+  price_paid?: number;
+  is_free_from_plan?: boolean;
   created_at?: string;
+}
+
+export interface MealPlanDayMeal {
+  name: string;
+  notes: string;
+  calories: number;
+  ingredients: string[];
+}
+
+export interface MealPlanDayContent {
+  day_index: number;
+  breakfast: MealPlanDayMeal;
+  lunch: MealPlanDayMeal;
+  dinner: MealPlanDayMeal;
+  snacks: MealPlanDayMeal; // single object
+  instructions: string;
 }
 
 export interface ClientUserPlan {
@@ -195,12 +220,13 @@ export interface ClientUserPlan {
 
 export interface CommunityPost {
   id: number;
-  title: string;
-  content?: string;
-  author?: string;
-  status: "pending" | "approved" | "rejected";
-  created_at?: string;
-  updated_at?: string;
+  author_username: string;
+  content: string;
+  image_url?: string | null;
+  status: "draft" | "published" | "removed" | "pending" | "approved" | "rejected" | string;
+  is_approved: boolean;
+  created_at: string;
+  comments?: any[];
 }
 
 export interface ClientInvoice {
@@ -209,11 +235,12 @@ export interface ClientInvoice {
   total_paid: number;
   item_type: string;
   created_at: string;
-  client: {
-    username: string;
-  };
+  // Change these to match the API response you logged
+  client_username: string; 
+  nutritionist_username: string;
+  net_earnings?: number;
+  commission_rate?: number;
 }
-
 function unwrapList<T>(payload: ApiEnvelope<T[]> | T[] | { results?: T[] }): T[] {
   const data = unwrapResponse(payload as ApiEnvelope<T[]> | T[] | { results?: T[] });
   if (Array.isArray(data)) return data;
@@ -333,6 +360,16 @@ export async function getClientProgress(startDate: string, endDate: string): Pro
   return unwrapList(response.data);
 }
 
+export async function patchClientProgressTargets(
+  payload: ClientProgressTargetsPayload,
+): Promise<ClientProgress> {
+  const response = await api.patch<ApiEnvelope<ClientProgress> | ClientProgress>(
+    "/client/progress/targets/",
+    payload,
+  );
+  return unwrapResponse(response.data);
+}
+
 export async function getClientConsultations(): Promise<ClientConsultation[]> {
   const response = await api.get<ApiEnvelope<ClientConsultation[]> | ClientConsultation[]>("/client/consultations/");
   return unwrapList(response.data);
@@ -343,11 +380,28 @@ export async function getClientUserPlans(): Promise<ClientUserPlan[]> {
   return unwrapList(response.data);
 }
 
+export async function getMealPlanDayContent(userPlanId: number, dayIndex?: number): Promise<MealPlanDayContent> {
+  const response = await api.get<ApiEnvelope<MealPlanDayContent>>(`/client/user-plans/${userPlanId}/content/`, {
+    params: dayIndex !== undefined ? { day_index: dayIndex } : {},
+  });
+  return unwrapResponse(response.data);
+}
+
+export async function advanceMealPlanDay(userPlanId: number): Promise<{ day_index: number; status: string }> {
+  const response = await api.patch<ApiEnvelope<{ day_index: number; status: string }>>(
+    `/client/user-plans/${userPlanId}/advance/`,
+  );
+  return unwrapResponse(response.data);
+}
+
 export interface BookConsultationPayload {
   nutritionist_id: number;
   appointment_date: string;
-  start_time?: string;
-  consultation_type?: string;
+  start_time: string;
+  end_time: string;
+  consultation_type: "advice_only" | "plan_included";
+  user_plan_id?: number;
+  is_free_from_plan?: boolean;
 }
 
 export async function postBookConsultation(payload: BookConsultationPayload): Promise<ClientConsultation> {
@@ -356,6 +410,17 @@ export async function postBookConsultation(payload: BookConsultationPayload): Pr
     payload,
   );
   return unwrapResponse(response.data);
+}
+
+export interface ReviewPayload {
+  item_type: "plan" | "consultation";
+  item_id: number;
+  rating: number;
+  comment?: string;
+}
+
+export async function submitReview(payload: ReviewPayload): Promise<void> {
+  await api.post("/reviews/", payload);
 }
 
 export async function getNutritionistAvailability(nutritionistId: number, date: string): Promise<unknown> {
@@ -374,7 +439,7 @@ export async function getCommunityPosts(page?: number): Promise<CommunityPost[]>
 }
 
 export interface CreatePostPayload {
-  title: string;
+  title?: string;
   content: string;
   tags?: string[];
 }
@@ -392,7 +457,7 @@ export async function getClientOwnPosts(page?: number): Promise<CommunityPost[]>
   return unwrapList(response.data);
 }
 
-export async function deleteClientPost(postId: number): Promise<void> {
+export async function deleteCommunityPost(postId: number): Promise<void> {
   await api.delete(`/client/posts/${postId}/`);
 }
 
@@ -402,6 +467,7 @@ export async function getClientInvoices(): Promise<ClientInvoice[]> {
 }
 
 export async function getInvoiceDetail(id: number): Promise<ClientInvoice> {
-  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`/invoices/${id}/`);
+  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`/client/invoices/${id}/`);
+  console.log("Invoice detail response:", response.data);
   return unwrapResponse(response.data);
 }

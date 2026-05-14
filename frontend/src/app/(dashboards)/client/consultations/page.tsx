@@ -18,47 +18,59 @@ import {
   User,
   DollarSign,
   CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
+import ReviewModal from "@/components/ReviewModal";
+import Link from "next/link";
+import { getClientConsultations, ClientConsultation } from "@/lib/client/service";
+import { getNutritionists } from "@/lib/api";
 
 export default function ConsultationsPage() {
-  const [consultations, setConsultations] = useState<any[]>([]);
+  const [consultations, setConsultations] = useState<ClientConsultation[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Booking states (as per your current logic)
   const [nutritionists, setNutritionists] = useState<any[]>([]);
-  const [selectedNutri, setSelectedNutri] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [availability, setAvailability] = useState<any[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [bookingSlot, setBookingSlot] = useState<any | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ id: number; title: string } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const [consRes, nutriRes] = await Promise.all([
-          api.get("/client/consultations/").catch(() => null),
-          api.get("/marketplace/nutritionists/").catch(() => null),
+        console.log("Fetching consultations and nutritionists...");
+        const [consData, nutriData] = await Promise.all([
+          getClientConsultations().catch((err) => {
+            console.error("Error fetching consultations:", err);
+            return null;
+          }),
+          getNutritionists().catch((err) => {
+            console.error("Error fetching nutritionists:", err);
+            return null;
+          }),
         ]);
 
-        if (consRes?.data) {
-          const raw = consRes.data.results || consRes.data || [];
-          setConsultations(Array.isArray(raw) ? raw : []);
-        }
-        else throw new Error("Mock cons");
+        console.log("API Response - Consultations:", consData);
+        console.log("API Response - Nutritionists:", nutriData);
 
-        if (nutriRes?.data) {
-          const raw = nutriRes.data.results || nutriRes.data || [];
+        if (consData) {
+          setConsultations(consData);
+        } else {
+          // Fallback to mock if API fails or returns null
+          throw new Error("Failed to fetch consultations");
+        }
+
+        if (nutriData) {
+          const raw = nutriData.data || nutriData.results || nutriData || [];
           setNutritionists(Array.isArray(raw) ? raw : []);
         }
       } catch (e) {
+        console.warn("Using mock data due to error:", e);
         // Populated Mock Data based on API Doc fields
         setConsultations([
           {
             id: 1042,
             status: "scheduled",
             appointment_date: "2026-05-12",
-            start_time: "10:00",
-            end_time: "11:00",
+            start_time: "10:00:00",
+            end_time: "11:00:00",
             consultation_type: "plan_included",
             is_free_from_plan: true,
             price_paid: 0.0,
@@ -69,8 +81,8 @@ export default function ConsultationsPage() {
         setNutritionists([
           {
             id: 1,
-            user: { username: "Dr. Sarah Smith" },
-            specialization: { name: "Weight Loss" },
+            username: "Dr. Sarah Smith",
+            specialization_name: "Weight Loss",
             consultation_price: 50,
           },
         ]);
@@ -84,13 +96,20 @@ export default function ConsultationsPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
       {/* Page Header */}
-      <div className="space-y-2 pb-6 border-b border-border">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Consultations
-        </h1>
-        <p className="text-muted-foreground">
-          Manage your upcoming sessions and professional guidance.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Consultations
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your upcoming sessions and professional guidance.
+          </p>
+        </div>
+        <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20">
+          <Link href="/consultations">
+            Book New Consultation
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -106,10 +125,19 @@ export default function ConsultationsPage() {
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : consultations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed border-border rounded-xl">
-              <p className="text-muted-foreground font-medium">
-                No past or upcoming consultations found.
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-card/50">
+              <div className="p-4 bg-primary/10 rounded-full mb-4">
+                <Video className="w-8 h-8 text-primary/60" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">No consultations found</h3>
+              <p className="text-muted-foreground max-w-xs mb-6">
+                You haven't scheduled any consultations yet. Ready to start your journey?
               </p>
+              <Button asChild variant="outline" className="rounded-full">
+                <Link href="/consultations">
+                  Browse Nutritionists
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -139,6 +167,10 @@ export default function ConsultationsPage() {
                             <Clock className="w-3.5 h-3.5" />
                             {c.start_time} - {c.end_time}
                           </CardDescription>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                            <User className="w-3 h-3" />
+                            <span className="font-semibold">{c.nutritionist_name || c.nutritionist_username || "Nutritionist"}</span>
+                          </div>
                         </div>
                       </div>
                       <span
@@ -176,7 +208,7 @@ export default function ConsultationsPage() {
                               by Plan
                             </span>
                           ) : (
-                            `$${c.price_paid.toFixed(2)}`
+                            `$${(c.price_paid ?? 0).toFixed(2)}`
                           )}
                         </p>
                       </div>
@@ -199,14 +231,32 @@ export default function ConsultationsPage() {
                             </a>
                           </Button>
                         ) : (
-                          <div className="text-[13px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg flex items-start gap-2 border border-amber-100 dark:border-amber-900/30">
-                            <Clock className="w-4 h-4 mt-0.5 shrink-0" />
-                            <span>
-                              Zoom link will be added by the nutritionist 5–10
-                              minutes before the call.{" "}
-                            </span>
+                          <div className="text-[13px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl flex items-start gap-3 border border-amber-100 dark:border-amber-900/20">
+                            <Clock className="w-5 h-5 mt-0.5 shrink-0 text-amber-500" />
+                            <div className="space-y-1">
+                              <p className="font-semibold">Meeting link pending</p>
+                              <p className="text-xs opacity-80">
+                                The nutritionist will provide the Zoom link approximately 5–10 minutes before the scheduled start time.
+                              </p>
+                            </div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {c.status === "finished" && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-lg border-primary text-primary hover:bg-primary/5"
+                          onClick={() => setReviewTarget({ 
+                            id: c.id, 
+                            title: `Consultation with ${c.nutritionist_name || c.nutritionist_username || "Nutritionist"}` 
+                          })}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Post Review
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -216,6 +266,14 @@ export default function ConsultationsPage() {
           )}
         </div>
       </div>
+
+      <ReviewModal
+        isOpen={!!reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        type="consultation"
+        id={reviewTarget?.id || 0}
+        title={reviewTarget?.title || ""}
+      />
     </div>
   );
 }

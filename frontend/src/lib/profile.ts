@@ -40,9 +40,11 @@ export async function getProfileIdentity(role?: UserRole | null): Promise<Curren
       username: profile.user?.username,
       email: profile.user?.email,
     });
+    const baseUsername = profile.user?.username || sessionUser?.username || "Nutritionist";
+    const username = baseUsername.startsWith("Dr. ") ? baseUsername : `Dr. ${baseUsername}`;
     return {
       role: "nutritionist",
-      username: profile.user?.username || sessionUser?.username || "Nutritionist",
+      username,
       email: profile.user?.email || sessionUser?.email || "",
       avatarUrl: resolveApiUrl(profile.profile_photo_url),
     };

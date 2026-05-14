@@ -157,3 +157,9 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 *.onnx
+
+
+ai-service/food_api/.kilo/
+/.kilo/
+**/.kilo/
+**/.kilo/**

@@ -111,6 +111,7 @@
   --ring: #3DDC97;
 
   --shadow-brand-val: 0 4px 12px 0 rgba(97, 221, 163, 0.15);
+  --sidebar-background: #ffffff;
 }
 
 [data-theme='dark'] {
@@ -159,6 +160,7 @@
   --input: #374151;
   /* gray-700 */
   --ring: #3DDC97;
+  --sidebar-background: #1a2027;
 }
 
 [data-theme='special'] {
@@ -199,13 +201,14 @@
   --button-destructive-foreground: #ffffff;
 
   --border: #15464E;
-  --input: #082E35;
+  --input: #072b31;
   --ring: #3DDC97;
 
   /* Gradients for special mode */
   --bg-main-gradient: linear-gradient(to bottom, #052023, #01181D, #052025);
   --bg-hero-gradient: linear-gradient(to right, #082E35, #0D3239);
   --btn-primary-gradient: linear-gradient(to right, #61dda3, #5dd9d8);
+  --sidebar-background: #0D3239;
 }
 
 @layer base {

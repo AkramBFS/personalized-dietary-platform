@@ -40,6 +40,7 @@ export interface ModerationPlan {
   plan_type: "private-custom" | "public-predefined";
   status: "pending" | "approved" | "rejected";
   price: number;
+  category?: string;
   created_at: string;
 }
 
@@ -73,11 +74,28 @@ export interface InquiryTicket {
 
 export interface DashboardStats {
   total_users: number;
-  active_nutritionists: number;
+  total_clients: number;
+  total_nutritionists: number;
   pending_approvals: number;
-  total_revenue: number;
-  monthly_growth: { month: string; value: number }[];
+  pending_plans: number;
+  unresolved_inquiries: number;
   recent_activity: { id: number; text: string; created_at: string }[];
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const response = await api.get("/lookup/admin/dashboard/");
+  const raw = unwrapEnvelope(response.data) as any;
+  
+  // Map API response to interface
+  return {
+    total_users: raw.users?.total ?? 0,
+    total_clients: raw.users?.clients ?? 0,
+    total_nutritionists: raw.users?.nutritionists ?? 0,
+    pending_approvals: raw.pending_approvals ?? 0,
+    pending_plans: raw.pending_plans ?? 0,
+    unresolved_inquiries: raw.unresolved_inquiries ?? 0,
+    recent_activity: [], // Backend doesn't provide this yet, keep empty for now
+  };
 }
 
 export interface AdminUserDetail extends AdminUser {
@@ -224,38 +242,4 @@ export async function banUser(id: number, is_banned: boolean): Promise<void> {
 
 export async function respondToInquiry(id: number, admin_response: string, status: string = "resolved"): Promise<void> {
   await api.patch(`/lookup/admin/inquiries/${id}/respond/`, { admin_response, status });
-}
-
-export async function getDashboardStats(): Promise<DashboardStats> {
-  // Using mocks for dashboard stats as a special case per requirements
-  return {
-    total_users: 1284,
-    active_nutritionists: 87,
-    pending_approvals: 9,
-    total_revenue: 98210,
-    monthly_growth: [
-      { month: "Jan", value: 6 },
-      { month: "Feb", value: 8 },
-      { month: "Mar", value: 12 },
-      { month: "Apr", value: 10 },
-      { month: "May", value: 14 },
-    ],
-    recent_activity: [
-      {
-        id: 1,
-        text: "New nutritionist signed up",
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        text: "New inquiry received from client",
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-      },
-      {
-        id: 3,
-        text: "Community post reported",
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-      },
-    ],
-  };
 }
