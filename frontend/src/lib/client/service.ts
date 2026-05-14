@@ -395,8 +395,11 @@ export async function advanceMealPlanDay(userPlanId: number): Promise<{ day_inde
 export interface BookConsultationPayload {
   nutritionist_id: number;
   appointment_date: string;
-  start_time?: string;
-  consultation_type?: string;
+  start_time: string;
+  end_time: string;
+  consultation_type: "advice_only" | "plan_included";
+  user_plan_id?: number;
+  is_free_from_plan?: boolean;
 }
 
 export async function postBookConsultation(payload: BookConsultationPayload): Promise<ClientConsultation> {

@@ -298,7 +298,8 @@ export default function SecurePayment() {
           start_time: context.startTime,
           end_time: context.endTime,
           consultation_type: context.consultationType,
-          is_free_from_plan: false,
+          user_plan_id: context.userPlanId,
+          is_free_from_plan: context.isFreeFromPlan || false,
         });
         setSuccessMessage("Payment confirmed. Your consultation booking has been submitted successfully.");
       }

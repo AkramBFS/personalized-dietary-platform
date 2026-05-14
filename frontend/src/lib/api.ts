@@ -237,7 +237,7 @@ export const getNutritionistAvailability = async (id: string, date: string) => {
   const response = await api.get(`marketplace/nutritionists/${id}/availability/`, {
     params: { date }
   });
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 /**
@@ -250,6 +250,7 @@ export const bookConsultation = async (payload: {
   start_time: string;
   end_time: string;
   consultation_type: "advice_only" | "plan_included";
+  user_plan_id?: number;
   is_free_from_plan: boolean;
 }) => {
   const response = await api.post("client/consultations/book/", payload);

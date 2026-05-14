@@ -21,6 +21,8 @@ export type ConsultationPaymentContext = {
   startTime: string;
   endTime: string;
   consultationType: ConsultationPaymentType;
+  userPlanId?: number;
+  isFreeFromPlan?: boolean;
 };
 
 export type SubscriptionPaymentContext = {
@@ -62,6 +64,8 @@ export function buildPaymentUrl(context: PaymentContext): string {
     params.set("startTime", context.startTime);
     params.set("endTime", context.endTime);
     params.set("consultationType", context.consultationType);
+    if (context.userPlanId) params.set("userPlanId", String(context.userPlanId));
+    if (context.isFreeFromPlan) params.set("isFreeFromPlan", "true");
   }
 
   if (context.type === "subscription") {
@@ -108,6 +112,8 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
     const startTime = searchParams.get("startTime");
     const endTime = searchParams.get("endTime");
     const consultationType = searchParams.get("consultationType");
+    const userPlanId = parsePositiveInteger(searchParams.get("userPlanId"));
+    const isFreeFromPlan = searchParams.get("isFreeFromPlan") === "true";
 
     if (
       !nutritionistId ||
@@ -126,6 +132,8 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
       startTime,
       endTime,
       consultationType,
+      ...(userPlanId ? { userPlanId } : {}),
+      isFreeFromPlan,
     };
   }
 
