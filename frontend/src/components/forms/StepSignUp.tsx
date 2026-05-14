@@ -42,6 +42,12 @@ export default function StepSignUp({
   errors = {},
 }: Props) {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [touched, setTouched] = React.useState<Record<string, boolean>>({});
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -135,9 +141,10 @@ export default function StepSignUp({
               placeholder="John"
               value={formData.firstName || ""}
               onChange={handleChange}
-              aria-invalid={Boolean(errors.firstName)}
+              onBlur={handleBlur}
+              aria-invalid={Boolean(touched.firstName && errors.firstName)}
             />
-            {errors.firstName ? (
+            {touched.firstName && errors.firstName ? (
               <p className={errorStyles}>{errors.firstName}</p>
             ) : null}
           </div>
@@ -150,9 +157,10 @@ export default function StepSignUp({
               placeholder="Doe"
               value={formData.lastName || ""}
               onChange={handleChange}
-              aria-invalid={Boolean(errors.lastName)}
+              onBlur={handleBlur}
+              aria-invalid={Boolean(touched.lastName && errors.lastName)}
             />
-            {errors.lastName ? (
+            {touched.lastName && errors.lastName ? (
               <p className={errorStyles}>{errors.lastName}</p>
             ) : null}
           </div>
@@ -168,9 +176,12 @@ export default function StepSignUp({
             placeholder="john@example.com"
             value={formData.email || ""}
             onChange={handleChange}
-            aria-invalid={Boolean(errors.email)}
+            onBlur={handleBlur}
+            aria-invalid={Boolean(touched.email && errors.email)}
           />
-          {errors.email ? <p className={errorStyles}>{errors.email}</p> : null}
+          {touched.email && errors.email ? (
+            <p className={errorStyles}>{errors.email}</p>
+          ) : null}
         </div>
 
         {/* Password */}
@@ -183,9 +194,10 @@ export default function StepSignUp({
             placeholder="Password"
             value={formData.password || ""}
             onChange={handleChange}
-            aria-invalid={Boolean(errors.password)}
+            onBlur={handleBlur}
+            aria-invalid={Boolean(touched.password && errors.password)}
           />
-          {errors.password ? (
+          {touched.password && errors.password ? (
             <p className={errorStyles}>{errors.password}</p>
           ) : null}
         </div>
@@ -196,11 +208,12 @@ export default function StepSignUp({
             <Input
               ref={fileInputRef}
               name="profilePhoto"
-              className={`${inputStyles} file:mr-4 file:rounded-lg file:bg-button-primary file:px-4 file:py-2 file:text-button-primary-foreground`}
+              className={`${inputStyles}"h-11 cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground`}
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
-              aria-invalid={Boolean(errors.profilePhoto)}
+              onBlur={handleBlur}
+              aria-invalid={Boolean(touched.profilePhoto && errors.profilePhoto)}
             />
 
             {formData.profilePhoto ? (
@@ -223,7 +236,7 @@ export default function StepSignUp({
               </div>
             ) : null}
           </div>
-          {errors.profilePhoto ? (
+          {touched.profilePhoto && errors.profilePhoto ? (
             <p className={errorStyles}>{errors.profilePhoto}</p>
           ) : null}
         </div>

@@ -42,7 +42,9 @@ function renderStars(rating: number) {
     if (i <= normalizedRating) {
       stars.push(<Star key={i} className="w-4 h-4 fill-brand text-brand" />);
     } else if (i - 0.5 === normalizedRating) {
-      stars.push(<StarHalf key={i} className="w-4 h-4 fill-brand text-brand" />);
+      stars.push(
+        <StarHalf key={i} className="w-4 h-4 fill-brand text-brand" />,
+      );
     } else {
       stars.push(<Star key={i} className="w-4 h-4 text-muted" />);
     }
@@ -70,7 +72,8 @@ function mealEntries(day: MarketplacePlanDayContent) {
 
 export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
   const [plan, setPlan] = useState<MarketplacePlanDetail | null>(null);
-  const [nutritionist, setNutritionist] = useState<MarketplaceNutritionistProfile | null>(null);
+  const [nutritionist, setNutritionist] =
+    useState<MarketplaceNutritionistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const detailRequestIdRef = useRef(0);
@@ -97,7 +100,9 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
         setPlan(planDetail);
 
         try {
-          const profile = await getNutritionistProfile(planDetail.nutritionist_id);
+          const profile = await getNutritionistProfile(
+            planDetail.nutritionist_id,
+          );
           if (requestId !== detailRequestIdRef.current) return;
           setNutritionist(profile);
         } catch (profileError) {
@@ -126,7 +131,9 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="w-10 h-10 text-brand animate-spin" />
-        <p className="text-muted-foreground animate-pulse">Loading protocol details...</p>
+        <p className="text-muted-foreground animate-pulse">
+          Loading protocol details...
+        </p>
       </div>
     );
   }
@@ -135,8 +142,12 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
     return (
       <div className="bg-background text-foreground min-h-screen flex items-center justify-center px-6">
         <div className="max-w-xl w-full bg-card border border-border rounded-3xl p-10 text-center shadow-sm">
-          <h1 className="text-3xl font-semibold text-foreground mb-4">Plan unavailable</h1>
-          <p className="text-muted-foreground mb-8">{error || "We couldn't find the requested marketplace plan."}</p>
+          <h1 className="text-3xl font-semibold text-foreground mb-4">
+            Plan unavailable
+          </h1>
+          <p className="text-muted-foreground mb-8">
+            {error || "We couldn't find the requested marketplace plan."}
+          </p>
           <Link
             href="/marketplace"
             className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-brand text-brand-foreground font-semibold hover:opacity-90 transition-opacity"
@@ -150,11 +161,17 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
 
   const imageSrc = resolveApiUrl(plan.cover_image_url) ?? FALLBACK_PLAN_IMAGE;
   const providerName =
-    nutritionist?.user?.username || nutritionist?.username || plan.nutritionist_username;
-  const providerBio = nutritionist?.bio || "This nutritionist has not added a public bio yet.";
-  const providerCountry = plan.country_name || nutritionist?.country_name || "Country not listed";
+    nutritionist?.user?.username ||
+    nutritionist?.username ||
+    plan.nutritionist_username;
+  const providerBio =
+    nutritionist?.bio || "This nutritionist has not added a public bio yet.";
+  const providerCountry =
+    plan.country_name || nutritionist?.country_name || "Country not listed";
   const providerSpecialization =
-    plan.specialization_name || nutritionist?.specialization_name || "Nutrition Specialist";
+    plan.specialization_name ||
+    nutritionist?.specialization_name ||
+    "Nutrition Specialist";
   const paymentHref = buildPaymentUrl({
     type: "marketplace-plan",
     planId: plan.id,
@@ -173,7 +190,9 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-brand/10 border border-brand/20 w-fit">
               <BadgeCheck className="w-4 h-4 text-brand" />
               <span className="text-xs font-bold text-brand uppercase tracking-wider">
-                {plan.category === "seasonal" ? "Seasonal Protocol" : "Clinical Grade Protocol"}
+                {plan.category === "seasonal"
+                  ? "Seasonal Protocol"
+                  : "Clinical Grade Protocol"}
               </span>
             </div>
 
@@ -205,7 +224,9 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
                   Investment
                 </span>
-                <span className="text-4xl font-serif text-brand">{formatPrice(plan.price)}</span>
+                <span className="text-4xl font-serif text-brand">
+                  {formatPrice(plan.price)}
+                </span>
               </div>
             </div>
 
@@ -219,7 +240,11 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
               </Link>
               <button
                 className="flex items-center justify-center gap-2 border border-border text-foreground px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-muted transition-all duration-300 cursor-pointer"
-                onClick={() => document.getElementById("sample-menu-section")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() =>
+                  document
+                    .getElementById("sample-menu-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
                 type="button"
               >
                 View Sample Menu
@@ -267,9 +292,12 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                   <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center border border-border">
                     <Calendar className="w-6 h-6 text-brand" />
                   </div>
-                  <h3 className="text-lg font-bold uppercase tracking-widest text-foreground">Plan Duration</h3>
+                  <h3 className="text-lg font-bold uppercase tracking-widest text-foreground">
+                    Plan Duration
+                  </h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    This protocol is structured across {plan.duration_days} days of guided meals and instructions.
+                    This protocol is structured across {plan.duration_days} days
+                    of guided meals and instructions.
                   </p>
                 </div>
 
@@ -277,10 +305,14 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                   <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center border border-border">
                     <MessageCircle className="w-6 h-6 text-brand" />
                   </div>
-                  <h3 className="text-lg font-bold uppercase tracking-widest text-foreground">Included Support</h3>
+                  <h3 className="text-lg font-bold uppercase tracking-widest text-foreground">
+                    Included Support
+                  </h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Includes {plan.free_consultations_per_week} free consultation
-                    {plan.free_consultations_per_week === 1 ? "" : "s"} per week with the plan provider.
+                    Includes {plan.free_consultations_per_week} free
+                    consultation
+                    {plan.free_consultations_per_week === 1 ? "" : "s"} per week
+                    with the plan provider.
                   </p>
                 </div>
               </div>
@@ -298,8 +330,12 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                   <Calendar className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white/80 uppercase tracking-wider mb-1">Duration</p>
-                  <p className="text-3xl font-extrabold text-white">{plan.duration_days} Days</p>
+                  <p className="text-sm font-bold text-white/80 uppercase tracking-wider mb-1">
+                    Duration
+                  </p>
+                  <p className="text-3xl font-extrabold text-white">
+                    {plan.duration_days} Days
+                  </p>
                 </div>
               </motion.div>
 
@@ -314,8 +350,12 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                   <ShoppingCart className="w-7 h-7 text-brand" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Price</p>
-                  <p className="text-2xl font-bold text-foreground">{formatPrice(plan.price)}</p>
+                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    Price
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {formatPrice(plan.price)}
+                  </p>
                 </div>
               </motion.div>
             </div>
@@ -335,8 +375,12 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                 <div className="w-20 h-20 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center mx-auto mb-4">
                   <UserRound className="w-10 h-10 text-brand" />
                 </div>
-                <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Provider</p>
-                <h3 className="text-2xl font-serif mt-2 text-foreground">{providerName}</h3>
+                <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">
+                  Provider
+                </p>
+                <h3 className="text-2xl font-serif mt-2 text-foreground">
+                  {providerName}
+                </h3>
               </div>
             </div>
 
@@ -347,15 +391,23 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-1">Specialization</p>
-                  <p className="text-muted-foreground">{providerSpecialization}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-1">
+                    Specialization
+                  </p>
+                  <p className="text-muted-foreground">
+                    {providerSpecialization}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-1">Country</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-1">
+                    Country
+                  </p>
                   <p className="text-muted-foreground">{providerCountry}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-1">Experience</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-1">
+                    Experience
+                  </p>
                   <p className="text-muted-foreground">
                     {nutritionist?.years_experience !== undefined
                       ? `${nutritionist.years_experience} years`
@@ -377,22 +429,28 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                 Plan Schedule
               </h2>
               <p className="text-muted-foreground mt-3 max-w-2xl">
-                Preview day one of this plan’s menu structure, ingredients, calories, and daily instructions.
+                Preview day one of this plan’s menu structure, ingredients,
+                calories, and daily instructions.
               </p>
             </div>
           </div>
 
           {plan.content_json.length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-10 text-center">
-              <p className="text-muted-foreground">No day-by-day content is available for this plan yet.</p>
+              <p className="text-muted-foreground">
+                No day-by-day content is available for this plan yet.
+              </p>
             </div>
           ) : (
             <div className="space-y-8">
               <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm font-bold uppercase tracking-widest text-foreground">Sample Menu</p>
+                  <p className="text-sm font-bold uppercase tracking-widest text-foreground">
+                    Sample Menu
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    Public preview shows day 1 only. Full plan access starts after purchase.
+                    Public preview shows day 1 only. Full plan access starts
+                    after purchase.
                   </p>
                 </div>
                 <span className="inline-flex items-center rounded-full bg-brand/10 border border-brand/20 px-4 py-2 text-sm font-semibold text-brand">
@@ -404,29 +462,48 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {mealEntries(previewDay).map(({ key, label, meal }) => (
-                      <div key={key} className="bg-card p-6 rounded-2xl border border-border flex flex-col gap-4 hover:shadow-md transition-shadow">
+                      <div
+                        key={key}
+                        className="bg-card p-6 rounded-2xl border border-border flex flex-col gap-4 hover:shadow-md transition-shadow"
+                      >
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h4 className="text-sm font-bold uppercase tracking-widest text-foreground mb-1">{label}</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-widest text-foreground mb-1">
+                              {label}
+                            </h4>
                             <p className="text-xl font-serif text-foreground">
-                              {meal.name || `${label} to be announced`}
+                              {/* Add optional chaining here */}
+                              {meal?.name || `${label} to be announced`}
                             </p>
                           </div>
                           <span className="text-xs font-semibold text-brand bg-brand/10 border border-brand/20 px-3 py-1.5 rounded-full">
-                            {formatMealCalories(meal.calories)}
+                            {/* Safely pass calories or default to 0 */}
+                            {meal?.calories
+                              ? formatMealCalories(meal.calories)
+                              : formatMealCalories(0)}
                           </span>
                         </div>
 
-                        {meal.notes ? (
-                          <p className="text-sm text-muted-foreground leading-relaxed">{meal.notes}</p>
+                        {/* Safely check for notes */}
+                        {meal?.notes ? (
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {meal.notes}
+                          </p>
                         ) : (
-                          <p className="text-sm text-muted-foreground">No additional notes for this meal.</p>
+                          <p className="text-sm text-muted-foreground">
+                            No additional notes for this meal.
+                          </p>
                         )}
 
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-3">Ingredients</p>
-                          {meal.ingredients.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No ingredients listed.</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-foreground mb-3">
+                            Ingredients
+                          </p>
+                          {/* Safely check if ingredients exist and have length */}
+                          {!meal?.ingredients?.length ? (
+                            <p className="text-sm text-muted-foreground">
+                              No ingredients listed.
+                            </p>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {meal.ingredients.map((ingredient, index) => (
@@ -462,22 +539,33 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                                 Daily Instructions
                               </h4>
                               <p className="text-muted-foreground leading-relaxed">
-                                {previewDay.instructions || "No specific instructions were provided for this day."}
+                                {previewDay.instructions ||
+                                  "No specific instructions were provided for this day."}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          {mealEntries(previewDay).map(({ key, label, meal }) => (
-                            <div key={`${key}-summary`} className="rounded-2xl border border-border bg-secondary/30 p-4">
-                              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                                {label}
-                              </p>
-                              <p className="text-base font-semibold text-foreground">{meal.calories}</p>
-                              <p className="text-xs text-muted-foreground">Calories</p>
-                            </div>
-                          ))}
+                          {mealEntries(previewDay).map(
+                            ({ key, label, meal }) => (
+                              <div
+                                key={`${key}-summary`}
+                                className="rounded-2xl border border-border bg-secondary/30 p-4"
+                              >
+                                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                                  {label}
+                                </p>
+                                {/* Safely access calories or fallback to 0 */}
+                                <p className="text-base font-semibold text-foreground">
+                                  {meal?.calories || 0}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Calories
+                                </p>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     </div>
