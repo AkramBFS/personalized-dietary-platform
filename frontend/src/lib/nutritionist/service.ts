@@ -477,7 +477,12 @@ export async function getNutritionistProfile(): Promise<NutritionistProfile> {
 
 export async function patchNutritionistProfile(payload: ProfilePatchPayload): Promise<NutritionistProfile> {
   if (useBackendMocks) {
-    return { ...mockProfile, ...payload, profile_photo_url: payload.profile_photo ? URL.createObjectURL(payload.profile_photo) : mockProfile.profile_photo_url };
+    const { profile_photo, ...rest } = payload;
+    return {
+      ...mockProfile,
+      ...rest,
+      profile_photo_url: profile_photo ? URL.createObjectURL(profile_photo) : mockProfile.profile_photo_url,
+    } as NutritionistProfile;
   }
 
   const formData = new FormData();
@@ -496,7 +501,12 @@ export async function patchNutritionistProfile(payload: ProfilePatchPayload): Pr
     return unwrapResponse(response.data);
   } catch (error) {
     if (hasNetworkError(error)) {
-      return { ...mockProfile, ...payload, profile_photo_url: payload.profile_photo ? URL.createObjectURL(payload.profile_photo) : mockProfile.profile_photo_url };
+      const { profile_photo, ...rest } = payload;
+      return {
+        ...mockProfile,
+        ...rest,
+        profile_photo_url: profile_photo ? URL.createObjectURL(profile_photo) : mockProfile.profile_photo_url,
+      } as NutritionistProfile;
     }
     throw error;
   }
@@ -583,7 +593,7 @@ export async function getNutritionistPatients(): Promise<NutritionistPatientSumm
   if (useBackendMocks) return mockPatients;
   try {
     const response = await api.get<ApiEnvelope<NutritionistPatientSummary[]> | NutritionistPatientSummary[]>("/nutritionist/patients/");
-    const data = unwrapResponse(response.data) as NutritionistPatientApiRecord[] | NutritionistPatientSummary[];
+    const data = unwrapResponse(response.data) as any[];
     // Normalize API response: extract nested client data if present
     return (Array.isArray(data) ? data : []).map((p) => ({
       id: p.id ?? p.client_id,
@@ -678,8 +688,13 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
       created_at: new Date().toISOString(),
       category: "predefined",
       cover_image_url: payload.cover_image ? URL.createObjectURL(payload.cover_image) : null,
-      ...payload,
-    };
+      title: payload.title,
+      description: payload.description,
+      plan_type: payload.plan_type,
+      price: payload.price,
+      duration_days: payload.duration_days,
+      content_json: payload.content_json,
+    } as NutritionistPlan;
   }
   try {
     const formData = new FormData();
@@ -697,8 +712,13 @@ export async function createNutritionistPlan(payload: CreatePlanPayload): Promis
         created_at: new Date().toISOString(),
         category: "predefined",
         cover_image_url: payload.cover_image ? URL.createObjectURL(payload.cover_image) : null,
-        ...payload,
-      };
+        title: payload.title,
+        description: payload.description,
+        plan_type: payload.plan_type,
+        price: payload.price,
+        duration_days: payload.duration_days,
+        content_json: payload.content_json,
+      } as NutritionistPlan;
     }
     throw error;
   }
