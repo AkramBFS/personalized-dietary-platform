@@ -40,8 +40,12 @@ interface NutritionistProfile {
   profile_image: string;
 }
 
-type AvailabilityPayload = TimeSlot[] | {
-  available_slots?: TimeSlot[];
+interface AvailabilityResponse {
+  is_holiday: boolean;
+  available_slots: TimeSlot[];
+}
+
+type AvailabilityPayload = TimeSlot[] | AvailabilityResponse | {
   results?: TimeSlot[];
 };
 
@@ -83,6 +87,7 @@ export default function ScheduleConsultation({
   const [availability, setAvailability] = useState<TimeSlot[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
+  const [isHoliday, setIsHoliday] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -121,21 +126,55 @@ export default function ScheduleConsultation({
 
     const fetchSlots = async () => {
       setIsSlotsLoading(true);
+      setIsHoliday(false);
       try {
         const formattedDate = format(selectedDate, "yyyy-MM-dd");
         const raw = await getNutritionistAvailability(nutritionistId, formattedDate);
         if (!isMounted) return;
 
-        const payload: AvailabilityPayload =
-          raw && typeof raw === "object" ? (raw as AvailabilityPayload) : [];
-        const slots = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload.available_slots)
-          ? payload.available_slots
-          : Array.isArray(payload.results)
-          ? payload.results
-          : [];
-        setAvailability(slots);
+        const payload = raw as AvailabilityPayload;
+        let rawSlots: TimeSlot[] = [];
+        
+        if (Array.isArray(payload)) {
+          rawSlots = payload;
+        } else if ("available_slots" in payload && Array.isArray(payload.available_slots)) {
+          rawSlots = payload.available_slots;
+          if ("is_holiday" in payload) {
+            setIsHoliday(!!payload.is_holiday);
+          }
+        } else if ("results" in payload && Array.isArray(payload.results)) {
+          rawSlots = payload.results;
+        }
+        
+        // Split ranges into 1-hour slots
+        const generatedSlots: TimeSlot[] = [];
+        rawSlots.forEach(range => {
+          const [startH, startM] = range.start_time.split(":").map(Number);
+          const [endH, endM] = range.end_time.split(":").map(Number);
+          
+          let currentH = startH;
+          let currentM = startM;
+          
+          // Total minutes from start of day
+          const totalEndMinutes = endH * 60 + endM;
+          
+          while (currentH * 60 + currentM + 60 <= totalEndMinutes) {
+            const nextTotalMinutes = currentH * 60 + currentM + 60;
+            const nextH = Math.floor(nextTotalMinutes / 60);
+            const nextM = nextTotalMinutes % 60;
+            
+            generatedSlots.push({
+              start_time: `${String(currentH).padStart(2, "0")}:${String(currentM).padStart(2, "0")}`,
+              end_time: `${String(nextH).padStart(2, "0")}:${String(nextM).padStart(2, "0")}`,
+              is_available: range.is_available ?? true
+            });
+            
+            currentH = nextH;
+            currentM = nextM;
+          }
+        });
+        
+        setAvailability(generatedSlots);
       } catch (err) {
         console.error("Failed to load slots", err);
         if (isMounted) {
@@ -156,9 +195,8 @@ export default function ScheduleConsultation({
   }, [nutritionist, nutritionistId, selectedDate]);
 
   const days = useMemo(() => {
-    return Array.from({ length: 14 }).map((_, index) =>
-      addDays(startOfDay(new Date()), index),
-    );
+    const start = startOfDay(new Date());
+    return Array.from({ length: 7 }).map((_, index) => addDays(start, index));
   }, []);
 
   const morningSlots = availability.filter(
@@ -324,6 +362,14 @@ export default function ScheduleConsultation({
                     <span className="ml-2 text-muted-foreground">
                       Loading available slots...
                     </span>
+                  </div>
+                ) : isHoliday ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <CalendarX className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h4 className="text-lg font-bold text-foreground">Practitioner is on Holiday</h4>
+                    <p className="text-muted-foreground max-w-xs mx-auto">
+                      {currentNutritionist.name} is not available on {format(selectedDate, "MMMM do")}. Please select another date.
+                    </p>
                   </div>
                 ) : (
                   <>
