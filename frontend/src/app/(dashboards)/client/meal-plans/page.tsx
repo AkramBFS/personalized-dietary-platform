@@ -174,10 +174,11 @@ export default function MealPlansPage() {
                 {userPlan.status === "completed" && (
                   <Button
                     variant="outline"
-                    className="px-3 border-primary text-primary hover:bg-primary/5"
+                    className="flex-1 border-primary text-primary hover:bg-primary/5 flex items-center justify-center gap-2"
                     onClick={() => setReviewTarget({ id: userPlan.plan_id, title: userPlan.plan_title })}
                   >
                     <MessageSquare className="w-4 h-4" />
+                    Review Plan
                   </Button>
                 )}
               </CardFooter>

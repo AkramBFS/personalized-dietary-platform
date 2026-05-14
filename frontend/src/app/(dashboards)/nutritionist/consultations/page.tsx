@@ -139,7 +139,7 @@ export default function ConsultationsPage() {
               {consultations.map((consultation) => (
                 <TableRow key={consultation.id}>
                   <TableCell>
-                    <div className="font-medium">{consultation.client_name}</div>
+                    <div className="font-medium">{consultation.client_name || "Unknown Patient"}</div>
                     <div className="text-xs text-muted-foreground">
                       {consultation.start_time} - {consultation.end_time}
                     </div>
@@ -164,11 +164,11 @@ export default function ConsultationsPage() {
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border">
-                  <AvatarFallback>{selected.client_name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{selected.client_name?.charAt(0) || "P"}</AvatarFallback>
                 </Avatar>
                 <div>
                   <CardTitle>Consultation Workspace</CardTitle>
-                  <CardDescription>Managing {selected.client_name}</CardDescription>
+                  <CardDescription>Managing {selected.client_name || "Patient"}</CardDescription>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setSelected(null)}>

@@ -254,7 +254,7 @@ export const bookConsultation = async (payload: {
   is_free_from_plan: boolean;
 }) => {
   const response = await api.post("client/consultations/book/", payload);
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 // ============================================
@@ -288,7 +288,7 @@ export const getNutritionists = async (params?: {
   sort?: string;
 }) => {
   const response = await api.get("marketplace/nutritionists/", { params });
-  return response.data;
+  return unwrapResponse(response.data);
 };
 
 /**

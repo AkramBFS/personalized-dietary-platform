@@ -178,6 +178,8 @@ export interface ClientConsultation {
   status: "scheduled" | "finished" | "cancelled" | string;
   consultation_type?: string;
   zoom_link?: string | null;
+  price_paid?: number;
+  is_free_from_plan?: boolean;
   created_at?: string;
 }
 
@@ -411,16 +413,14 @@ export async function postBookConsultation(payload: BookConsultationPayload): Pr
 }
 
 export interface ReviewPayload {
+  item_type: "plan" | "consultation";
+  item_id: number;
   rating: number;
-  comment: string;
+  comment?: string;
 }
 
-export async function postMealPlanReview(planId: number, payload: ReviewPayload): Promise<void> {
-  await api.post(`/client/reviews/meal-plans/${planId}/`, payload);
-}
-
-export async function postConsultationReview(consultationId: number, payload: ReviewPayload): Promise<void> {
-  await api.post(`/client/reviews/consultations/${consultationId}/`, payload);
+export async function submitReview(payload: ReviewPayload): Promise<void> {
+  await api.post("/reviews/", payload);
 }
 
 export async function getNutritionistAvailability(nutritionistId: number, date: string): Promise<unknown> {
