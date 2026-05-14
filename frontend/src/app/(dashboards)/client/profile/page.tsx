@@ -30,18 +30,18 @@ import {
 import { resolveApiUrl } from "@/lib/api";
 import GenericDropdown from "@/components/ui/GenericDropdown";
 
-const ACTIVITY_FALLBACK = [
-  { value: "sedentary", label: "Sedentary" },
-  { value: "moderate", label: "Moderate" },
-  { value: "very active", label: "Very Active" },
+const ACTIVITY_FALLBACK: LookupItem[] = [
+  { id: -1, value: "sedentary", label: "Sedentary" },
+  { id: -2, value: "moderate", label: "Moderate" },
+  { id: -3, value: "very active", label: "Very Active" },
 ];
 
-const DIET_FALLBACK = [
-  { value: "omnivore", label: "Omnivore" },
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: "vegan", label: "Vegan" },
-  { value: "keto", label: "Keto" },
-  { value: "paleo", label: "Paleo" },
+const DIET_FALLBACK: LookupItem[] = [
+  { id: -1, value: "omnivore", label: "Omnivore" },
+  { id: -2, value: "vegetarian", label: "Vegetarian" },
+  { id: -3, value: "vegan", label: "Vegan" },
+  { id: -4, value: "keto", label: "Keto" },
+  { id: -5, value: "paleo", label: "Paleo" },
 ];
 
 function optionLabel(item: LookupItem): string {
