@@ -255,6 +255,8 @@ export const bookConsultation = async (payload: {
   consultation_type: "advice_only" | "plan_included";
   user_plan_id?: number;
   is_free_from_plan: boolean;
+  amount_paid?: number;
+  transaction_number?: string;
 }) => {
   const response = await api.post("client/consultations/book/", payload);
   return unwrapResponse(response.data);
