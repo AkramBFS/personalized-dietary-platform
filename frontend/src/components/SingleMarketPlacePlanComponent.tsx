@@ -17,7 +17,7 @@ import {
   UserRound,
 } from "lucide-react";
 import {
-  getMarketplacePlanDetail,
+  getMarketplacePlanPreview,
   getNutritionistProfile,
   MarketplaceNutritionistProfile,
   MarketplacePlanDayContent,
@@ -94,7 +94,7 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
       setError(null);
 
       try {
-        const planDetail = await getMarketplacePlanDetail(planId);
+        const planDetail = await getMarketplacePlanPreview(planId);
         if (requestId !== detailRequestIdRef.current) return;
 
         setPlan(planDetail);
