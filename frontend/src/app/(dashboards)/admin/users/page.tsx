@@ -14,15 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, Search, X } from "lucide-react";
 import {
   getAdminUsers,
   getAdminUserDetail,
   banUser,
+  deleteUser,
   type AdminUser,
 } from "@/lib/admin";
 import { toast } from "sonner";
 import GenericDropdown from "@/components/ui/GenericDropdown";
+import { Eye, Search, X, Trash2, User, Mail, Calendar, Shield, Activity, UserCircle } from "lucide-react";
 
 const getDisplayRole = (role?: string) => {
   if (!role) return "Unknown";
@@ -81,6 +82,21 @@ export default function AdminUsersPage() {
       setUserDetails(null);
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: AdminUser) => {
+    if (!confirm(`Are you sure you want to delete user ${user.username}? This action is irreversible.`)) {
+      return;
+    }
+
+    try {
+      await deleteUser(user.id);
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      setIsModalOpen(false);
+      toast.success("User deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete user");
     }
   };
 
@@ -213,151 +229,204 @@ export default function AdminUsersPage() {
       </Card>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
-            <div className="flex justify-between items-center p-6 border-b border-border">
-              <h2 className="text-lg font-semibold">
-                User Details - {selectedUser?.username}
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-border flex flex-col">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <UserCircle className="w-8 h-8" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold leading-tight">
+                    {selectedUser?.username}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    User ID: #{selectedUser?.id}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
+                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6">
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {detailsLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
+                <div className="space-y-6">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                  </div>
+                  <Skeleton className="h-40 w-full rounded-xl" />
                 </div>
               ) : userDetails ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Username</label>
-                      <p className="text-sm text-muted-foreground">
-                        {userDetails.username}
-                      </p>
+                <>
+                  {/* Quick Info Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <Shield className="w-4 h-4" />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Role</span>
+                      </div>
+                      <p className="font-bold capitalize">{getDisplayRole(userDetails.role)}</p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <p className="text-sm text-muted-foreground">
-                        {userDetails.email}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Role</label>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {getDisplayRole(userDetails.role)}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Status</label>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <Activity className="w-4 h-4" />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Status</span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={
+                          userDetails.is_active
+                            ? "text-primary border-primary/30"
+                            : "text-destructive border-destructive/30"
+                        }
+                      >
                         {userDetails.is_active ? "Active" : "Banned"}
+                      </Badge>
+                    </div>
+                    <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Joined</span>
+                      </div>
+                      <p className="font-bold">
+                        {new Date(userDetails.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
+
+                  {/* Contact Info */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Mail className="w-4 h-4" /> Account Details
+                    </h3>
+                    <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+                      <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+                        <span className="text-sm text-muted-foreground">Email Address</span>
+                        <span className="text-sm font-medium">{userDetails.email}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+                        <span className="text-sm text-muted-foreground">Username</span>
+                        <span className="text-sm font-medium">{userDetails.username}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+                        <span className="text-sm text-muted-foreground">Staff Status</span>
+                        <Badge variant="secondary" className="font-mono">
+                          {userDetails.is_staff ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Role Specific Content */}
                   {userDetails.role === "client" && userDetails.client && (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Client Profile</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Age</label>
-                          <p className="text-sm text-muted-foreground">
-                            {userDetails.client.age}
-                          </p>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+                        Client Physical Profile
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
+                          <p className="text-xs text-muted-foreground">Age</p>
+                          <p className="text-lg font-bold text-primary">{userDetails.client.age}</p>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Weight</label>
-                          <p className="text-sm text-muted-foreground">
-                            {userDetails.client.weight} kg
-                          </p>
+                        <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
+                          <p className="text-xs text-muted-foreground">Weight</p>
+                          <p className="text-lg font-bold text-primary">{userDetails.client.weight}kg</p>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Height</label>
-                          <p className="text-sm text-muted-foreground">
-                            {userDetails.client.height} cm
-                          </p>
+                        <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
+                          <p className="text-xs text-muted-foreground">Height</p>
+                          <p className="text-lg font-bold text-primary">{userDetails.client.height}cm</p>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">BMI</label>
-                          <p className="text-sm text-muted-foreground">
-                            {userDetails.client.bmi}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">BMR</label>
-                          <p className="text-sm text-muted-foreground">
-                            {userDetails.client.bmr}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Goal</label>
-                          <p className="text-sm text-muted-foreground">
-                            {userDetails.client.goal?.name}
-                          </p>
+                        <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
+                          <p className="text-xs text-muted-foreground">BMI</p>
+                          <p className="text-lg font-bold text-primary">{userDetails.client.bmi}</p>
                         </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium">
-                          Health History
-                        </label>
-                        <p className="text-sm text-muted-foreground">
-                          {userDetails.client.health_history || "None"}
-                        </p>
+                      <div className="bg-muted/20 p-4 rounded-xl border border-border">
+                         <p className="text-sm font-medium mb-1">Health History</p>
+                         <p className="text-sm text-muted-foreground italic">
+                           {userDetails.client.health_history || "No recorded history"}
+                         </p>
                       </div>
                     </div>
                   )}
-                  {userDetails.role === "nutritionist" &&
-                    userDetails.nutritionist && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">
-                          Nutritionist Profile
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">Bio</label>
-                            <p className="text-sm text-muted-foreground">
-                              {userDetails.nutritionist.bio}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">
-                              Years Experience
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                              {userDetails.nutritionist.years_experience}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">
-                              Consultation Price
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                              ${userDetails.nutritionist.consultation_price}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">
-                              Specialization
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                              {userDetails.nutritionist.specialization?.name}
-                            </p>
-                          </div>
+
+                  {userDetails.role === "nutritionist" && userDetails.nutritionist && (
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+                        Professional Profile
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Specialization</p>
+                          <p className="font-medium">{userDetails.nutritionist.specialization?.name || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Experience</p>
+                          <p className="font-medium">{userDetails.nutritionist.years_experience} Years</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Rate</p>
+                          <p className="font-medium text-emerald-600">${userDetails.nutritionist.consultation_price}/session</p>
                         </div>
                       </div>
-                    )}
-                </div>
+                      <div className="bg-muted/20 p-4 rounded-xl border border-border">
+                         <p className="text-sm font-medium mb-1">Professional Bio</p>
+                         <p className="text-sm text-muted-foreground">
+                           {userDetails.nutritionist.bio}
+                         </p>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
-                <p className="text-muted-foreground">
-                  Failed to load user details.
-                </p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive mb-4">
+                    <X className="w-6 h-6" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">
+                    Failed to load detailed information for this user.
+                  </p>
+                </div>
               )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-border bg-muted/30 flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-full px-6"
+              >
+                Close
+              </Button>
+              <div className="flex gap-3">
+                 <Button
+                    variant={(userDetails?.is_active ?? selectedUser?.is_active) ? "outline" : "default"}
+                    onClick={() => selectedUser && handleBanToggle(selectedUser)}
+                    className="rounded-full px-6"
+                    disabled={detailsLoading}
+                  >
+                    {(userDetails?.is_active ?? selectedUser?.is_active) ? "Ban User" : "Unban User"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => selectedUser && handleDeleteUser(selectedUser)}
+                    className="rounded-full px-6 flex items-center gap-2"
+                    disabled={detailsLoading}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Permanent
+                  </Button>
+              </div>
             </div>
           </div>
         </div>
