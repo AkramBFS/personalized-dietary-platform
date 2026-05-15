@@ -2,6 +2,9 @@ import { getClientProfile } from "@/lib/client";
 import { getNutritionistProfile } from "@/lib/nutritionist";
 import { getSessionUser, hasAccessToken, setSessionUser, type UserRole } from "@/lib/auth";
 import { resolveApiUrl } from "@/lib/api";
+import { formatNutritionistName, formatClientName } from "@/lib/utils";
+
+
 
 export interface CurrentProfileIdentity {
   role: Exclude<UserRole, "high_admin">;
@@ -26,10 +29,11 @@ export async function getProfileIdentity(role?: UserRole | null): Promise<Curren
     });
     return {
       role: "client",
-      username: profile.username || sessionUser?.username || "Client",
+      username: formatClientName(profile.username || sessionUser?.username),
       email: profile.email || sessionUser?.email || "",
       avatarUrl: resolveApiUrl(profile.profile_photo_url),
     };
+
   }
 
   if (resolvedRole === "nutritionist") {
@@ -37,18 +41,21 @@ export async function getProfileIdentity(role?: UserRole | null): Promise<Curren
     setSessionUser({
       id: profile.nutritionist_id,
       role: "nutritionist",
-      username: profile.user?.username,
-      email: profile.user?.email,
+      username: profile.username || profile.user?.username,
+      email: profile.email || profile.user?.email,
     });
-    const baseUsername = profile.user?.username || sessionUser?.username || "Nutritionist";
-    const username = baseUsername.startsWith("Dr. ") ? baseUsername : `Dr. ${baseUsername}`;
+    
+    const rawUsername = profile.username || profile.user?.username || sessionUser?.username || "Nutritionist";
+    const username = formatNutritionistName(rawUsername);
+    
     return {
       role: "nutritionist",
       username,
-      email: profile.user?.email || sessionUser?.email || "",
+      email: profile.email || profile.user?.email || sessionUser?.email || "",
       avatarUrl: resolveApiUrl(profile.profile_photo_url),
     };
   }
+
 
   if (resolvedRole === "high_admin") return null;
 

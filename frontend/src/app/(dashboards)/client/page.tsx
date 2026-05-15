@@ -35,6 +35,8 @@ import {
   getClientProgress,
   getClientUserPlans,
 } from "@/lib/client";
+import { formatClientName } from "@/lib/utils";
+
 
 interface ChartPoint {
   date: string;
@@ -82,7 +84,8 @@ export default function ClientDashboardPage() {
 
         if (!isMounted) return;
 
-        setProfileName(profile.username || "there");
+        setProfileName(formatClientName(profile.username));
+
 
         const currentPlan =
           plans.find((plan) => plan.status === "active") ?? null;
