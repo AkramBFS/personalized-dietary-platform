@@ -13,79 +13,43 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { getBlogPosts, BlogPost, buildBlogPostHref } from "@/lib/api";
+
+const FALLBACK_IMAGE_URL = "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=600";
 
 export default function BlogPageComponent() {
-  const articles = [
-    {
-      slug: "optimizing-gut-health-probiotics-prebiotics",
-      tag: "Healthcare",
-      title: "Optimizing Gut Health: A Guide to Probiotics and Prebiotics",
-      desc: "Explore the science behind gut health and how incorporating probiotics and prebiotics into your diet can improve digestion, boost immunity, and enhance overall well-being.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1494390248081-4e521a5940db?q=80&w=806&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    },
-    {
-      slug: "tools-effective-agile-teams-healthcare",
-      tag: "Webinar",
-      title: "Tools for Effective Agile Teams in Healthcare",
-      desc: "Discover the latest digital tools that are helping medical practices streamline their operations and deliver better care.",
-      imageUrl:
-        "https://plus.unsplash.com/premium_photo-1681843126728-04eab730febe?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    },
-    {
-      slug: "navigating-stress-burnout-clinicians",
-      tag: "Mental Health",
-      title: "Navigating Stress and Burnout for Clinicians",
-      desc: "Strategies and resources for healthcare professionals to maintain their mental well-being in high-pressure environments.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&q=80&w=600",
-    },
-    {
-      slug: "role-diet-preventative-medicine",
-      tag: "Nutrition",
-      title: "The Role of Diet in Preventative Medicine",
-      desc: "A comprehensive look at how nutritional choices can significantly impact long-term health outcomes and prevent chronic diseases.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=600",
-    },
-    {
-      slug: "redefining-patient-experience-case-study",
-      tag: "Patient Stories",
-      title: "Redefining the Patient Experience: A Case Study",
-      desc: "How one clinic overhauled its approach to patient care, resulting in higher satisfaction rates and better clinical results.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=600",
-    },
-    {
-      slug: "advancements-telehealth-technologies",
-      tag: "Medical Care",
-      title: "Advancements in Telehealth Technologies",
-      desc: "Exploring the latest software and hardware solutions making remote patient monitoring more effective than ever.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=600",
-    },
-  ];
-
+  const [articles, setArticles] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
   const debouncedSearch = useDebounce(search, 300);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const fetchedArticles = await getBlogPosts();
+        setArticles(fetchedArticles);
+      } catch (error) {
+        console.error("Failed to fetch blog posts", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchArticles();
+  }, []);
 
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
       // Search Logic
       const matchesSearch =
         article.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        article.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        article.tag.toLowerCase().includes(debouncedSearch.toLowerCase());
+        article.content.toLowerCase().includes(debouncedSearch.toLowerCase());
 
-      // Category Logic (mapping "Preventative Care" to include Healthcare/Medical Care to ensure results show)
-      const matchesCategory =
-        selectedCategory === "All Articles" ||
-        article.tag === selectedCategory ||
-        (selectedCategory === "Preventative Care" &&
-          (article.tag === "Healthcare" || article.tag === "Medical Care"));
+      // API doesn't return categories, so we just return all when selectedCategory matches 
+      // or if they are just filtering by search
+      const matchesCategory = selectedCategory === "All Articles" || true;
 
       return matchesSearch && matchesCategory;
     });
@@ -217,7 +181,11 @@ export default function BlogPageComponent() {
           />
         </div>
 
-        {filteredArticles.length === 0 ? (
+        {loading ? (
+          <div className="py-12 text-center text-muted-foreground flex items-center justify-center gap-2">
+            Loading articles...
+          </div>
+        ) : filteredArticles.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
             No articles found matching your criteria.
           </div>
@@ -232,21 +200,21 @@ export default function BlogPageComponent() {
                   <img
                     alt={article.title}
                     className="w-full h-full object-cover"
-                    src={article.imageUrl}
+                    src={FALLBACK_IMAGE_URL}
                   />
                 </div>
                 <div className="p-6 flex flex-col flex-grow gap-4">
                   <span className="inline-block bg-muted text-primary text-xs font-bold px-3 py-1 rounded-full w-max border border-primary/10 tracking-wide uppercase">
-                    {article.tag}
+                    Article
                   </span>
                   <h3 className="text-xl font-semibold text-foreground line-clamp-3 leading-tight">
                     {article.title}
                   </h3>
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-auto leading-relaxed">
-                    {article.desc}
+                    {article.content}
                   </p>
                   <Link
-                    href={`/blog/${article.slug}`}
+                    href={buildBlogPostHref(article)}
                     className="inline-flex items-center gap-2 text-sm font-semibold text-primary/80 hover:text-primary transition-colors mt-4 group"
                   >
                     Read more{" "}

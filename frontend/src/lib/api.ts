@@ -395,3 +395,62 @@ export const getInvoiceDetail = async (id: number): Promise<NutritionistInvoice>
   const response = await api.get(`client/invoices/${id}/`);
   return unwrapResponse(response.data);
 };
+
+// ============================================
+// Blog API
+// ============================================
+
+export interface BlogPost {
+  id: number;
+  admin_username: string;
+  title: string;
+  content: string;
+  created_at: string;
+}
+
+export const getBlogPosts = async (): Promise<BlogPost[]> => {
+  const response = await api.get('blog/');
+  return unwrapResponse(response.data);
+};
+
+export const getBlogPost = async (id: number): Promise<BlogPost> => {
+  const response = await api.get(`blog/${id}/`);
+  return unwrapResponse(response.data);
+};
+
+export function buildBlogPostHref(post: Pick<BlogPost, "id" | "title">): string {
+  const slug = slugifyPlanTitle(post.title);
+  return `/blog/${post.id}${slug ? `-${slug}` : ""}`;
+}
+
+export function parseBlogPostIdFromSlug(slug: string): number | null {
+  const match = slug.match(/^(\d+)(?:-|$)/);
+  if (!match) return null;
+
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+// ============================================
+// Community API
+// ============================================
+
+export interface CommunityPost {
+  id: number;
+  author_username: string;
+  content: string;
+  image_url: string | null;
+  status: string;
+  is_approved: boolean;
+  created_at: string;
+  comments: any[];
+}
+
+export const getCommunityPosts = async (): Promise<CommunityPost[]> => {
+  const response = await api.get('posts/');
+  return unwrapResponse(response.data);
+};
+
+export const deleteCommunityPost = async (id: number): Promise<void> => {
+  await api.delete(`posts/${id}/`);
+};
