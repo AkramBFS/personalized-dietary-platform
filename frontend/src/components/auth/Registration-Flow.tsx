@@ -236,7 +236,7 @@ export default function RegistrationFlow() {
         const payload = new FormData();
 
         // Basic Info[cite: 2]
-        payload.append("username", formData.email); // Using email as username per original logic[cite: 1]
+        payload.append("username", `${formData.firstName} ${formData.lastName}`); // Concatenated first and last name as username
         payload.append("email", formData.email);
         payload.append("password", formData.password);
 

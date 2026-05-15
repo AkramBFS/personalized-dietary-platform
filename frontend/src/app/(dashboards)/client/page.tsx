@@ -245,7 +245,7 @@ export default function ClientDashboardPage() {
                 </p>
                 {dailyTarget ? (
                   <div className="mt-2 flex w-full items-center gap-3">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-progress-track">
                       <div
                         className="h-full bg-primary"
                         style={{ width: `${progressPercentage}%` }}
