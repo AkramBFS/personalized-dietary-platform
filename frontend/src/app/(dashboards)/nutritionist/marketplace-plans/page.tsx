@@ -218,7 +218,7 @@ export default function MarketplacePlansPage() {
             <Input
               type="search"
               placeholder="Search plans..."
-              className="pl-8 bg-background border-border"
+              className="pl-8 h-10 bg-background border-border focus-visible:ring-ring transition-all duration-200"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -306,7 +306,7 @@ export default function MarketplacePlansPage() {
                     value={planData.title}
                     onChange={(e) => setPlanData({...planData, title: e.target.value})}
                     placeholder="e.g. 30-Day Mediterranean Transformation" 
-                    className="h-11"
+                    className="h-11 bg-background border-border focus-visible:ring-ring transition-all duration-200"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -316,7 +316,7 @@ export default function MarketplacePlansPage() {
                     value={planData.description}
                     onChange={(e) => setPlanData({...planData, description: e.target.value})}
                     placeholder="Short plan overview for reviewers"
-                    className="h-11"
+                    className="h-11 bg-background border-border focus-visible:ring-ring transition-all duration-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -327,7 +327,7 @@ export default function MarketplacePlansPage() {
                     min={1}
                     value={planData.duration}
                     onChange={(e) => setPlanData({...planData, duration: parseInt(e.target.value) || 7})}
-                    className="h-11"
+                    className="h-11 bg-background border-border focus-visible:ring-ring transition-all duration-200"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-1">
@@ -341,7 +341,7 @@ export default function MarketplacePlansPage() {
                       min={0}
                       value={planData.price}
                       onChange={(e) => setPlanData({...planData, price: parseFloat(e.target.value) || 0})}
-                      className="pl-7 h-11 border-primary/30 focus-visible:ring-ring"
+                      className="pl-7 h-11 bg-background border-border focus-visible:ring-ring transition-all duration-200"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5">Set to 0 for a free plan.</p>
@@ -383,7 +383,7 @@ export default function MarketplacePlansPage() {
                           id="cover-image"
                           type="file"
                           accept="image/*"
-                          className="h-11 cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
+                          className="h-11 bg-background border-border cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground focus-visible:ring-ring transition-all duration-200"
                           onChange={(e) => {
                             const file = e.target.files?.[0] ?? null;
                             if (file && file.size > 5 * 1024 * 1024) {
@@ -455,7 +455,7 @@ export default function MarketplacePlansPage() {
                                       ),
                                     }))
                                   }
-                                  className="h-8 text-sm bg-background"
+                                  className="h-8 text-sm bg-background border-border focus-visible:ring-ring transition-all duration-200"
                                 />
                               </div>
                               <Input
@@ -473,15 +473,15 @@ export default function MarketplacePlansPage() {
                                     ),
                                   }))
                                 }
-                                className="h-8 text-sm bg-background"
+                                className="h-8 text-sm bg-background border-border focus-visible:ring-ring transition-all duration-200"
                               />
                             </div>
                             {/* Ingredients */}
                             {meal.ingredients.map((ing, ingIdx) => (
                               <div key={ingIdx} className="flex items-center gap-1.5">
-                                <Input placeholder="Ingredient" value={ing.name} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], name: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background flex-1" />
-                                <Input placeholder="Amt" value={ing.amount} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], amount: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background w-16" />
-                                <Input placeholder="Unit" value={ing.unit} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], unit: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background w-16" />
+                                <Input placeholder="Ingredient" value={ing.name} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], name: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background border-border focus-visible:ring-ring flex-1 transition-all duration-200" />
+                                <Input placeholder="Amt" value={ing.amount} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], amount: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background border-border focus-visible:ring-ring w-16 transition-all duration-200" />
+                                <Input placeholder="Unit" value={ing.unit} onChange={(e) => { const updated = [...meal.ingredients]; updated[ingIdx] = { ...updated[ingIdx], unit: e.target.value }; setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }} className="h-7 text-xs bg-background border-border focus-visible:ring-ring w-16 transition-all duration-200" />
                                 <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive/60" onClick={() => { const updated = meal.ingredients.filter((_, i) => i !== ingIdx); setPlanData((prev) => ({ ...prev, days: prev.days.map((item, di) => di === index ? { ...item, [mealKey]: { ...item[mealKey], ingredients: updated } } : item) })); }}><Trash2 className="w-3 h-3" /></Button>
                               </div>
                             ))}
@@ -489,7 +489,7 @@ export default function MarketplacePlansPage() {
                               <Plus className="w-3 h-3 mr-1" /> Ingredient
                             </Button>
                             <textarea
-                              className="flex min-h-[40px] w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+                              className="flex min-h-[40px] w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all duration-200"
                               placeholder="Notes"
                               value={meal.notes}
                               onChange={(e) =>
@@ -508,7 +508,7 @@ export default function MarketplacePlansPage() {
                       })}
 
                       <textarea
-                        className="flex min-h-[60px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                        className="flex min-h-[60px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all duration-200"
                         placeholder="Day instructions"
                         value={day.instructions}
                         onChange={(event) =>

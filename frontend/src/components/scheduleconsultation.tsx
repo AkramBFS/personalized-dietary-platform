@@ -20,6 +20,7 @@ import {
   getNutritionistAvailability,
   getNutritionistProfile,
   MarketplaceNutritionistProfile,
+  resolveApiUrl,
 } from "@/lib/api";
 import { buildPaymentUrl } from "@/lib/payment";
 import NutritionistProfileModal from "./NutritionistProfileModal";
@@ -67,11 +68,7 @@ function mapNutritionistProfile(
     ].filter(Boolean) as string[],
     bio: profile.bio ?? "",
     consultation_price: Number(profile.consultation_price ?? 0),
-    profile_image: profile.profile_photo_url
-      ? profile.profile_photo_url.startsWith("http")
-        ? profile.profile_photo_url
-        : `http://127.0.0.1:8000/${profile.profile_photo_url}`
-      : "/placeholder-avatar.png",
+    profile_image: resolveApiUrl(profile.profile_photo_url) ?? "/placeholder-avatar.png",
   };
 }
 
@@ -239,6 +236,8 @@ export default function ScheduleConsultation({
     if (!selectedSlot || !nutritionist) return;
 
     setIsRedirectingToPayment(true);
+    const totalPrice = (nutritionist?.consultation_price ?? 0) + (consultationType === "plan_included" ? 50 : 0);
+
     const paymentHref = buildPaymentUrl({
       type: "consultation",
       nutritionistId: Number(nutritionist.id),
@@ -246,6 +245,7 @@ export default function ScheduleConsultation({
       startTime: selectedSlot.start_time,
       endTime: selectedSlot.end_time,
       consultationType,
+      amount: totalPrice,
     });
     router.push(paymentHref);
   };
@@ -502,7 +502,7 @@ export default function ScheduleConsultation({
                   Total Due Today
                 </span>
                 <span className="font-serif text-3xl text-foreground font-bold">
-                  ${currentNutritionist.consultation_price.toFixed(2)}
+                  ${(currentNutritionist.consultation_price + (consultationType === "plan_included" ? 50 : 0)).toFixed(2)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground text-right mt-1">
