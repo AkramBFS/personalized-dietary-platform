@@ -57,6 +57,8 @@ interface EditablePrediction {
   label: string;
   mass_grams: string;
   calories?: number;
+  count?: number;
+  confidence?: number;
 }
 
 const MEAL_LABELS: Record<MealType, string> = {
@@ -168,7 +170,7 @@ export default function CalorieTrackerPage() {
     protein?: number;
     carbs?: number;
     fats?: number;
-  }>({ calories: 0 });
+  } | null>(null);
 
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [ingredientName, setIngredientName] = useState("");
@@ -286,21 +288,65 @@ export default function CalorieTrackerPage() {
     const predictions = extractPredictions(log);
     setAiLogId(log.log_id);
     setSegmentedImageUrl(resolveApiUrl(log.segmented_image_url) ?? null);
+
+    const grouped = predictions.reduce(
+      (acc, pred) => {
+        const label = predictionLabel(pred).toLowerCase().trim();
+        if (!acc[label]) {
+          acc[label] = {
+            originalLabel: predictionLabel(pred),
+            mass_grams: 0,
+            calories: 0,
+            count: 0,
+            confidenceSum: 0,
+            hasCalories: false,
+          };
+        }
+        acc[label].mass_grams += predictionMass(pred);
+        if (pred.calories !== undefined) {
+          acc[label].calories += pred.calories;
+          acc[label].hasCalories = true;
+        }
+        acc[label].count += 1;
+        acc[label].confidenceSum += pred.confidence ?? 0;
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          originalLabel: string;
+          mass_grams: number;
+          calories: number;
+          count: number;
+          confidenceSum: number;
+          hasCalories: boolean;
+        }
+      >,
+    );
+
     setEditableItems(
-      predictions.map((prediction, index) => ({
+      Object.entries(grouped).map(([_, data], index) => ({
         id: `${log.log_id}-${index}`,
-        label: predictionLabel(prediction),
-        mass_grams: String(predictionMass(prediction)),
-        calories: prediction.calories,
+        label: data.originalLabel,
+        mass_grams: String(data.mass_grams.toFixed(1)),
+        calories: data.hasCalories ? data.calories : undefined,
+        count: data.count,
+        confidence:
+          data.count > 0
+            ? Number((data.confidenceSum / data.count).toFixed(3))
+            : undefined,
       })),
     );
+
     if (log.nutrition_preview) {
       setEstimatedNutrition({
         calories: log.nutrition_preview.total_calories || 0,
-        protein: log.nutrition_preview.total_protein,
-        carbs: log.nutrition_preview.total_carbs,
-        fats: log.nutrition_preview.total_fats,
+        protein: log.nutrition_preview.total_protein || 0,
+        carbs: log.nutrition_preview.total_carbs || 0,
+        fats: log.nutrition_preview.total_fats || 0,
       });
+    } else {
+      setEstimatedNutrition(null);
     }
     setIsModalOpen(true);
   };
@@ -367,7 +413,7 @@ export default function CalorieTrackerPage() {
       (sum, item) => sum + (item.calories || 0),
       0,
     );
-    setEstimatedNutrition((prev) => ({ ...prev, calories: totalCals }));
+    setEstimatedNutrition((prev) => prev ? ({ ...prev, calories: totalCals }) : { calories: totalCals });
   };
 
   const handleItemChange = (
@@ -550,39 +596,49 @@ export default function CalorieTrackerPage() {
                 </p>
               </div>
 
-              {estimatedNutrition.calories > 0 && (
-                <div className="grid grid-cols-4 gap-2 rounded-xl bg-primary/5 p-4 border border-primary/10">
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Calories
-                    </p>
-                    <p className="text-lg font-black text-primary">
-                      {estimatedNutrition.calories.toFixed(0)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Protein
-                    </p>
-                    <p className="text-lg font-black text-foreground">
-                      {estimatedNutrition.protein?.toFixed(1) ?? "--"}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Carbs
-                    </p>
-                    <p className="text-lg font-black text-foreground">
-                      {estimatedNutrition.carbs?.toFixed(1) ?? "--"}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Fats
-                    </p>
-                    <p className="text-lg font-black text-foreground">
-                      {estimatedNutrition.fats?.toFixed(1) ?? "--"}
-                    </p>
+              {estimatedNutrition && (
+                <div className="mb-4 space-y-3">
+                  <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Nutrition Preview
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="flex flex-col items-center justify-center rounded-xl bg-primary/10 p-4 border border-primary/20">
+                      <p className="text-[10px] font-bold text-primary uppercase mb-1">
+                        Calories
+                      </p>
+                      <p className="text-2xl font-black text-primary">
+                        {estimatedNutrition.calories.toFixed(0)}
+                      </p>
+                      <p className="text-[10px] text-primary/70 font-medium">kcal</p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
+                        Protein
+                      </p>
+                      <p className="text-2xl font-black text-foreground">
+                        {estimatedNutrition.protein?.toFixed(1) ?? "0.0"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium">grams</p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
+                        Carbs
+                      </p>
+                      <p className="text-2xl font-black text-foreground">
+                        {estimatedNutrition.carbs?.toFixed(1) ?? "0.0"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium">grams</p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
+                        Fats
+                      </p>
+                      <p className="text-2xl font-black text-foreground">
+                        {estimatedNutrition.fats?.toFixed(1) ?? "0.0"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium">grams</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -593,57 +649,79 @@ export default function CalorieTrackerPage() {
                   saving.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                    Detected Ingredients
+                  </h3>
                   {editableItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4"
+                      className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/30"
                     >
-                      <div className="min-w-[200px] flex-1">
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Food Type
-                        </label>
-                        <Input
-                          value={item.label}
-                          onChange={(event) =>
-                            handleItemChange(
-                              item.id,
-                              "label",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="w-32">
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Mass (g)
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.mass_grams}
-                          onChange={(event) =>
-                            handleItemChange(
-                              item.id,
-                              "mass_grams",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      {item.calories !== undefined && (
-                        <div className="pb-2 text-right text-sm font-semibold text-foreground">
-                          {item.calories} kcal
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-bold text-primary">
+                            {item.count ?? 1}x
+                          </span>
+                          {item.confidence !== undefined && (
+                            <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                              {Math.round(item.confidence * 100)}% Match
+                            </span>
+                          )}
                         </div>
-                      )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="px-3"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap items-end gap-3">
+                        <div className="min-w-[140px] flex-1">
+                          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Food Type
+                          </label>
+                          <Input
+                            value={item.label}
+                            onChange={(event) =>
+                              handleItemChange(
+                                item.id,
+                                "label",
+                                event.target.value,
+                              )
+                            }
+                            className="bg-background"
+                          />
+                        </div>
+                        <div className="w-24 sm:w-32">
+                          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Mass (g)
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={item.mass_grams}
+                            onChange={(event) =>
+                              handleItemChange(
+                                item.id,
+                                "mass_grams",
+                                event.target.value,
+                              )
+                            }
+                            className="bg-background"
+                          />
+                        </div>
+                        {item.calories !== undefined && (
+                          <div className="pb-2 text-right text-sm font-bold text-foreground">
+                            {item.calories.toFixed(0)} kcal
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

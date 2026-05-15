@@ -21,8 +21,45 @@ import {
   Info,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getClientSubscriptionStatus } from "@/lib/client/service";
+import { hasAccessToken } from "@/lib/auth";
 
 export default function ServicesPage() {
+  const router = useRouter();
+  const [isPremium, setIsPremium] = useState(false);
+
+  useEffect(() => {
+    async function checkPremium() {
+      if (hasAccessToken()) {
+        try {
+          const status = await getClientSubscriptionStatus();
+          setIsPremium(status.is_premium);
+        } catch (error) {
+          console.error("Error checking subscription status", error);
+        }
+      }
+    }
+    checkPremium();
+  }, []);
+
+  const handleExploreServices = () => {
+    const el = document.getElementById("ai-calorie-estimation");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleAiTrackerClick = () => {
+    if (isPremium) {
+      router.push("/client/calorie-tracker");
+    } else {
+      router.push("/subscription");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pt-24 pb-32 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 space-y-40">
@@ -51,6 +88,7 @@ export default function ServicesPage() {
             </p>
 
             <motion.button
+              onClick={handleExploreServices}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
@@ -133,6 +171,16 @@ export default function ServicesPage() {
                     medical diagnosis.
                   </p>
                 </div>
+
+                <motion.button
+                  onClick={handleAiTrackerClick}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all mt-4"
+                >
+                  Try AI Tracker
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
               </div>
             </div>
 
@@ -271,6 +319,17 @@ export default function ServicesPage() {
                     </div>
                   ))}
                 </div>
+
+                <Link href="/consultations" className="inline-block mt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                  >
+                    Book a Consultation
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </Link>
               </div>
             </div>
           </motion.section>
@@ -328,6 +387,17 @@ export default function ServicesPage() {
                     </div>
                   ))}
                 </div>
+
+                <Link href="/consultations" className="inline-block mt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                  >
+                    Get a Personalized Plan
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </Link>
               </div>
             </div>
 
@@ -466,6 +536,17 @@ export default function ServicesPage() {
                   </div>
                 ))}
               </div>
+
+              <Link href="/marketplace" className="inline-block mt-2">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                >
+                  Browse Meal Plans
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
+              </Link>
             </div>
           </motion.section>
         </section>
@@ -522,8 +603,19 @@ export default function ServicesPage() {
                     <span className="text-sm font-medium text-foreground/90">
                       Short-term Shifts
                     </span>
-                  </div>
                 </div>
+              </div>
+
+              <Link href="/marketplace" className="inline-block mt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                  >
+                    Explore Seasonal Programs
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </Link>
               </div>
             </div>
 
@@ -587,26 +679,31 @@ export default function ServicesPage() {
 
           <div className="flex flex-wrap justify-center gap-4">
             <motion.button
+              onClick={handleExploreServices}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="px-6 py-3 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-accent transition-colors"
             >
               Explore Services
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-6 py-3 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-accent transition-colors"
-            >
-              Browse Marketplace
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground text-sm font-bold shadow-brand hover:opacity-90 transition-all"
-            >
-              Book a Consultation
-            </motion.button>
+            <Link href="/marketplace">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-6 py-3 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-accent transition-colors"
+              >
+                Browse Marketplace
+              </motion.button>
+            </Link>
+            <Link href="/consultations">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground text-sm font-bold shadow-brand hover:opacity-90 transition-all"
+              >
+                Book a Consultation
+              </motion.button>
+            </Link>
           </div>
         </motion.section>
       </div>
