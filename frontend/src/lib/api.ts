@@ -136,6 +136,9 @@ export interface MarketplacePlanDetail extends MarketplacePlanListItem {
   country_name?: string;
 }
 
+/** Preview-safe plan detail — only contains day-1 content. */
+export type MarketplacePlanPreview = MarketplacePlanDetail;
+
 export interface MarketplacePlanPurchasePayload {
   transaction_number: string;
   amount_paid: number;
@@ -309,6 +312,18 @@ export const getMarketplacePlans = async (params?: MarketplacePlansParams): Prom
 export const getMarketplacePlanDetail = async (id: number): Promise<MarketplacePlanDetail> => {
   const response = await api.get<ApiEnvelope<MarketplacePlanDetail> | MarketplacePlanDetail>(`marketplace/plans/${id}/`);
   return unwrapResponse(response.data);
+};
+
+/**
+ * GET /api/marketplace/plans/{id}/preview  (Next.js Route Handler)
+ * Returns plan detail with content_json trimmed to day 1 only for security.
+ */
+export const getMarketplacePlanPreview = async (id: number): Promise<MarketplacePlanPreview> => {
+  // Use absolute URL or relative if on same origin. Axios handles this.
+  // We use axios directly instead of the 'api' instance to avoid Django interceptors
+  // and hitting the Next.js API route instead.
+  const response = await axios.get<MarketplacePlanPreview>(`/api/marketplace/plans/${id}/preview`);
+  return response.data;
 };
 
 /**
