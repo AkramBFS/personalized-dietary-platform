@@ -85,7 +85,7 @@ export interface DashboardStats {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const response = await api.get("/lookup/admin/dashboard/");
   const raw = unwrapEnvelope(response.data) as any;
-  
+
   // Map API response to interface
   return {
     total_users: raw.users?.total ?? 0,

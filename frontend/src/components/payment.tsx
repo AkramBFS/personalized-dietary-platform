@@ -226,7 +226,7 @@ export default function SecurePayment() {
           setSummary({
             title: getConsultationTypeLabel(context.consultationType),
             provider: profile.user?.username || profile.username || "Nutritionist",
-            amount: Number(profile.consultation_price ?? 0),
+            amount: context.amount ?? Number(profile.consultation_price ?? 0),
             description: `Scheduled for ${context.appointmentDate} from ${context.startTime} to ${context.endTime}.`,
           });
           return;
@@ -300,6 +300,8 @@ export default function SecurePayment() {
           consultation_type: context.consultationType,
           user_plan_id: context.userPlanId,
           is_free_from_plan: context.isFreeFromPlan || false,
+          amount_paid: summary.amount,
+          transaction_number: generatedTransactionNumber,
         });
         setSuccessMessage("Payment confirmed. Your consultation booking has been submitted successfully.");
       }

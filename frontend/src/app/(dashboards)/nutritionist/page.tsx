@@ -15,6 +15,8 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { toast } from "sonner";
+import { formatNutritionistName } from "@/lib/utils";
+
 import {
   getNutritionistPatients,
   getNutritionistConsultations,
@@ -39,7 +41,8 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 // ── Component ───────────────────────────────────────────────────────────
 export default function NutritionistOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [displayName, setDisplayName] = useState("Doctor");
+  const [displayName, setDisplayName] = useState("Nutritionist");
+
   const [activePatients, setActivePatients] = useState(0);
   const [upcomingConsultations, setUpcomingConsultations] = useState(0);
   const [nextConsultationLabel, setNextConsultationLabel] = useState<string | null>(null);
@@ -63,8 +66,10 @@ export default function NutritionistOverviewPage() {
         ]);
 
         // Display name
-        const baseName = profile.user?.username ?? "Doctor";
-        setDisplayName(baseName.startsWith("Dr. ") ? baseName : `Dr. ${baseName}`);
+        const rawName = profile.username || profile.user?.username || "Nutritionist";
+
+        setDisplayName(formatNutritionistName(rawName));
+
 
         // Active patients count
         setActivePatients(Array.isArray(patients) ? patients.length : 0);

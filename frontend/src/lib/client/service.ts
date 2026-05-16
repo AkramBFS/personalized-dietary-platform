@@ -218,6 +218,14 @@ export interface ClientUserPlan {
   };
 }
 
+export interface CommunityComment {
+  id: number;
+  author_username: string;
+  content: string;
+  image_url?: string | null;
+  created_at: string;
+}
+
 export interface CommunityPost {
   id: number;
   author_username: string;
@@ -226,7 +234,7 @@ export interface CommunityPost {
   status: "draft" | "published" | "removed" | "pending" | "approved" | "rejected" | string;
   is_approved: boolean;
   created_at: string;
-  comments?: any[];
+  comments?: CommunityComment[];
 }
 
 export interface ClientInvoice {
@@ -442,10 +450,21 @@ export interface CreatePostPayload {
   title?: string;
   content: string;
   tags?: string[];
+  image?: File | null;
 }
 
 export async function postCreateCommunityPost(payload: CreatePostPayload): Promise<CommunityPost> {
-  const response = await api.post<ApiEnvelope<CommunityPost> | CommunityPost>("/client/posts/", payload);
+  const formData = new FormData();
+  formData.append("content", payload.content);
+  if (payload.title) formData.append("title", payload.title);
+  if (payload.image) formData.append("image", payload.image);
+  if (payload.tags && payload.tags.length > 0) {
+    payload.tags.forEach(tag => formData.append("tags", tag));
+  }
+
+  const response = await api.post<ApiEnvelope<CommunityPost> | CommunityPost>("/client/posts/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return unwrapResponse(response.data);
 }
 

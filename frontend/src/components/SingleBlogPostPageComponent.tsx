@@ -1,37 +1,22 @@
+"use client";
+
 import {
   CalendarDays,
   UserCircle,
-  Clock3,
-  MessageSquare,
   Facebook,
   Twitter,
   Linkedin,
+  Loader2,
 } from "lucide-react";
-const articleData = {
-  title:
-    "Optimizing Gut Health: The Nutritionist's Guide to a Balanced Microbiome",
-  category: "Nutrition & Wellness",
-  publishDate: "October 26, 2023",
-  author: {
-    name: "Dr. Sarah Johnson, RD",
-    title: "Registered Dietitian & Gut Health Specialist",
-    bio: "Dr. Sarah Johnson is a leading expert in functional nutrition, specializing in gastrointestinal health and the gut microbiome. She has dedicated over 15 years to helping clients achieve optimal wellness through evidence-based dietary interventions. Sarah is passionate about empowering people to understand the powerful connection between food, digestion, and overall health.",
-    avatar:
-      "https://images.pexels.com/photos/5215024/pexels-photo-5215024.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1", // Placeholder headshot
-  },
-  readTime: "7 min read",
-  commentsCount: 12,
-  featureImage:
-    "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1", // Placeholder healthy food image
-  contentParagraphs: [
-    "The gut microbiome, a complex ecosystem of trillions of bacteria residing in our digestive tract, is increasingly recognized as a cornerstone of overall health. Research continues to unveil its profound influence on everything from digestion and immune function to mental health and chronic disease risk. As a nutritionist specializing in this area, I’ve seen firsthand the transformative impact that focusing on gut health can have on a person's well-being.",
-    "A healthy gut is characterized by a diverse and balanced population of beneficial bacteria. However, factors like a poor diet (high in processed foods and sugar), chronic stress, lack of sleep, and overused antibiotics can disrupt this delicate balance, leading to a state called dysbiosis. This imbalance is linked to various health issues, including digestive distress (bloating, gas, IBD), skin problems, systemic inflammation, and even mood disorders.",
-    "So, how can we nurture our gut microbiome? It starts with the food we eat. Incorporating a variety of fiber-rich plant foods—such as vegetables, fruits, whole grains, legumes, nuts, and seeds—is crucial. Fiber acts as 'prebiotics,' providing fuel for the beneficial bacteria to thrive. In addition to fiber, consuming 'probiotic' foods, which contain live beneficial bacteria, can help replenish the microbiome. Think fermented foods like yogurt, kefir, sauerkraut, kimchi, and miso.",
-    "Beyond diet, other lifestyle factors play a vital role. Managing stress through practices like meditation or yoga, prioritizing 7-9 hours of quality sleep per night, and regular physical activity all contribute to a healthier gut environment. Remember, optimizing gut health is not a quick fix; it's a journey involving consistent dietary and lifestyle choices.",
-    "In conclusion, supporting your gut microbiome is one of the most impactful things you can do for your long-term health. By understanding the connection between what you eat and the health of your 'inner garden,' you can empower yourself to make choices that cultivate vitality from the inside out. Consult with a qualified health professional or a registered dietitian to develop a personalized plan tailored to your unique gut health needs.",
-  ],
-};
+import { useEffect, useState, useRef } from "react";
+import { getBlogPost, BlogPost, parseBlogPostIdFromSlug } from "@/lib/api";
 
+const FALLBACK_IMAGE_URL =
+  "https://images.unsplash.com/photo-1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+const FALLBACK_AUTHOR_AVATAR =
+  "https://images.pexels.com/photos/5215024/pexels-photo-5215024.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+
+// Related posts are kept static per instructions to repurpose UI but data isn't available
 const relatedPosts = [
   {
     title: "5 Simple Ways to Boost Your Immune System Naturally",
@@ -52,6 +37,73 @@ interface BlogPostProps {
 }
 
 export default function SingleBlogPostPageComponent({ slug }: BlogPostProps) {
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      const id = parseBlogPostIdFromSlug(slug);
+      if (!id) {
+        setError("Invalid blog post URL.");
+        setLoading(false);
+        return;
+      }
+
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await getBlogPost(id);
+        if (requestId !== requestIdRef.current) return;
+        setPost(data);
+      } catch (err) {
+        if (requestId !== requestIdRef.current) return;
+        setError("We couldn't load this article right now.");
+      } finally {
+        if (requestId !== requestIdRef.current) return;
+        setLoading(false);
+      }
+    };
+
+    void fetchPost();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="text-muted-foreground animate-pulse">
+          Loading article...
+        </p>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="bg-background text-foreground min-h-[60vh] flex items-center justify-center px-6">
+        <div className="max-w-xl w-full bg-card border border-border rounded-3xl p-10 text-center shadow-sm">
+          <h1 className="text-3xl font-semibold text-foreground mb-4">
+            Article unavailable
+          </h1>
+          <p className="text-muted-foreground mb-8">
+            {error || "We couldn't find the requested article."}
+          </p>
+          <a
+            href="/blog"
+            className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+          >
+            Back to Blog
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="max-w-7xl mx-auto w-full px-4 md:px-8 py-12 md:py-16 grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
       {/* Left Column (Main Article Content - Scrollable) */}
@@ -59,76 +111,64 @@ export default function SingleBlogPostPageComponent({ slug }: BlogPostProps) {
         {/* Feature Image */}
         <div className="w-full h-auto overflow-hidden rounded-2xl shadow-lg">
           <img
-            src={articleData.featureImage}
-            alt="Healthy food feature for blog post"
+            src={FALLBACK_IMAGE_URL}
+            alt="Feature for blog post"
             className="w-full h-[400px] object-cover"
           />
         </div>
 
         {/* Category Tag */}
         <span className="inline-block bg-muted text-primary text-sm font-bold px-4 py-1.5 rounded-full w-max border border-primary/10 tracking-wide uppercase">
-          {articleData.category}
+          Article
         </span>
 
         {/* Article Title */}
         <h1 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
-          {articleData.title}
+          {post.title}
         </h1>
 
         {/* Metadata Row */}
         <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground border-y border-border py-4">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4" />
-            <span>{articleData.publishDate}</span>
+            <span>{new Date(post.created_at).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center gap-2">
             <UserCircle className="w-4 h-4" />
-            <span>By {articleData.author.name}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock3 className="w-4 h-4" />
-            <span>{articleData.readTime}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            <span>{articleData.commentsCount} Comments</span>
+            <span>By {post.admin_username}</span>
           </div>
         </div>
 
-        {/* Article Content (Full text renders here) */}
+        {/* Article Content */}
         <div className="prose prose-base md:prose-lg max-w-none text-muted-foreground leading-relaxed flex flex-col gap-6">
-          {articleData.contentParagraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          <p className="whitespace-pre-wrap">{post.content}</p>
         </div>
       </section>
 
       {/* Right Column (Sticky Sidebar) */}
       <aside className="md:col-span-4 sticky top-2 flex flex-col gap-10">
-        {/* Nutritionist Profile ("About Me" adaptation) */}
+        {/* Author Profile adaptation */}
         <div className="bg-card p-8 rounded-2xl border border-border shadow-sm flex flex-col gap-6">
           <h2 className="text-xl font-bold text-foreground border-b border-border pb-3">
-            MEET THE NUTRITIONIST
+            ARTICLE AUTHOR
           </h2>
 
           <div className="flex flex-col items-center text-center gap-4">
             <img
-              src={articleData.author.avatar}
-              alt="Dr. Sarah Johnson, Registered Dietitian"
+              src={FALLBACK_AUTHOR_AVATAR}
+              alt="Author avatar"
               className="w-28 h-28 rounded-full object-cover border-4 border-muted"
             />
             <div>
               <h3 className="text-lg font-semibold text-foreground">
-                {articleData.author.name}
+                {post.admin_username}
               </h3>
-              <p className="text-sm text-primary font-medium">
-                {articleData.author.title}
-              </p>
+              <p className="text-sm text-primary font-medium">Admin & Writer</p>
             </div>
           </div>
 
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {articleData.author.bio}
+            Content managed and published by {post.admin_username}.
           </p>
 
           <button className="w-full bg-muted text-primary text-sm font-semibold py-3 px-6 rounded-xl hover:bg-muted/80 transition-colors">

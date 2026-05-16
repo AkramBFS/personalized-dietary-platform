@@ -74,6 +74,9 @@ export default function SchedulePage() {
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingAvailability, setIsSavingAvailability] = useState(false);
+  const [isUpdatingZoom, setIsUpdatingZoom] = useState(false);
+  const [isAddingHoliday, setIsAddingHoliday] = useState(false);
 
   // ── Data Fetching ──────────────────────────────────────────────────
   useEffect(() => {
@@ -159,7 +162,7 @@ export default function SchedulePage() {
   const handleUpdateZoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedConsultation) return;
-
+    setIsUpdatingZoom(true);
     try {
       await patchConsultationZoomLink(selectedConsultation.id, zoomLinkInput);
       // Also update status to "notified" if currently "scheduled"
@@ -181,6 +184,8 @@ export default function SchedulePage() {
       toast.success("Zoom link updated. Client has been notified.");
     } catch {
       toast.error("Failed to update zoom link.");
+    } finally {
+      setIsUpdatingZoom(false);
     }
     setSelectedConsultation(null);
   };
@@ -188,7 +193,7 @@ export default function SchedulePage() {
   const handleAddHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!holidayDateInput) return;
-
+    setIsAddingHoliday(true);
     try {
       const created = await addNutritionistHoliday(holidayDateInput);
       setHolidays([
@@ -199,6 +204,8 @@ export default function SchedulePage() {
       setHolidayDateInput("");
     } catch {
       toast.error("Failed to add holiday.");
+    } finally {
+      setIsAddingHoliday(false);
     }
   };
 
@@ -242,7 +249,9 @@ export default function SchedulePage() {
     });
   };
 
+  const [hasSaved, setHasSaved] = useState(false);
   const handleSaveAvailability = async () => {
+    setIsSavingAvailability(true);
     try {
       // Transform camelCase frontend state → snake_case API payload
       const payload: AvailabilitySlotPayload[] = availability.map((slot) => ({
@@ -252,8 +261,12 @@ export default function SchedulePage() {
       }));
       await putNutritionistAvailability(payload);
       toast.success("Availability preferences saved.");
+      setHasSaved(true);
+      setTimeout(() => setHasSaved(false), 2000);
     } catch {
       toast.error("Failed to save availability.");
+    } finally {
+      setIsSavingAvailability(false);
     }
   };
 
@@ -551,9 +564,22 @@ export default function SchedulePage() {
                   <CardFooter className="bg-muted border-t border-border rounded-b-xl py-4 flex justify-end">
                     <Button
                       onClick={handleSaveAvailability}
-                      className="shadow-sm"
+                      disabled={isSavingAvailability}
+                      className={`shadow-sm active:scale-95 transition-all duration-300 min-w-[160px] hover:shadow-md ${hasSaved ? "bg-emerald-600 hover:bg-emerald-700" : "bg-primary hover:bg-primary/90"}`}
                     >
-                      Save Restrictions
+                      {isSavingAvailability ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : hasSaved ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Saved!
+                        </>
+                      ) : (
+                        "Save Restrictions"
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -582,12 +608,19 @@ export default function SchedulePage() {
                             }
                             className="w-full h-11 border-border focus-visible:ring-destructive"
                           />
-                          <Button
+                           <Button
                             type="submit"
                             variant="outline"
-                            className="h-11 border-destructive/20 text-destructive hover:bg-destructive/10 px-8"
+                            disabled={isAddingHoliday}
+                            className="h-11 border-destructive/20 text-destructive hover:bg-destructive/10 px-8 active:scale-95 transition-all duration-200 min-w-[120px]"
                           >
-                            <Plus className="w-4 h-4 mr-2" /> Block
+                            {isAddingHoliday ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4 mr-2" /> Block
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -701,8 +734,19 @@ export default function SchedulePage() {
                         placeholder="https://zoom.us/j/..."
                       />
                     </div>
-                    <Button type="submit" className="w-full mt-2">
-                      Update & Notify Client
+                     <Button
+                      type="submit"
+                      disabled={isUpdatingZoom}
+                      className="w-full mt-2 active:scale-95 transition-all duration-200"
+                    >
+                      {isUpdatingZoom ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Update & Notify Client"
+                      )}
                     </Button>
                   </div>
                 </form>

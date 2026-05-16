@@ -50,6 +50,13 @@
   --color-brand: #3DDC97;
   /* Locked brand color */
 
+  /* Macro Tracking Colors */
+  --color-calories: var(--calories);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fats: var(--fats);
+  --color-progress-track: var(--progress-track);
+
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
@@ -91,18 +98,27 @@
   /* red-400 */
   --destructive-foreground: #ffffff;
 
-  /* LIGHT MODE BUTTONS (Restored for visibility) */
+  /* LIGHT MODE BUTTONS */
   --button-primary: #059669;
   --button-primary-foreground: #ffffff;
-
   --button-secondary: #f3f4f6;
   --button-secondary-foreground: #4b5563;
-
   --button-accent: #ecfdf5;
   --button-accent-foreground: #10b981;
-
   --button-destructive: #f87171;
   --button-destructive-foreground: #ffffff;
+
+  /* MACRO COLORS - LIGHT */
+  --calories: #059669;
+  /* primary */
+  --protein: #0284c7;
+  /* sky-600 */
+  --carbs: #ea580c;
+  /* orange-600 */
+  --fats: #7c3aed;
+  /* violet-600 */
+  --progress-track: #e5e7eb;
+  /* gray-200 */
 
   --border: #dddddd;
   /* gray-100 */
@@ -112,6 +128,8 @@
 
   --shadow-brand-val: 0 4px 12px 0 rgba(97, 221, 163, 0.15);
   --sidebar-background: #ffffff;
+
+
 }
 
 [data-theme='dark'] {
@@ -142,18 +160,27 @@
   /* red-500 */
   --destructive-foreground: #ffffff;
 
-  /* DARK MODE BUTTONS (Restored for visibility) */
+  /* DARK MODE BUTTONS */
   --button-primary: #34D399;
   --button-primary-foreground: #000000;
-
   --button-secondary: #1f2937;
   --button-secondary-foreground: #f9fafb;
-
   --button-accent: #064E3B;
   --button-accent-foreground: #34D399;
-
   --button-destructive: #ef4444;
   --button-destructive-foreground: #ffffff;
+
+  /* MACRO COLORS - DARK */
+  --calories: #34D399;
+  /* primary */
+  --protein: #38bdf8;
+  /* sky-400 */
+  --carbs: #fb923c;
+  /* orange-400 */
+  --fats: #a78bfa;
+  /* violet-400 */
+  --progress-track: #12161b;
+  /* darker than card background to look like a groove */
 
   --border: #1f2937;
   /* gray-800 */
@@ -190,15 +217,24 @@
   /* SPECIAL MODE BUTTONS */
   --button-primary: #3DDC97;
   --button-primary-foreground: #00161c;
-
   --button-secondary: #0D3239;
   --button-secondary-foreground: #3DDC97;
-
   --button-accent: #15464E;
   --button-accent-foreground: #ffffff;
-
   --button-destructive: #f87171;
   --button-destructive-foreground: #ffffff;
+
+  /* MACRO COLORS - SPECIAL */
+  --calories: #3DDC97;
+  /* primary */
+  --protein: #2dd4bf;
+  /* complementary teal */
+  --carbs: #fbbf24;
+  /* soft warm amber */
+  --fats: #c084fc;
+  /* vibrant purple to pop against the dark green */
+  --progress-track: #051b20;
+  /* Slightly darker than #0D3239 card background to fix blending issue */
 
   --border: #15464E;
   --input: #072b31;

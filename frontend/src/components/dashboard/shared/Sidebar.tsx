@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LucideIcon, UserRound, LogOut } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 import {
   Sidebar as BaseSidebar,
   SidebarContent,
@@ -14,7 +14,9 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Logo } from "@/components/layout/logo";
 
 export interface SidebarLink {
   title: string;
@@ -29,10 +31,25 @@ interface SidebarProps {
 
 export function SharedSidebar({ links, role }: SidebarProps) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const prevPathname = useRef(pathname);
+
+  // Auto-close sidebar on mobile when navigating to a new route
+  useEffect(() => {
+    if (isMobile && prevPathname.current !== pathname) {
+      setOpenMobile(false);
+    }
+    prevPathname.current = pathname;
+  }, [pathname, isMobile, setOpenMobile]);
 
   return (
     <BaseSidebar>
-      <SidebarContent className="px-4 py-2 mt-4">
+      {/* Show logo inside sidebar on mobile for branding */}
+      <SidebarHeader className="flex items-center gap-2 px-5 py-4 md:hidden">
+        <Logo />
+      </SidebarHeader>
+
+      <SidebarContent className="px-4 py-2 mt-0 md:mt-4">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">

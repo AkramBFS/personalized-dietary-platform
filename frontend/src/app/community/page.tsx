@@ -5,7 +5,9 @@ export default function CommunityPage() {
   return (
     <main>
       <HeroHeader />
+      <div className="mt-16">
       <CommunityComponent />
+      </div>
       <FooterSection />
     </main>
   );
