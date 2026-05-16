@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Eye, Check, X, AlertCircle } from "lucide-react";
 import { getModerationPosts, approvePost, rejectPost, deletePost, type ModerationPost } from "@/lib/admin";
+import { resolveApiUrl } from "@/lib/api";
 
 export default function AdminModerationPage() {
   const [posts, setPosts] = useState<ModerationPost[]>([]);
@@ -236,6 +237,16 @@ export default function AdminModerationPage() {
                   <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md whitespace-pre-wrap">
                     {selectedPost.content}
                   </div>
+                  {selectedPost.image_url && (
+                    <div className="mt-4">
+                      <label className="text-sm font-medium block mb-2">Attached Image</label>
+                      <img
+                        src={resolveApiUrl(selectedPost.image_url)}
+                        alt="Post Attachment"
+                        className="max-h-96 rounded-lg object-contain border border-border"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                   <Button

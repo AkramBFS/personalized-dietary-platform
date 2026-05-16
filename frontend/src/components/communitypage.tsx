@@ -10,12 +10,17 @@ import {
   Loader2,
   Flame,
   Shuffle,
+  ImageIcon,
+  X,
+  Send,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import {
   getCommunityPosts,
   deleteCommunityPost,
+  postComment,
   CommunityPost,
+  resolveApiUrl,
 } from "@/lib/api";
 import { getProfileIdentity, CurrentProfileIdentity } from "@/lib/profile";
 
@@ -26,6 +31,58 @@ export default function CommunityComponent() {
     null,
   );
   const [sortBy, setSortBy] = useState<"recent" | "oldest">("recent");
+
+  const [expandedPostId, setExpandedPostId] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [commentImage, setCommentImage] = useState<File | null>(null);
+  const [commentImagePreview, setCommentImagePreview] = useState<string | null>(null);
+  const [commentingPostId, setCommentingPostId] = useState<number | null>(null);
+
+  const handleCommentImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setCommentImage(file);
+      setCommentImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeCommentImage = () => {
+    setCommentImage(null);
+    setCommentImagePreview(null);
+  };
+
+  const handlePostComment = async (postId: number) => {
+    if (!commentText && !commentImage) return;
+    setCommentingPostId(postId);
+    try {
+      const responseComment = await postComment(postId, { content: commentText, image: commentImage });
+      
+      const newComment: CommunityComment = {
+        ...responseComment,
+        author_username: responseComment.author_username || (responseComment as any).username || currentUser?.username || "Unknown",
+        created_at: responseComment.created_at || new Date().toISOString(),
+      };
+
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              comments: [...(p.comments || []), newComment],
+            };
+          }
+          return p;
+        })
+      );
+      setCommentText("");
+      removeCommentImage();
+    } catch (err) {
+      console.error("Failed to post comment", err);
+      alert("Failed to post comment.");
+    } finally {
+      setCommentingPostId(null);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -171,7 +228,7 @@ export default function CommunityComponent() {
                   {post.image_url && (
                     <div className="mb-4">
                       <img
-                        src={post.image_url}
+                        src={resolveApiUrl(post.image_url)}
                         alt="Post content"
                         className="max-h-96 rounded-lg object-contain"
                       />
@@ -180,11 +237,83 @@ export default function CommunityComponent() {
 
                   {/* Footer Actions */}
                   <div className="flex items-center gap-6 text-muted-foreground">
-                    <button className="flex items-center gap-2 hover:text-primary transition-colors text-sm font-semibold">
+                    <button 
+                      onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+                      className="flex items-center gap-2 hover:text-primary transition-colors text-sm font-semibold"
+                    >
                       <MessageSquare className="w-[18px] h-[18px]" />
                       {post.comments?.length || 0} Comments
                     </button>
                   </div>
+
+                  {/* Comments Section */}
+                  {expandedPostId === post.id && (
+                    <div className="mt-6 pt-6 border-t border-border flex flex-col gap-4">
+                      {/* Comment List */}
+                      {post.comments && post.comments.length > 0 ? (
+                        <div className="flex flex-col gap-4 mb-4">
+                          {post.comments.map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-bold uppercase text-muted-foreground">
+                                {comment.author_username?.[0] || "?"}
+                              </div>
+                              <div className="flex-1 bg-muted/30 p-3 rounded-lg border border-border/50">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-semibold text-foreground text-sm">{comment.author_username}</span>
+                                  <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-sm text-foreground/80 whitespace-pre-wrap">{comment.content}</p>
+                                {comment.image_url && (
+                                  <div className="mt-2">
+                                    <img src={resolveApiUrl(comment.image_url)} alt="Comment attachment" className="max-h-40 rounded-lg object-contain" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mb-4">No comments yet. Be the first to comment!</p>
+                      )}
+
+                      {/* Add Comment */}
+                      {currentUser ? (
+                        <div className="flex flex-col gap-3">
+                          <textarea
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="Write a comment..."
+                            className="w-full min-h-[80px] p-3 text-sm rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                          />
+                          {commentImagePreview && (
+                            <div className="relative inline-block w-max">
+                              <img src={commentImagePreview} alt="Preview" className="max-h-32 rounded-lg object-contain border border-border" />
+                              <button type="button" onClick={removeCommentImage} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:opacity-90">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center">
+                            <label className="cursor-pointer flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm font-medium">
+                              <ImageIcon className="w-4 h-4" />
+                              <span>Attach Image</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={handleCommentImageChange} />
+                            </label>
+                            <button
+                              onClick={() => handlePostComment(post.id)}
+                              disabled={(!commentText && !commentImage) || commentingPostId === post.id}
+                              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                            >
+                              {commentingPostId === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                              Post Comment
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Please log in to leave a comment.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </article>
             ))

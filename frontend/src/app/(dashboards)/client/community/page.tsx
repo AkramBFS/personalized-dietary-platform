@@ -7,14 +7,30 @@ import {
   CardFooter,
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Loader2, Send, Trash2, Heart, MessageCircle } from "lucide-react";
+import { Loader2, Send, Trash2, Heart, MessageCircle, ImageIcon, X } from "lucide-react";
 import { deleteCommunityPost, getClientOwnPosts, postCreateCommunityPost, type CommunityPost } from "@/lib/client/service";
+import { resolveApiUrl } from "@/lib/api";
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -44,12 +60,13 @@ export default function CommunityPage() {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost) return;
+    if (!newPost && !imageFile) return;
     setSubmitting(true);
     try {
-      await postCreateCommunityPost({ content: newPost });
+      await postCreateCommunityPost({ content: newPost, image: imageFile });
       alert("Post submitted and is pending moderation!");
       setNewPost("");
+      removeImage();
       
       // Refresh posts
       const updatedPosts = await getClientOwnPosts();
@@ -82,10 +99,23 @@ export default function CommunityPage() {
               placeholder="What's on your mind? Share your progress..."
               className="w-full min-h-[100px] p-4 text-sm rounded-xl border border-border bg-background text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none transition-all"
             />
-            <div className="flex justify-end">
+            {imagePreview && (
+              <div className="relative inline-block w-max">
+                <img src={imagePreview} alt="Preview" className="max-h-48 rounded-lg object-contain border border-border" />
+                <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:opacity-90">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <label className="cursor-pointer flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm font-medium">
+                <ImageIcon className="w-5 h-5" />
+                <span>Attach Image</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              </label>
               <Button
                 type="submit"
-                disabled={!newPost || submitting}
+                disabled={(!newPost && !imageFile) || submitting}
                 className="rounded-lg px-6"
               >
                 {submitting ? (
@@ -153,6 +183,11 @@ export default function CommunityPage() {
                 <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
                   {post.content}
                 </p>
+                {post.image_url && (
+                  <div className="mt-4">
+                    <img src={resolveApiUrl(post.image_url)} alt="Post attachment" className="max-h-80 rounded-lg object-contain" />
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="px-5 py-3 border-t border-border flex gap-4 bg-muted/50">
                 <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">

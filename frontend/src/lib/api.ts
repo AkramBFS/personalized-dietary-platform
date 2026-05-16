@@ -435,6 +435,14 @@ export function parseBlogPostIdFromSlug(slug: string): number | null {
 // Community API
 // ============================================
 
+export interface CommunityComment {
+  id: number;
+  author_username: string;
+  content: string;
+  image_url?: string | null;
+  created_at: string;
+}
+
 export interface CommunityPost {
   id: number;
   author_username: string;
@@ -443,7 +451,7 @@ export interface CommunityPost {
   status: string;
   is_approved: boolean;
   created_at: string;
-  comments: any[];
+  comments: CommunityComment[];
 }
 
 export const getCommunityPosts = async (): Promise<CommunityPost[]> => {
@@ -452,5 +460,22 @@ export const getCommunityPosts = async (): Promise<CommunityPost[]> => {
 };
 
 export const deleteCommunityPost = async (id: number): Promise<void> => {
-  await api.delete(`posts/${id}/`);
+  await api.delete(`client/posts/${id}/`);
+};
+
+export interface CreateCommentPayload {
+  content: string;
+  image?: File | null;
+}
+
+export const postComment = async (postId: number, payload: CreateCommentPayload): Promise<CommunityComment> => {
+  const formData = new FormData();
+  formData.append("content", payload.content);
+  if (payload.image) {
+    formData.append("image", payload.image);
+  }
+  const response = await api.post(`posts/${postId}/comments/`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return unwrapResponse(response.data);
 };
