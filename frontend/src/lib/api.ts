@@ -136,6 +136,9 @@ export interface MarketplacePlanDetail extends MarketplacePlanListItem {
   country_name?: string;
 }
 
+/** Preview-safe plan detail — only contains day-1 content. */
+export type MarketplacePlanPreview = MarketplacePlanDetail;
+
 export interface MarketplacePlanPurchasePayload {
   transaction_number: string;
   amount_paid: number;
@@ -252,6 +255,8 @@ export const bookConsultation = async (payload: {
   consultation_type: "advice_only" | "plan_included";
   user_plan_id?: number;
   is_free_from_plan: boolean;
+  amount_paid?: number;
+  transaction_number?: string;
 }) => {
   const response = await api.post("client/consultations/book/", payload);
   return unwrapResponse(response.data);
@@ -309,6 +314,18 @@ export const getMarketplacePlans = async (params?: MarketplacePlansParams): Prom
 export const getMarketplacePlanDetail = async (id: number): Promise<MarketplacePlanDetail> => {
   const response = await api.get<ApiEnvelope<MarketplacePlanDetail> | MarketplacePlanDetail>(`marketplace/plans/${id}/`);
   return unwrapResponse(response.data);
+};
+
+/**
+ * GET /api/marketplace/plans/{id}/preview  (Next.js Route Handler)
+ * Returns plan detail with content_json trimmed to day 1 only for security.
+ */
+export const getMarketplacePlanPreview = async (id: number): Promise<MarketplacePlanPreview> => {
+  // Use absolute URL or relative if on same origin. Axios handles this.
+  // We use axios directly instead of the 'api' instance to avoid Django interceptors
+  // and hitting the Next.js API route instead.
+  const response = await axios.get<MarketplacePlanPreview>(`/api/marketplace/plans/${id}/preview`);
+  return response.data;
 };
 
 /**
@@ -376,5 +393,89 @@ export const getNutritionistInvoices = async (): Promise<NutritionistInvoice[]> 
  */
 export const getInvoiceDetail = async (id: number): Promise<NutritionistInvoice> => {
   const response = await api.get(`client/invoices/${id}/`);
+  return unwrapResponse(response.data);
+};
+
+// ============================================
+// Blog API
+// ============================================
+
+export interface BlogPost {
+  id: number;
+  admin_username: string;
+  title: string;
+  content: string;
+  created_at: string;
+}
+
+export const getBlogPosts = async (): Promise<BlogPost[]> => {
+  const response = await api.get('blog/');
+  return unwrapResponse(response.data);
+};
+
+export const getBlogPost = async (id: number): Promise<BlogPost> => {
+  const response = await api.get(`blog/${id}/`);
+  return unwrapResponse(response.data);
+};
+
+export function buildBlogPostHref(post: Pick<BlogPost, "id" | "title">): string {
+  const slug = slugifyPlanTitle(post.title);
+  return `/blog/${post.id}${slug ? `-${slug}` : ""}`;
+}
+
+export function parseBlogPostIdFromSlug(slug: string): number | null {
+  const match = slug.match(/^(\d+)(?:-|$)/);
+  if (!match) return null;
+
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+// ============================================
+// Community API
+// ============================================
+
+export interface CommunityComment {
+  id: number;
+  author_username: string;
+  content: string;
+  image_url?: string | null;
+  created_at: string;
+}
+
+export interface CommunityPost {
+  id: number;
+  author_username: string;
+  content: string;
+  image_url: string | null;
+  status: string;
+  is_approved: boolean;
+  created_at: string;
+  comments: CommunityComment[];
+}
+
+export const getCommunityPosts = async (): Promise<CommunityPost[]> => {
+  const response = await api.get('posts/');
+  return unwrapResponse(response.data);
+};
+
+export const deleteCommunityPost = async (id: number): Promise<void> => {
+  await api.delete(`client/posts/${id}/`);
+};
+
+export interface CreateCommentPayload {
+  content: string;
+  image?: File | null;
+}
+
+export const postComment = async (postId: number, payload: CreateCommentPayload): Promise<CommunityComment> => {
+  const formData = new FormData();
+  formData.append("content", payload.content);
+  if (payload.image) {
+    formData.append("image", payload.image);
+  }
+  const response = await api.post(`posts/${postId}/comments/`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return unwrapResponse(response.data);
 };

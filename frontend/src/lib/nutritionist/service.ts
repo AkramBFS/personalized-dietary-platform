@@ -4,6 +4,8 @@ const useBackendMocks = process.env.NEXT_PUBLIC_USE_BACKEND_MOCKS === "true";
 
 export interface NutritionistProfile {
   nutritionist_id: number;
+  username?: string;
+  email?: string;
   bio: string;
   years_experience: number;
   consultation_price: number;
@@ -15,6 +17,7 @@ export interface NutritionistProfile {
     email?: string;
   };
 }
+
 
 export interface ProfilePatchPayload {
   bio?: string;
@@ -468,12 +471,19 @@ export async function getNutritionistProfile(): Promise<NutritionistProfile> {
   if (useBackendMocks) return mockProfile;
   try {
     const response = await api.get<ApiEnvelope<NutritionistProfile> | NutritionistProfile>("/nutritionist/profile/");
-    return unwrapResponse(response.data);
+    const data = unwrapResponse(response.data);
+    // Normalize: ensuring username and email are available at top level
+    return {
+      ...data,
+      username: data.username ?? data.user?.username,
+      email: data.email ?? data.user?.email,
+    };
   } catch (error) {
     if (hasNetworkError(error)) return mockProfile;
     throw error;
   }
 }
+
 
 export async function patchNutritionistProfile(payload: ProfilePatchPayload): Promise<NutritionistProfile> {
   if (useBackendMocks) {

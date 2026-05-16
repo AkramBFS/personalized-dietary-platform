@@ -35,6 +35,8 @@ import {
   getClientProgress,
   getClientUserPlans,
 } from "@/lib/client";
+import { formatClientName } from "@/lib/utils";
+
 
 interface ChartPoint {
   date: string;
@@ -82,7 +84,8 @@ export default function ClientDashboardPage() {
 
         if (!isMounted) return;
 
-        setProfileName(profile.username || "there");
+        setProfileName(formatClientName(profile.username));
+
 
         const currentPlan =
           plans.find((plan) => plan.status === "active") ?? null;
@@ -245,7 +248,7 @@ export default function ClientDashboardPage() {
                 </p>
                 {dailyTarget ? (
                   <div className="mt-2 flex w-full items-center gap-3">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-progress-track">
                       <div
                         className="h-full bg-primary"
                         style={{ width: `${progressPercentage}%` }}

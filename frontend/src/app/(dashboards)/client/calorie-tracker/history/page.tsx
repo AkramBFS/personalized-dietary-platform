@@ -200,9 +200,9 @@ function ProgressMetricCard({
             </p>
           </div>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
-          <div className={`h-full rounded-full transition-all duration-700 ease-out ${barClass}`} style={{ width: `${pct}%` }} />
-        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-progress-track">
+  <div className={`h-full rounded-full transition-all duration-700 ease-out ${barClass}`} style={{ width: `${pct}%` }} />
+</div>
         <p className="mt-1.5 text-right text-xs text-muted-foreground">
           {target ? `${pct}% of target` : "Target not set"}
         </p>
@@ -347,41 +347,41 @@ export default function CalorieHistoryPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <ProgressMetricCard
-              label="Calories"
-              value={totals.calories}
-              target={targets.calories}
-              unit="kcal"
-              icon={Flame}
-              colorClass="bg-primary/10 text-primary"
-              barClass="bg-gradient-to-r from-emerald-500 to-teal-400"
-            />
-            <ProgressMetricCard
-              label="Protein"
-              value={totals.protein}
-              target={targets.protein}
-              unit="g"
-              icon={Beef}
-              colorClass="bg-blue-500/10 text-blue-500"
-              barClass="bg-gradient-to-r from-blue-500 to-cyan-400"
-            />
-            <ProgressMetricCard
-              label="Carbs"
-              value={totals.carbs}
-              target={targets.carbs}
-              unit="g"
-              icon={Wheat}
-              colorClass="bg-amber-500/10 text-amber-500"
-              barClass="bg-gradient-to-r from-amber-500 to-yellow-400"
-            />
-            <ProgressMetricCard
-              label="Fat"
-              value={totals.fats}
-              target={targets.fats}
-              unit="g"
-              icon={Droplets}
-              colorClass="bg-rose-500/10 text-rose-500"
-              barClass="bg-gradient-to-r from-rose-500 to-pink-400"
-            />
+  label="Calories"
+  value={totals.calories}
+  target={targets.calories}
+  unit="kcal"
+  icon={Flame}
+  colorClass="bg-calories/10 text-calories"
+  barClass="bg-gradient-to-r from-calories to-calories/80"
+/>
+<ProgressMetricCard
+  label="Protein"
+  value={totals.protein}
+  target={targets.protein}
+  unit="g"
+  icon={Beef}
+  colorClass="bg-protein/10 text-protein"
+  barClass="bg-gradient-to-r from-protein to-protein/80"
+/>
+<ProgressMetricCard
+  label="Carbs"
+  value={totals.carbs}
+  target={targets.carbs}
+  unit="g"
+  icon={Wheat}
+  colorClass="bg-carbs/10 text-carbs"
+  barClass="bg-gradient-to-r from-carbs to-carbs/80"
+/>
+<ProgressMetricCard
+  label="Fat"
+  value={totals.fats}
+  target={targets.fats}
+  unit="g"
+  icon={Droplets}
+  colorClass="bg-fats/10 text-fats"
+  barClass="bg-gradient-to-r from-fats to-fats/80"
+/>
           </div>
 
           {!hasAnyMeals && (
@@ -461,24 +461,26 @@ export default function CalorieHistoryPage() {
                                   <td className="px-3 py-2.5 text-right font-semibold text-foreground">
                                     {(log.total_calories ?? 0).toFixed(0)}
                                   </td>
-                                  <td className="hidden px-3 py-2.5 text-right text-blue-600 dark:text-blue-400 sm:table-cell">
-                                    {(log.total_protein ?? 0).toFixed(0)}g
-                                  </td>
-                                  <td className="hidden px-3 py-2.5 text-right text-amber-600 dark:text-amber-400 sm:table-cell">
-                                    {(log.total_carbs ?? 0).toFixed(0)}g
-                                  </td>
-                                  <td className="hidden px-4 py-2.5 text-right text-rose-600 dark:text-rose-400 sm:table-cell">
-                                    {(log.total_fats ?? 0).toFixed(0)}g
-                                  </td>
+                                  <td className="hidden px-3 py-2.5 text-right text-protein sm:table-cell">
+  {(log.total_protein ?? 0).toFixed(0)}g
+</td>
+<td className="hidden px-3 py-2.5 text-right text-carbs sm:table-cell">
+  {(log.total_carbs ?? 0).toFixed(0)}g
+</td>
+<td className="hidden px-4 py-2.5 text-right text-fats sm:table-cell">
+  {(log.total_fats ?? 0).toFixed(0)}g
+</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
                         <div className="flex items-center gap-4 px-1 pt-2">
-                          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">P: {mealTotals.protein.toFixed(0)}g</span>
-                          <span className="text-xs font-medium text-amber-600 dark:text-amber-400">C: {mealTotals.carbs.toFixed(0)}g</span>
-                          <span className="text-xs font-medium text-rose-600 dark:text-rose-400">F: {mealTotals.fats.toFixed(0)}g</span>
+                          <div className="flex items-center gap-4 px-1 pt-2">
+  <span className="text-xs font-medium text-protein">P: {mealTotals.protein.toFixed(0)}g</span>
+  <span className="text-xs font-medium text-carbs">C: {mealTotals.carbs.toFixed(0)}g</span>
+  <span className="text-xs font-medium text-fats">F: {mealTotals.fats.toFixed(0)}g</span>
+</div>
                         </div>
                       </div>
                     )}
@@ -500,18 +502,15 @@ export default function CalorieHistoryPage() {
                 <div className="flex items-center gap-6">
                   <div className="text-center">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Protein</p>
-                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{totals.protein.toFixed(0)}g</p>
-                  </div>
+<p className="text-lg font-bold text-protein">{totals.protein.toFixed(0)}g</p>                  </div>
                   <div className="h-8 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Carbs</p>
-                    <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{totals.carbs.toFixed(0)}g</p>
-                  </div>
+<p className="text-lg font-bold text-carbs">{totals.carbs.toFixed(0)}g</p>                  </div>
                   <div className="h-8 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fat</p>
-                    <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{totals.fats.toFixed(0)}g</p>
-                  </div>
+<p className="text-lg font-bold text-fats">{totals.fats.toFixed(0)}g</p>                  </div>
                 </div>
               </div>
             </CardContent>

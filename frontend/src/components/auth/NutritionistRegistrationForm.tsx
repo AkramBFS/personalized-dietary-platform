@@ -375,7 +375,7 @@ export default function NutritionistRegistrationForm() {
             </div>
             <label className="block">
               <span className="text-sm font-medium text-foreground">
-                Username
+                Fullname
               </span>
               <input
                 type="text"

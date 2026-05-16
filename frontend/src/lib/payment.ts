@@ -21,6 +21,7 @@ export type ConsultationPaymentContext = {
   startTime: string;
   endTime: string;
   consultationType: ConsultationPaymentType;
+  amount?: number;
   userPlanId?: number;
   isFreeFromPlan?: boolean;
 };
@@ -64,6 +65,7 @@ export function buildPaymentUrl(context: PaymentContext): string {
     params.set("startTime", context.startTime);
     params.set("endTime", context.endTime);
     params.set("consultationType", context.consultationType);
+    if (context.amount) params.set("amount", String(context.amount));
     if (context.userPlanId) params.set("userPlanId", String(context.userPlanId));
     if (context.isFreeFromPlan) params.set("isFreeFromPlan", "true");
   }
@@ -112,6 +114,7 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
     const startTime = searchParams.get("startTime");
     const endTime = searchParams.get("endTime");
     const consultationType = searchParams.get("consultationType");
+    const amount = parsePositiveInteger(searchParams.get("amount"));
     const userPlanId = parsePositiveInteger(searchParams.get("userPlanId"));
     const isFreeFromPlan = searchParams.get("isFreeFromPlan") === "true";
 
@@ -132,6 +135,7 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
       startTime,
       endTime,
       consultationType,
+      ...(amount ? { amount } : {}),
       ...(userPlanId ? { userPlanId } : {}),
       isFreeFromPlan,
     };
