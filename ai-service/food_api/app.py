@@ -2,6 +2,10 @@
 # ── Single-model pipeline: YOLOv8l-seg ONNX (trained on FoodInsSeg, 73 classes)
 import json
 import os
+from dotenv import load_dotenv  # reads .env file into os.environ
+
+load_dotenv()  # call this before any os.getenv() so the key is available
+
 import cv2
 import numpy as np
 import onnxruntime as ort
@@ -33,6 +37,32 @@ DENSITY = {
     "noodles": 0.85, "pasta": 0.85,
     "default": 0.80
 }
+
+# ── USDA reference portion sizes (grams) ─────────────────────
+# Used to clamp mass estimates to a realistic range per food type.
+# A detection can be 0.3x–3.5x the reference (very small to large portion).
+PORTION_REFERENCE_G = {
+    "rice":         150,
+    "chicken duck": 175,
+    "steak":        200,
+    "pork":         175,
+    "lamb":         175,
+    "fried meat":   175,
+    "fish":         175,
+    "shrimp":       120,
+    "shellfish":    120,
+    "bread":        60,
+    "egg":          55,
+    "tofu":         150,
+    "noodles":      180,
+    "pasta":        180,
+    "default":      150,
+}
+
+# ── Full-plate reference mass (grams) ────────────────────────
+# A single food item that fills the *entire* frame ≈ this mass.
+# Calibrated for typical restaurant/plate photos shot ~40–60 cm away.
+FULL_FRAME_MASS_G = 600
 
 CALORIENINJAS_BASE_URL = "https://api.calorieninjas.com/v1/nutrition"
 CALORIENINJAS_API_KEY  = os.getenv("CALORIENINJAS_API_KEY", "")
@@ -98,12 +128,36 @@ def nms(boxes, scores, iou_thresh):
 
 
 def estimate_mass(mask_pixels: int, img_hw: tuple, category: str) -> float:
-    H, W       = img_hw
-    px_per_cm  = (W * 0.8) / PLATE_DIAM_CM
-    area_cm2   = mask_pixels / (px_per_cm ** 2)
-    volume_cm3 = area_cm2 * THICKNESS_CM
-    density    = DENSITY.get(category, DENSITY["default"])
-    return round(volume_cm3 * density, 1)
+    """
+    Estimate food mass in grams from segmentation mask area.
+
+    Strategy
+    --------
+    We compute the fraction of the total image area covered by this mask,
+    then scale it against a calibrated full-frame reference mass (FULL_FRAME_MASS_G).
+    The result is clamped to [0.3×, 3.5×] the USDA reference portion for the
+    food category, preventing absurd values on very high- or low-resolution images.
+
+    Why not the old plate-diameter formula?
+    The old formula assumed the plate always fills 80 % of the image width
+    (px_per_cm = W * 0.8 / PLATE_DIAM_CM). On a 3024×3024 phone photo this
+    produces px_per_cm ≈ 93, which makes even a medium steak balloon to ~380 g
+    before the CalorieNinjas decimal bug multiplies it by 10.
+    """
+    H, W        = img_hw
+    total_px    = H * W
+
+    # Fraction of the frame this food occupies. Hard-cap at 0.65:
+    # even a single item shot very close up rarely covers more than that.
+    fill_ratio  = min(mask_pixels / total_px, 0.65)
+
+    raw_mass    = fill_ratio * FULL_FRAME_MASS_G
+
+    # Clamp to a sensible range for this food type
+    ref         = PORTION_REFERENCE_G.get(category, PORTION_REFERENCE_G["default"])
+    mass        = max(ref * 0.3, min(raw_mass, ref * 3.5))
+
+    return round(mass, 1)
 
 
 def postprocess(outputs, orig_hw: tuple) -> list:
@@ -195,6 +249,59 @@ def postprocess(outputs, orig_hw: tuple) -> list:
     results.sort(key=lambda x: x["estimated_mass_g"], reverse=True)
     return results
 
+
+def merge_duplicate_classes(results: list) -> list:
+    """
+    Merge detections of the same food class into a single entry.
+
+    When the model fires twice on the same food (e.g. two overlapping
+    "steak" detections), sending both masses separately to CalorieNinjas
+    causes inflated totals AND the NLP parser sometimes fuses adjacent
+    same-name tokens.  We keep the highest-confidence detection as the
+    representative entry and sum the pixel counts / masses.
+    """
+    merged: dict[str, dict] = {}
+    for item in results:
+        key = item["ingredient"]
+        if key not in merged:
+            merged[key] = dict(item)          # copy; mask handled separately
+        else:
+            # Accumulate pixels and mass; keep the better bounding box (higher conf)
+            merged[key]["mask_pixels"]      += item["mask_pixels"]
+            merged[key]["estimated_mass_g"] += item["estimated_mass_g"]
+            if item["confidence"] > merged[key]["confidence"]:
+                merged[key]["bbox"]       = item["bbox"]
+                merged[key]["confidence"] = item["confidence"]
+            # Merge binary masks via logical OR if both are present
+            if "mask" in merged[key] and "mask" in item:
+                merged[key]["mask"] = np.logical_or(
+                    merged[key]["mask"], item["mask"]
+                ).astype(np.uint8)
+
+    out = list(merged.values())
+    out.sort(key=lambda x: x["estimated_mass_g"], reverse=True)
+    return out
+
+
+def build_nutrition_query(ingredients: list) -> str:
+    """
+    Build the CalorieNinjas query string correctly.
+
+    Two bugs fixed here:
+    1. Floating-point mass with a trailing zero (e.g. "381.0g") is misread
+       by CalorieNinjas as 10× the intended value (3810g).  Always send
+       integer grams: int(mass) → "381g".
+    2. Sending the same ingredient name twice in one query string causes
+       the NLP parser to sometimes merge the two tokens into one giant
+       serving.  merge_duplicate_classes() already collapses duplicates
+       before we get here, but we also join with " and " instead of a
+       plain space for extra clarity.
+    """
+    parts = [f"{int(round(i['estimated_mass_g']))}g {i['ingredient']}"
+             for i in ingredients]
+    return " and ".join(parts)
+
+
 def draw_visualization(img_bgr: np.ndarray, results: list) -> np.ndarray:
     vis = img_bgr.copy()
 
@@ -250,11 +357,11 @@ async def fetch_nutrition(ingredients: list) -> dict:
     if not CALORIENINJAS_API_KEY:
         return {"error": "CALORIENINJAS_API_KEY not set"}
 
-    parts   = [f"{i['estimated_mass_g']}g {i['ingredient']}"
-               for i in ingredients]
-    query   = quote(" ".join(parts))
-    url     = f"{CALORIENINJAS_BASE_URL}?query={query}"
+    query   = build_nutrition_query(ingredients)   # ← uses the fixed builder
+    url     = f"{CALORIENINJAS_BASE_URL}?query={quote(query)}"
     headers = {"X-Api-Key": CALORIENINJAS_API_KEY}
+
+    print(f"[nutrition] query: {query!r}")         # helpful for debugging
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -302,6 +409,7 @@ async def segment(
     tensor      = preprocess(img_bgr)
     outputs     = session.run(None, {input_name: tensor})
     ingredients = postprocess(outputs, orig_hw)
+    ingredients = merge_duplicate_classes(ingredients)   # ← dedup before nutrition
 
     nutrition_data = {}
     if ingredients and CALORIENINJAS_API_KEY:
@@ -336,6 +444,7 @@ async def segment_image(file: UploadFile = File(...)):
     tensor      = preprocess(img_bgr)
     outputs     = session.run(None, {input_name: tensor})
     ingredients = postprocess(outputs, orig_hw)
+    ingredients = merge_duplicate_classes(ingredients)   # ← dedup
 
     vis    = draw_visualization(img_bgr, ingredients) \
              if ingredients else img_bgr
@@ -366,6 +475,7 @@ async def segment_save(
     tensor      = preprocess(img_bgr)
     outputs     = session.run(None, {input_name: tensor})
     ingredients = postprocess(outputs, orig_hw)
+    ingredients = merge_duplicate_classes(ingredients)   # ← dedup
 
     vis = draw_visualization(img_bgr, ingredients) \
           if ingredients else img_bgr
