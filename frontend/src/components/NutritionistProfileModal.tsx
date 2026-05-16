@@ -53,7 +53,7 @@ export default function NutritionistProfileModal({
         try {
           const raw = await getNutritionistProfile(String(id));
           const data = unwrapResponse(raw);
-          setProfile(data);
+          setProfile(data as NutritionistPublicProfile);
         } catch (err) {
           console.error("Failed to fetch nutritionist profile:", err);
           setError("Failed to load profile information.");

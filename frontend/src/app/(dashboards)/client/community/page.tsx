@@ -7,11 +7,12 @@ import {
   CardFooter,
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Loader2, Send, Trash2, Heart, MessageCircle, ImageIcon, X } from "lucide-react";
+import { Loader2, Send, Trash2, Heart, MessageCircle, ImageIcon, X, ExternalLink } from "lucide-react";
 import { deleteCommunityPost, getClientOwnPosts, postCreateCommunityPost, type CommunityPost } from "@/lib/client/service";
 import { resolveApiUrl } from "@/lib/api";
+import Link from "next/link";
 
-export default function CommunityPage() {
+export default function CommunityDashboardPage() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
@@ -81,16 +82,24 @@ export default function CommunityPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Community
-        </h1>
-        <p className="text-muted-foreground">
-          Share your journey, ask questions, and inspire others.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            My Community Feed
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your posts and see your contribution to the community.
+          </p>
+        </div>
+        <Link href="/community">
+          <Button variant="outline" className="flex items-center gap-2">
+            <ExternalLink className="w-4 h-4" />
+            Go to Global Community
+          </Button>
+        </Link>
       </div>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm border-primary/10">
         <CardContent className="p-4 sm:p-6">
           <form onSubmit={handlePost} className="flex flex-col gap-3">
             <textarea
@@ -132,7 +141,7 @@ export default function CommunityPage() {
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-foreground tracking-wide border-b border-border pb-2">
-          My Posts
+          My Recent Posts
         </h2>
         {loading ? (
           <div className="flex justify-center p-12">
@@ -145,7 +154,7 @@ export default function CommunityPage() {
         ) : (
           Array.isArray(posts) &&
           posts.map((post) => (
-            <Card key={post.id} className="shadow-sm">
+            <Card key={post.id} className="shadow-sm overflow-hidden">
               <CardContent className="p-5">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
@@ -184,18 +193,18 @@ export default function CommunityPage() {
                   {post.content}
                 </p>
                 {post.image_url && (
-                  <div className="mt-4">
-                    <img src={resolveApiUrl(post.image_url)} alt="Post attachment" className="max-h-80 rounded-lg object-contain" />
+                  <div className="mt-4 border border-border rounded-lg overflow-hidden">
+                    <img src={resolveApiUrl(post.image_url)} alt="Post attachment" className="max-h-80 w-full object-cover" />
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="px-5 py-3 border-t border-border flex gap-4 bg-muted/50">
-                <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
-                  <Heart className="w-4 h-4" /> 0 Likes
-                </button>
-                <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
-                  <MessageCircle className="w-4 h-4" /> 0 Comments
-                </button>
+              <CardFooter className="px-5 py-3 border-t border-border flex gap-4 bg-muted/30">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Heart className="w-4 h-4" /> {(post as any).likes_count || 0} Likes
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <MessageCircle className="w-4 h-4" /> {post.comments?.length || 0} Comments
+                </div>
               </CardFooter>
             </Card>
           ))
