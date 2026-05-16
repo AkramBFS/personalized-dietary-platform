@@ -20,6 +20,7 @@ import {
   deleteCommunityPost,
   postComment,
   CommunityPost,
+  CommunityComment,
   resolveApiUrl,
 } from "@/lib/api";
 import { getProfileIdentity, CurrentProfileIdentity } from "@/lib/profile";
