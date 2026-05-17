@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import type { ToolUIPart } from "ai"
-import { CheckIcon, GlobeIcon, MicIcon } from "lucide-react"
-import { nanoid } from "nanoid"
-import { useCallback, useState } from "react"
-import { toast } from "sonner"
+import type { ToolUIPart } from "ai";
+import { CheckIcon, GlobeIcon, MicIcon } from "lucide-react";
+import { nanoid } from "nanoid";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
   Attachment,
   AttachmentPreview,
   AttachmentRemove,
   Attachments,
-} from "~/packages/ai/attachments"
+} from "./attachments";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from "~/packages/ai/conversation"
+} from "./conversation";
 import {
   Message,
   MessageBranch,
@@ -26,7 +26,7 @@ import {
   MessageBranchSelector,
   MessageContent,
   MessageResponse,
-} from "~/packages/ai/message"
+} from "./message";
 import {
   ModelSelector,
   ModelSelectorContent,
@@ -39,7 +39,7 @@ import {
   ModelSelectorLogoGroup,
   ModelSelectorName,
   ModelSelectorTrigger,
-} from "~/packages/ai/model-selector"
+} from "./model-selector";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -55,31 +55,31 @@ import {
   PromptInputTextarea,
   PromptInputTools,
   usePromptInputAttachments,
-} from "~/packages/ai/prompt-input"
-import { Reasoning, ReasoningContent, ReasoningTrigger } from "~/packages/ai/reasoning"
-import { Source, Sources, SourcesContent, SourcesTrigger } from "~/packages/ai/sources"
-import { Suggestion, Suggestions } from "~/packages/ai/suggestion"
+} from "./prompt-input";
+import { Reasoning, ReasoningContent, ReasoningTrigger } from "./reasoning";
+import { Source, Sources, SourcesContent, SourcesTrigger } from "./sources";
+import { Suggestion, Suggestions } from "./suggestion";
 
 interface MessageType {
-  key: string
-  from: "user" | "assistant"
-  sources?: { href: string; title: string }[]
+  key: string;
+  from: "user" | "assistant";
+  sources?: { href: string; title: string }[];
   versions: {
-    id: string
-    content: string
-  }[]
+    id: string;
+    content: string;
+  }[];
   reasoning?: {
-    content: string
-    duration: number
-  }
+    content: string;
+    duration: number;
+  };
   tools?: {
-    name: string
-    description: string
-    status: ToolUIPart["state"]
-    parameters: Record<string, unknown>
-    result: string | undefined
-    error: string | undefined
-  }[]
+    name: string;
+    description: string;
+    status: ToolUIPart["state"];
+    parameters: Record<string, unknown>;
+    result: string | undefined;
+    error: string | undefined;
+  }[];
 }
 
 const initialMessages: MessageType[] = [
@@ -233,7 +233,7 @@ Don't overuse these hooks! They come with their own overhead. Only use them when
       },
     ],
   },
-]
+];
 
 const models = [
   {
@@ -271,7 +271,7 @@ const models = [
     chefSlug: "google",
     providers: ["google"],
   },
-]
+];
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -282,7 +282,7 @@ const suggestions = [
   "How to optimize database queries?",
   "What is the difference between SQL and NoSQL?",
   "Explain cloud computing basics",
-]
+];
 
 const mockResponses = [
   "That's a great question! Let me help you understand this concept better. The key thing to remember is that proper implementation requires careful consideration of the underlying principles and best practices in the field.",
@@ -290,18 +290,18 @@ const mockResponses = [
   "This is an interesting topic that comes up frequently. The solution typically involves understanding the core concepts and applying them in the right context. Here's what I recommend...",
   "Great choice of topic! This is something that many developers encounter. The approach I'd suggest is to start with the fundamentals and then build up to more complex scenarios.",
   "That's definitely worth exploring. From what I can see, the best way to handle this is to consider both the theoretical aspects and practical implementation details.",
-]
+];
 
 const PromptInputAttachmentsDisplay = () => {
-  const attachments = usePromptInputAttachments()
+  const attachments = usePromptInputAttachments();
 
   if (attachments.files.length === 0) {
-    return null
+    return null;
   }
 
   return (
     <Attachments variant="inline">
-      {attachments.files.map(attachment => (
+      {attachments.files.map((attachment) => (
         <Attachment
           data={attachment}
           key={attachment.id}
@@ -312,51 +312,60 @@ const PromptInputAttachmentsDisplay = () => {
         </Attachment>
       ))}
     </Attachments>
-  )
-}
+  );
+};
 
 export function ChatbotDemo() {
-  const [model, setModel] = useState<string>(models[0].id)
-  const [modelSelectorOpen, setModelSelectorOpen] = useState(false)
-  const [text, setText] = useState<string>("")
-  const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
-  const [useMicrophone, setUseMicrophone] = useState<boolean>(false)
-  const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready")
-  const [messages, setMessages] = useState<MessageType[]>(initialMessages)
-  const [_streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
+  const [model, setModel] = useState<string>(models[0].id);
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [text, setText] = useState<string>("");
+  const [useWebSearch, setUseWebSearch] = useState<boolean>(false);
+  const [useMicrophone, setUseMicrophone] = useState<boolean>(false);
+  const [status, setStatus] = useState<
+    "submitted" | "streaming" | "ready" | "error"
+  >("ready");
+  const [messages, setMessages] = useState<MessageType[]>(initialMessages);
+  const [_streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null,
+  );
 
-  const selectedModelData = models.find(m => m.id === model)
+  const selectedModelData = models.find((m) => m.id === model);
 
-  const streamResponse = useCallback(async (messageId: string, content: string) => {
-    setStatus("streaming")
-    setStreamingMessageId(messageId)
+  const streamResponse = useCallback(
+    async (messageId: string, content: string) => {
+      setStatus("streaming");
+      setStreamingMessageId(messageId);
 
-    const words = content.split(" ")
-    let currentContent = ""
+      const words = content.split(" ");
+      let currentContent = "";
 
-    for (let i = 0; i < words.length; i++) {
-      currentContent += (i > 0 ? " " : "") + words[i]
+      for (let i = 0; i < words.length; i++) {
+        currentContent += (i > 0 ? " " : "") + words[i];
 
-      setMessages(prev =>
-        prev.map(msg => {
-          if (msg.versions.some(v => v.id === messageId)) {
-            return {
-              ...msg,
-              versions: msg.versions.map(v =>
-                v.id === messageId ? { ...v, content: currentContent } : v,
-              ),
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.versions.some((v) => v.id === messageId)) {
+              return {
+                ...msg,
+                versions: msg.versions.map((v) =>
+                  v.id === messageId ? { ...v, content: currentContent } : v,
+                ),
+              };
             }
-          }
-          return msg
-        }),
-      )
+            return msg;
+          }),
+        );
 
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50))
-    }
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.random() * 100 + 50),
+        );
+      }
 
-    setStatus("ready")
-    setStreamingMessageId(null)
-  }, [])
+      setStatus("ready");
+      setStreamingMessageId(null);
+    },
+    [],
+  );
 
   const addUserMessage = useCallback(
     (content: string) => {
@@ -369,13 +378,14 @@ export function ChatbotDemo() {
             content,
           },
         ],
-      }
+      };
 
-      setMessages(prev => [...prev, userMessage])
+      setMessages((prev) => [...prev, userMessage]);
 
       setTimeout(() => {
-        const assistantMessageId = `assistant-${Date.now()}`
-        const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)]
+        const assistantMessageId = `assistant-${Date.now()}`;
+        const randomResponse =
+          mockResponses[Math.floor(Math.random() * mockResponses.length)];
 
         const assistantMessage: MessageType = {
           key: `assistant-${Date.now()}`,
@@ -386,39 +396,39 @@ export function ChatbotDemo() {
               content: "",
             },
           ],
-        }
+        };
 
-        setMessages(prev => [...prev, assistantMessage])
-        streamResponse(assistantMessageId, randomResponse)
-      }, 500)
+        setMessages((prev) => [...prev, assistantMessage]);
+        streamResponse(assistantMessageId, randomResponse);
+      }, 500);
     },
     [streamResponse],
-  )
+  );
 
   const handleSubmit = (message: PromptInputMessage) => {
-    const hasText = Boolean(message.text)
-    const hasAttachments = Boolean(message.files?.length)
+    const hasText = Boolean(message.text);
+    const hasAttachments = Boolean(message.files?.length);
 
     if (!(hasText || hasAttachments)) {
-      return
+      return;
     }
 
-    setStatus("submitted")
+    setStatus("submitted");
 
     if (message.files?.length) {
       toast.success("Files attached", {
         description: `${message.files.length} file(s) attached to message`,
-      })
+      });
     }
 
-    addUserMessage(message.text || "Sent with attachments")
-    setText("")
-  }
+    addUserMessage(message.text || "Sent with attachments");
+    setText("");
+  };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setStatus("submitted")
-    addUserMessage(suggestion)
-  }
+    setStatus("submitted");
+    addUserMessage(suggestion);
+  };
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
@@ -427,15 +437,22 @@ export function ChatbotDemo() {
           {messages.map(({ versions, ...message }) => (
             <MessageBranch defaultBranch={0} key={message.key}>
               <MessageBranchContent>
-                {versions.map(version => (
-                  <Message from={message.from} key={`${message.key}-${version.id}`}>
+                {versions.map((version) => (
+                  <Message
+                    from={message.from}
+                    key={`${message.key}-${version.id}`}
+                  >
                     <div>
                       {message.sources?.length && (
                         <Sources>
                           <SourcesTrigger count={message.sources.length} />
                           <SourcesContent>
-                            {message.sources.map(source => (
-                              <Source href={source.href} key={source.href} title={source.title} />
+                            {message.sources.map((source) => (
+                              <Source
+                                href={source.href}
+                                key={source.href}
+                                title={source.title}
+                              />
                             ))}
                           </SourcesContent>
                         </Sources>
@@ -443,7 +460,9 @@ export function ChatbotDemo() {
                       {message.reasoning && (
                         <Reasoning duration={message.reasoning.duration}>
                           <ReasoningTrigger />
-                          <ReasoningContent>{message.reasoning.content}</ReasoningContent>
+                          <ReasoningContent>
+                            {message.reasoning.content}
+                          </ReasoningContent>
                         </Reasoning>
                       )}
                       <MessageContent>
@@ -467,7 +486,7 @@ export function ChatbotDemo() {
       </Conversation>
       <div className="shrink-0 space-y-4 pt-4">
         <Suggestions className="px-4">
-          {suggestions.map(suggestion => (
+          {suggestions.map((suggestion) => (
             <Suggestion
               key={suggestion}
               onClick={() => handleSuggestionClick(suggestion)}
@@ -481,7 +500,10 @@ export function ChatbotDemo() {
               <PromptInputAttachmentsDisplay />
             </PromptInputHeader>
             <PromptInputBody>
-              <PromptInputTextarea onChange={event => setText(event.target.value)} value={text} />
+              <PromptInputTextarea
+                onChange={(event) => setText(event.target.value)}
+                value={text}
+              />
             </PromptInputBody>
             <PromptInputFooter>
               <PromptInputTools>
@@ -505,14 +527,21 @@ export function ChatbotDemo() {
                   <GlobeIcon size={16} />
                   <span>Search</span>
                 </PromptInputButton>
-                <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
+                <ModelSelector
+                  onOpenChange={setModelSelectorOpen}
+                  open={modelSelectorOpen}
+                >
                   <ModelSelectorTrigger asChild>
                     <PromptInputButton>
                       {selectedModelData?.chefSlug && (
-                        <ModelSelectorLogo provider={selectedModelData.chefSlug} />
+                        <ModelSelectorLogo
+                          provider={selectedModelData.chefSlug}
+                        />
                       )}
                       {selectedModelData?.name && (
-                        <ModelSelectorName>{selectedModelData.name}</ModelSelectorName>
+                        <ModelSelectorName>
+                          {selectedModelData.name}
+                        </ModelSelectorName>
                       )}
                     </PromptInputButton>
                   </ModelSelectorTrigger>
@@ -520,24 +549,27 @@ export function ChatbotDemo() {
                     <ModelSelectorInput placeholder="Search models..." />
                     <ModelSelectorList>
                       <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                      {["OpenAI", "Anthropic", "Google"].map(chef => (
+                      {["OpenAI", "Anthropic", "Google"].map((chef) => (
                         <ModelSelectorGroup heading={chef} key={chef}>
                           {models
-                            .filter(m => m.chef === chef)
-                            .map(m => (
+                            .filter((m) => m.chef === chef)
+                            .map((m) => (
                               <ModelSelectorItem
                                 key={m.id}
                                 onSelect={() => {
-                                  setModel(m.id)
-                                  setModelSelectorOpen(false)
+                                  setModel(m.id);
+                                  setModelSelectorOpen(false);
                                 }}
                                 value={m.id}
                               >
                                 <ModelSelectorLogo provider={m.chefSlug} />
                                 <ModelSelectorName>{m.name}</ModelSelectorName>
                                 <ModelSelectorLogoGroup>
-                                  {m.providers.map(provider => (
-                                    <ModelSelectorLogo key={provider} provider={provider} />
+                                  {m.providers.map((provider) => (
+                                    <ModelSelectorLogo
+                                      key={provider}
+                                      provider={provider}
+                                    />
                                   ))}
                                 </ModelSelectorLogoGroup>
                                 {model === m.id ? (
@@ -562,7 +594,7 @@ export function ChatbotDemo() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default ChatbotDemo
+export default ChatbotDemo;
