@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SharedSidebar, SidebarLink } from "@/components/dashboard/shared/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/shared/DashboardHeader";
-import { FloatingChatbot } from "@/components/dashboard/shared/FloatingChatbot";
 import { LayoutDashboard, DollarSign, AlertCircle, Info, Store, CalendarClock, ClipboardList, HeartHandshake, HelpCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -84,7 +83,6 @@ export default function NutritionistLayout({ children }: { children: React.React
               children
             )}
           </main>
-          <FloatingChatbot />
         </SidebarInset>
         
         {showDevOverride ? (

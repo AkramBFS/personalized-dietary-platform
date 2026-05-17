@@ -4,7 +4,6 @@ import React from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SharedSidebar, SidebarLink } from "@/components/dashboard/shared/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/shared/DashboardHeader";
-import { FloatingChatbot } from "@/components/dashboard/shared/FloatingChatbot";
 import { LayoutDashboard, ClipboardList, MessageSquare, Camera, Users, HelpCircle, Settings, CreditCard, Receipt } from "lucide-react";
 
 const clientLinks: SidebarLink[] = [
@@ -65,7 +64,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <main className="flex-1 w-full p-4 md:p-8">
             {children}
           </main>
-          <FloatingChatbot />
+          
         </SidebarInset>
       </div>
     </SidebarProvider>
