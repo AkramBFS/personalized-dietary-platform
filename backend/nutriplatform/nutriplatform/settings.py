@@ -37,6 +37,7 @@ LOCAL_APPS = [
     'marketplace',
     'community',
     'notifications',
+    'chatbot',
 ]
 
 FILTER  = [
@@ -176,3 +177,7 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
+
+
+
+GROQ_API_KEY = config('GROQ_API_KEY')
