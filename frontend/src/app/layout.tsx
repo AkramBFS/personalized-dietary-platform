@@ -21,6 +21,7 @@ export const metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import SmoothScrolling from "@/components/SmoothScrolling";
 
 // Bootstrap lookup data on server startup
 bootstrapLookups().catch((err) =>
@@ -46,7 +47,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="flex-grow">{children}</main>
+          <SmoothScrolling>
+            <main className="flex-grow">{children}</main>
+          </SmoothScrolling>
         </ThemeProvider>
       </body>
     </html>

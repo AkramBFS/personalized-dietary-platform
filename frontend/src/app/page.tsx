@@ -8,9 +8,10 @@ import Testimonials from "@/components/testimonials";
 import CallToAction from "@/components/calltoaction";
 import { AIDetection } from "@/components/ai/aidetection";
 import { HeroHeader } from "@/components/layout/navbar";
+
 export default function HomePage() {
   return (
-    <div className="selection:bg-brand/30 selection:text-brand min-h-screen overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="selection:bg-brand/30 selection:text-brand min-h-screen">
       <HeroHeader />
       <HeroSection />
       <AIDetection />
