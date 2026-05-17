@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { ScanLine, ChevronDown, CheckCircle2 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -226,7 +226,7 @@ export function AIDetection() {
     >
       <div
         ref={wrapperRef}
-        className="relative mx-auto w-[90vw] h-[50vh] md:h-[70vh] max-w-6xl rounded-3xl overflow-hidden bg-black/20 ring-1 ring-white/10 shadow-2xl flex items-center justify-center"
+        className="relative mx-auto w-[90vw] h-[50vh] md:h-[70vh] max-w-6xl rounded-3xl overflow-hidden bg-black/20 ring-1 ring-white/10 shadow-2xl flex items-center justify-center [will-change:transform]"
       >
         <video
           ref={videoRef}
@@ -234,7 +234,7 @@ export function AIDetection() {
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover translate-x-[5px]"
+          className="absolute inset-0 w-full h-full object-cover translate-x-[5px] [will-change:transform]"
         />
 
         {/* ===== INSTRUCTIONS: SCROLL TO PLAY ===== */}
@@ -253,7 +253,7 @@ export function AIDetection() {
         {/* ===== SCANNING LINE ===== */}
         <div
           ref={scanLineRef}
-          className="absolute left-0 right-0 h-[2px] bg-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,1)] z-30 opacity-0 pointer-events-none"
+          className="absolute left-0 right-0 h-[2px] bg-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,1)] z-30 opacity-0 pointer-events-none [will-change:top,opacity]"
         />
 
         {/* ===== AI SCAN COMPLETE OVERLAY (FLOATING BADGE) ===== */}
