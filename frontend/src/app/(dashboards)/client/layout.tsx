@@ -64,6 +64,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <main className="flex-1 w-full p-4 md:p-8">
             {children}
           </main>
+          
         </SidebarInset>
       </div>
     </SidebarProvider>
