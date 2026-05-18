@@ -15,21 +15,17 @@ export default function HomePage() {
       <HeroHeader />
       <HeroSection />
       <AIDetection />
-      <FadeIn>
-        <Features />
-      </FadeIn>
-      <FadeIn delay={0.1}>
-        <ContentSection />
-      </FadeIn>
-      <FadeIn delay={0.2}>
-        <FAQs />
-      </FadeIn>
-      <FadeIn delay={0.3}>
-        <Testimonials />
-      </FadeIn>
-      <FadeIn delay={0.3}>
-        <CallToAction />
-      </FadeIn>
+
+      <Features />
+
+      <ContentSection />
+
+      <FAQs />
+
+      <Testimonials />
+
+      <CallToAction />
+
       <FooterSection />
     </div>
   );
