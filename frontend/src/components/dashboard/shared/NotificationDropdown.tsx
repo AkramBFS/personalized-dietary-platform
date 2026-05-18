@@ -83,7 +83,7 @@ export function NotificationDropdown() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto bg-card border-border shadow-xl custom-scrollbar">
+      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto bg-card border-border shadow-xl custom-scrollbar" data-lenis-prevent>
         <DropdownMenuLabel className="font-normal py-3 flex justify-between items-center">
           <span className="font-semibold text-foreground">Notifications</span>
           {unreadCount > 0 && (

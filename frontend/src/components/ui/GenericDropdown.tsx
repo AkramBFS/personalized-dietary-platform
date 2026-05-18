@@ -100,7 +100,7 @@ export default function GenericDropdown({
         </svg>
       </button>
       {isOpen && (
-        <ul className={dropdownMenuClasses}>
+        <ul className={dropdownMenuClasses} data-lenis-prevent>
           {options.length > 0 ? (
             options.map((option, idx) => {
               const optLabel =

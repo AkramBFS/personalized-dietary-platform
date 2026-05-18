@@ -290,9 +290,6 @@
   background-color: #3EAD88;
 }
 
-html {
-  scroll-behavior: smooth;
-}
 
 /* Hide scrollbar for Chrome, Safari and Opera */
 *::-webkit-scrollbar {

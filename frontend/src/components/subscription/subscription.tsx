@@ -16,7 +16,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { buildPaymentUrl } from "@/lib/payment";
+import { useState, useEffect } from "react";
+import { buildPaymentUrl, getSubscriptionAmount, DEFAULT_SUBSCRIPTION_PRICES } from "@/lib/payment";
 
 type FaqItem = {
   id: string;
@@ -25,6 +26,17 @@ type FaqItem = {
 };
 
 export default function SubscriptionPlans() {
+  const [mounted, setMounted] = useState(false);
+  const [prices, setPrices] = useState(DEFAULT_SUBSCRIPTION_PRICES);
+
+  useEffect(() => {
+    setMounted(true);
+    setPrices({
+      monthly: getSubscriptionAmount("monthly"),
+      yearly: getSubscriptionAmount("yearly"),
+    });
+  }, []);
+
   const monthlyPaymentHref = buildPaymentUrl({
     type: "subscription",
     planType: "monthly",
@@ -229,7 +241,7 @@ export default function SubscriptionPlans() {
 
               <div className="mb-8 pb-6 border-b border-border">
                 <div className="text-3xl font-[Syne] font-bold text-foreground">
-                  $190
+                  {mounted ? `$${prices.yearly}` : `$${DEFAULT_SUBSCRIPTION_PRICES.yearly}`}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Billed yearly (Save 15%)
@@ -289,7 +301,7 @@ export default function SubscriptionPlans() {
 
               <div className="mb-8 pb-6 border-b border-border">
                 <div className="text-3xl font-[Syne] font-bold text-foreground">
-                  $19
+                  {mounted ? `$${prices.monthly}` : `$${DEFAULT_SUBSCRIPTION_PRICES.monthly}`}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Monthly subscription

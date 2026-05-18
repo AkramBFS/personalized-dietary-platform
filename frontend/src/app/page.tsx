@@ -8,27 +8,24 @@ import Testimonials from "@/components/testimonials";
 import CallToAction from "@/components/calltoaction";
 import { AIDetection } from "@/components/ai/aidetection";
 import { HeroHeader } from "@/components/layout/navbar";
+
 export default function HomePage() {
   return (
-    <div className="selection:bg-brand/30 selection:text-brand min-h-screen overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="selection:bg-brand/30 selection:text-brand min-h-screen">
       <HeroHeader />
       <HeroSection />
       <AIDetection />
-      <FadeIn>
-        <Features />
-      </FadeIn>
-      <FadeIn delay={0.1}>
-        <ContentSection />
-      </FadeIn>
-      <FadeIn delay={0.2}>
-        <FAQs />
-      </FadeIn>
-      <FadeIn delay={0.3}>
-        <Testimonials />
-      </FadeIn>
-      <FadeIn delay={0.3}>
-        <CallToAction />
-      </FadeIn>
+
+      <Features />
+
+      <ContentSection />
+
+      <FAQs />
+
+      <Testimonials />
+
+      <CallToAction />
+
       <FooterSection />
     </div>
   );
