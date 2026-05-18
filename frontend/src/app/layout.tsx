@@ -51,7 +51,6 @@ export default function RootLayout({
           <SmoothScrolling>
             <main className="flex-grow">{children}</main>
           </SmoothScrolling>
-          <main className="flex-grow">{children}</main>
           <FloatingChatbot />
         </ThemeProvider>
       </body>
