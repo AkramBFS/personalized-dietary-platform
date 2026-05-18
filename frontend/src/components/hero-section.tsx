@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { ChevronRight, MessageCircle } from "lucide-react";
+import { useChatbot } from "@/context/ChatbotContext";
 
 export default function HeroSection() {
+  const { openChatbot } = useChatbot();
+
   return (
     <main>
       {/* Added justify-center to center the container horizontally */}
@@ -40,15 +44,13 @@ export default function HeroSection() {
               </Button>
 
               <Button
-                asChild
                 size="lg"
                 variant="outline"
                 className="border-border text-foreground hover:bg-accent"
+                onClick={openChatbot}
               >
-                <Link href="#chat">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Ask the AI
-                </Link>
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Ask the AI
               </Button>
             </div>
           </div>

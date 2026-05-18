@@ -204,9 +204,14 @@ export default function BlogPageComponent() {
                   />
                 </div>
                 <div className="p-6 flex flex-col flex-grow gap-4">
-                  <span className="inline-block bg-muted text-primary text-xs font-bold px-3 py-1 rounded-full w-max border border-primary/10 tracking-wide uppercase">
-                    Article
-                  </span>
+                  <div className="flex justify-between items-center">
+                    <span className="inline-block bg-muted text-primary text-xs font-bold px-3 py-1 rounded-full w-max border border-primary/10 tracking-wide uppercase">
+                      Article
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {new Date(article.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                   <h3 className="text-xl font-semibold text-foreground line-clamp-3 leading-tight">
                     {article.title}
                   </h3>

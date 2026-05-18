@@ -2,6 +2,7 @@ import "./globals.css";
 import { Syne, Space_Grotesk } from "next/font/google";
 import { bootstrapLookups } from "@/lib/lookups";
 import { FloatingChatbot } from "@/components/dashboard/shared/FloatingChatbot";
+import { ChatbotProvider } from "@/context/ChatbotContext";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -48,10 +49,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SmoothScrolling>
-            <main className="flex-grow">{children}</main>
-          </SmoothScrolling>
-          <FloatingChatbot />
+          <ChatbotProvider>
+            <SmoothScrolling>
+              <main className="flex-grow">{children}</main>
+            </SmoothScrolling>
+            <FloatingChatbot />
+          </ChatbotProvider>
         </ThemeProvider>
       </body>
     </html>
