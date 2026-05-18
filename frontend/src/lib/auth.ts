@@ -40,6 +40,12 @@ export function setRefreshToken(token: string) {
   }
 }
 
+export function setUserRoleCookie(role: string) {
+  if (typeof document !== "undefined") {
+    document.cookie = `user_role=${role}; path=/; max-age=604800; SameSite=Lax`;
+  }
+}
+
 export function hasAccessToken(): boolean {
   return Boolean(getCookie("access_token"));
 }
@@ -70,6 +76,7 @@ export function clearAuthSession() {
   if (typeof document !== "undefined") {
     document.cookie = "access_token=; path=/; max-age=0";
     document.cookie = "refresh_token=; path=/; max-age=0";
+    document.cookie = "user_role=; path=/; max-age=0";
   }
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(SESSION_USER_KEY);
