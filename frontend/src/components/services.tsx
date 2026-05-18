@@ -100,17 +100,18 @@ export default function ServicesPage() {
 
           <div className="relative rounded-[2.5rem] overflow-hidden aspect-square md:aspect-[4/3] shadow-2xl border border-border/50 group">
             <img
-              src="https://placehold.co/800x600/0D3239/61dda3?text=Sustainable+Health"
+              src="https://images.unsplash.com/photo-1494390248081-4e521a5940db?q=80&w=806&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               alt="Sustainable Health Ecosystem"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent"></div>
             <div className="absolute bottom-6 left-6 right-6 bg-card/80 backdrop-blur-xl p-5 rounded-2xl border border-border flex items-center gap-5">
               <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-brand shrink-0">
                 <Heart className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-bold text-card-foreground text-sm mb-0.5">
-                  Long-term Health
+                  Sustainable Health
                 </h4>
                 <p className="text-xs text-muted-foreground">
                   Built for real-life adherence and results.
@@ -159,7 +160,9 @@ export default function ServicesPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-brand shrink-0" />
-                      <span className="text-foreground/90 font-medium">{item}</span>
+                      <span className="text-foreground/90 font-medium">
+                        {item}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -211,14 +214,15 @@ export default function ServicesPage() {
 
               <div className="col-span-2 relative rounded-[2rem] overflow-hidden h-48 md:h-56 border border-border/50">
                 <img
-                  src="https://placehold.co/800x400/051b20/61dda3?text=Scanning+Food"
-                  alt="Scanning"
-                  className="w-full h-full object-cover opacity-80"
+                  src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=800"
+                  alt="Appetizing meal for scanning"
+                  className="w-full h-full object-cover"
                 />
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px]"></div>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-border flex items-center gap-3 whitespace-nowrap shadow-xl">
                   <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
                   <span className="text-sm font-bold text-card-foreground">
-                    Scanning... ~450 kcal
+                    Scanning Food... ~450 kcal
                   </span>
                 </div>
               </div>
@@ -258,14 +262,20 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 bg-muted rounded-2xl border border-border/60 relative overflow-hidden flex items-center justify-center">
-                  <Video className="w-16 h-16 text-foreground/10" />
-                  <div className="absolute bottom-4 right-4 bg-card px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground">
+                <div className="flex-1 rounded-2xl border border-border/60 relative overflow-hidden flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1758691462743-f9fc9e430d39?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    alt="Online Consultation"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-background/40"></div>
+                  <Video className="w-16 h-16 text-foreground/40 relative z-10" />
+                  <div className="absolute bottom-4 right-4 bg-card/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border text-xs text-foreground font-medium z-10">
                     45:00
                   </div>
                 </div>
 
-                <div className="mt-6 bg-accent/40 p-4 rounded-xl border border-border flex items-start gap-3">
+                <div className="mt-6 bg-accent/40 p-4 rounded-xl border border-border flex items-start gap-3 relative z-10 backdrop-blur-md">
                   <Check className="w-5 h-5 text-brand shrink-0" />
                   <p className="text-sm text-foreground/90 font-medium">
                     "Every consultation includes a personalized dietary plan."
@@ -383,7 +393,9 @@ export default function ServicesPage() {
                       className="flex items-center gap-3 bg-card p-3.5 rounded-xl border border-border"
                     >
                       <item.icon className="w-5 h-5 text-brand" />
-                      <span className="text-sm text-foreground/90">{item.text}</span>
+                      <span className="text-sm text-foreground/90">
+                        {item.text}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -435,7 +447,9 @@ export default function ServicesPage() {
                   ].map((macro, i) => (
                     <div key={i} className="space-y-2">
                       <div className="flex justify-between text-xs font-medium">
-                        <span className="text-foreground/80">{macro.label}</span>
+                        <span className="text-foreground/80">
+                          {macro.label}
+                        </span>
                         <span className="text-muted-foreground">
                           {macro.current}g / {macro.max}g
                         </span>
@@ -483,18 +497,24 @@ export default function ServicesPage() {
                 <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-brand mb-4">
                   <Target className="w-5 h-5" />
                 </div>
-                <h4 className="font-bold text-card-foreground mb-1">Fat Loss Protocol</h4>
-                <p className="text-xs text-muted-foreground mb-4">8-Week Structure</p>
-                <div className="text-brand text-sm font-bold">
-                  View Plan →
-                </div>
+                <h4 className="font-bold text-card-foreground mb-1">
+                  Fat Loss Protocol
+                </h4>
+                <p className="text-xs text-muted-foreground mb-4">
+                  8-Week Structure
+                </p>
+                <div className="text-brand text-sm font-bold">View Plan →</div>
               </div>
               <div className="bg-card p-6 rounded-3xl border border-border shadow-lg transform translate-y-8 hover:translate-y-6 transition-transform">
                 <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-accent-foreground mb-4">
                   <Heart className="w-5 h-5" />
                 </div>
-                <h4 className="font-bold text-card-foreground mb-1">Gut Health Reset</h4>
-                <p className="text-xs text-muted-foreground mb-4">4-Week Structure</p>
+                <h4 className="font-bold text-card-foreground mb-1">
+                  Gut Health Reset
+                </h4>
+                <p className="text-xs text-muted-foreground mb-4">
+                  4-Week Structure
+                </p>
                 <div className="text-accent-foreground text-sm font-bold">
                   View Plan →
                 </div>
@@ -532,7 +552,9 @@ export default function ServicesPage() {
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-brand shrink-0" />
-                    <span className="text-foreground/90 font-medium">{item}</span>
+                    <span className="text-foreground/90 font-medium">
+                      {item}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -584,7 +606,9 @@ export default function ServicesPage() {
               </div>
 
               <div>
-                <h4 className="text-foreground font-bold mb-4">Designed around:</h4>
+                <h4 className="text-foreground font-bold mb-4">
+                  Designed around:
+                </h4>
                 <div className="flex flex-wrap gap-3">
                   <div className="bg-card px-4 py-2.5 rounded-xl border border-border flex items-center gap-2">
                     <Moon className="w-4 h-4 text-primary" />
@@ -603,10 +627,10 @@ export default function ServicesPage() {
                     <span className="text-sm font-medium text-foreground/90">
                       Short-term Shifts
                     </span>
+                  </div>
                 </div>
-              </div>
 
-              <Link href="/marketplace" className="inline-block mt-6">
+                <Link href="/marketplace" className="inline-block mt-6">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -621,22 +645,26 @@ export default function ServicesPage() {
 
             {/* Visual Column */}
             <div className="relative lg:order-2 order-1">
-              <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-xl overflow-hidden group">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl font-black text-foreground/[0.02] pointer-events-none tracking-tighter whitespace-nowrap text-center leading-[0.8]">
-                  SEASONAL
-                </div>
-                <div className="relative z-10 text-center flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-primary mb-6 border border-border">
+              <div className="relative min-h-[400px] p-10 rounded-[2.5rem] border border-border shadow-xl overflow-hidden flex flex-col justify-center items-center group">
+                <img
+                  src="https://images.unsplash.com/photo-1526016650454-68a6f488910a?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                  alt="Ramadan Meal"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]"></div>
+
+                <div className="relative z-20 text-center flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-primary mb-6 border border-border shadow-lg">
                     <Moon className="w-8 h-8" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2 text-card-foreground">
+                  <h3 className="text-2xl font-bold mb-2 text-foreground">
                     Ramadan Protocol
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-6 max-w-xs mx-auto">
+                  <p className="text-foreground/80 text-sm leading-relaxed mb-6 max-w-xs mx-auto font-medium">
                     Maintain muscle and energy levels during fasting hours with
                     optimal nutrient timing.
                   </p>
-                  <button className="inline-flex items-center gap-2 text-brand text-sm font-bold hover:gap-3 transition-all">
+                  <button className="inline-flex items-center gap-2 text-brand bg-background/80 backdrop-blur-md px-4 py-2 rounded-full text-sm font-bold border border-brand/20 hover:gap-3 transition-all">
                     View Program <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
