@@ -47,24 +47,49 @@ export const LogoIcon = ({
 }) => {
   return (
     <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cn("size-5 text-foreground", className)}
     >
-      <path
-        d="M3 0H5V18H3V0ZM13 0H15V18H13V0ZM18 3V5H0V3H18ZM0 15V13H18V15H0Z"
-        fill={uniColor ? "currentColor" : "url(#logo-gradient)"}
-      />
+      {/* Translating down by 0.5 centers the 23-unit-tall shape perfectly in the 24-unit canvas */}
+      <g transform="translate(0, 0.5)">
+        <path
+          d="
+        M 20 2 
+        L 8 2 
+        A 7 7 0 0 0 8 16 
+        L 12 16 
+        A 2 2 0 0 0 12 12 
+        L 8 12 
+        A 3 3 0 0 1 8 6 
+        L 20 6 
+        A 2 2 0 0 0 20 2 
+        Z 
+        
+        M 4 21 
+        L 16 21 
+        A 7 7 0 0 0 16 7 
+        L 12 7 
+        A 2 2 0 0 0 12 11 
+        L 16 11 
+        A 3 3 0 0 1 16 17 
+        L 4 17 
+        A 2 2 0 0 0 4 21 
+        Z
+      "
+          fill={uniColor ? "currentColor" : "url(#logo-gradient)"}
+        />
+      </g>
       <defs>
         <linearGradient
           id="logo-gradient"
-          x1="10"
+          x1="12"
           y1="0"
-          x2="10"
-          y2="20"
+          x2="12"
+          y2="24"
           gradientUnits="userSpaceOnUse"
         >
           <stop stopColor="#0e9859" />

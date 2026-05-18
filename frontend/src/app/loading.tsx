@@ -1,4 +1,4 @@
-import { Logo, LogoIcon } from "@/components/layout/logo"; // Adjust import path as needed
+import { Logo, LogoIcon } from "@/components/layout/logo";
 
 export default function Loading() {
   return (
