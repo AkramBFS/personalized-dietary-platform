@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Settings,
   FileText,
+  CreditCard,
 } from "lucide-react";
 
 const adminLinks: SidebarLink[] = [
@@ -38,6 +39,11 @@ const adminLinks: SidebarLink[] = [
     title: "Plan Management",
     url: "/admin/plans",
     icon: FileText,
+  },
+  {
+    title: "Subscriptions",
+    url: "/admin/subscriptions",
+    icon: CreditCard,
   },
   {
     title: "Content Moderation",

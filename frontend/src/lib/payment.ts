@@ -4,7 +4,7 @@ export type PaymentFlowType = "marketplace-plan" | "consultation" | "subscriptio
 export type SubscriptionPlanType = "monthly" | "yearly";
 export type ConsultationPaymentType = "advice_only" | "plan_included";
 
-export const PUBLIC_SUBSCRIPTION_PRICES: Record<SubscriptionPlanType, number> = {
+export const DEFAULT_SUBSCRIPTION_PRICES: Record<SubscriptionPlanType, number> = {
   monthly: 19,
   yearly: 190,
 };
@@ -41,7 +41,20 @@ export function formatPaymentAmount(amount: number): string {
 }
 
 export function getSubscriptionAmount(planType: SubscriptionPlanType): number {
-  return PUBLIC_SUBSCRIPTION_PRICES[planType];
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("admin_subscription_prices");
+      if (stored) {
+        const prices = JSON.parse(stored);
+        if (prices && typeof prices[planType] === "number") {
+          return prices[planType];
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse subscription prices from local storage", e);
+    }
+  }
+  return DEFAULT_SUBSCRIPTION_PRICES[planType];
 }
 
 export function generateTransactionNumber(prefix: PaymentFlowType): string {

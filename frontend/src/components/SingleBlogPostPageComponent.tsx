@@ -2,7 +2,6 @@
 
 import {
   CalendarDays,
-  UserCircle,
   Facebook,
   Twitter,
   Linkedin,
@@ -13,8 +12,6 @@ import { getBlogPost, BlogPost, parseBlogPostIdFromSlug } from "@/lib/api";
 
 const FALLBACK_IMAGE_URL =
   "https://images.unsplash.com/photo-1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
-const FALLBACK_AUTHOR_AVATAR =
-  "https://images.pexels.com/photos/5215024/pexels-photo-5215024.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
 
 // Related posts are kept static per instructions to repurpose UI but data isn't available
 const relatedPosts = [
@@ -133,10 +130,6 @@ export default function SingleBlogPostPageComponent({ slug }: BlogPostProps) {
             <CalendarDays className="w-4 h-4" />
             <span>{new Date(post.created_at).toLocaleDateString()}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <UserCircle className="w-4 h-4" />
-            <span>By {post.admin_username}</span>
-          </div>
         </div>
 
         {/* Article Content */}
@@ -147,35 +140,6 @@ export default function SingleBlogPostPageComponent({ slug }: BlogPostProps) {
 
       {/* Right Column (Sticky Sidebar) */}
       <aside className="md:col-span-4 sticky top-2 flex flex-col gap-10">
-        {/* Author Profile adaptation */}
-        <div className="bg-card p-8 rounded-2xl border border-border shadow-sm flex flex-col gap-6">
-          <h2 className="text-xl font-bold text-foreground border-b border-border pb-3">
-            ARTICLE AUTHOR
-          </h2>
-
-          <div className="flex flex-col items-center text-center gap-4">
-            <img
-              src={FALLBACK_AUTHOR_AVATAR}
-              alt="Author avatar"
-              className="w-28 h-28 rounded-full object-cover border-4 border-muted"
-            />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">
-                {post.admin_username}
-              </h3>
-              <p className="text-sm text-primary font-medium">Admin & Writer</p>
-            </div>
-          </div>
-
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Content managed and published by {post.admin_username}.
-          </p>
-
-          <button className="w-full bg-muted text-primary text-sm font-semibold py-3 px-6 rounded-xl hover:bg-muted/80 transition-colors">
-            Book a Consultation
-          </button>
-        </div>
-
         {/* Follow Me Section */}
         <div className="flex flex-col gap-6 p-2">
           <h2 className="text-xl font-bold text-foreground border-b border-border pb-3">

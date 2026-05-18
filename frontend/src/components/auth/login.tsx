@@ -8,7 +8,12 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Logo } from "../layout/logo";
 import { loginSchema } from "@/lib/constants";
 import api from "@/lib/api";
-import { setAccessToken, setRefreshToken, setSessionUser } from "@/lib/auth";
+import {
+  setAccessToken,
+  setRefreshToken,
+  setSessionUser,
+  setUserRoleCookie,
+} from "@/lib/auth";
 import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";
@@ -80,6 +85,7 @@ export default function LoginPage() {
         username: user.username,
         email: user.email,
       });
+      setUserRoleCookie(user.role);
 
       // Redirect based on role
       if (user.role === "client") {
