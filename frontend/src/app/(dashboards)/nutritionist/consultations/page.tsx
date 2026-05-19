@@ -3,10 +3,23 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import {
   addNutritionistPatientNote,
@@ -23,15 +36,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 function statusBadge(status: NutritionistConsultation["status"]) {
   if (status === "scheduled") return <Badge variant="outline">Scheduled</Badge>;
-  if (status === "notified") return <Badge variant="secondary" className="bg-primary/15 text-primary border-0">Notified</Badge>;
-  if (status === "finished") return <Badge className="bg-primary text-primary-foreground">Finished</Badge>;
+  if (status === "notified")
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-primary/15 text-primary border-0"
+      >
+        Notified
+      </Badge>
+    );
+  if (status === "finished")
+    return (
+      <Badge className="bg-primary text-primary-foreground">Finished</Badge>
+    );
   return <Badge variant="destructive">Cancelled</Badge>;
 }
 
 export default function ConsultationsPage() {
-  const [consultations, setConsultations] = useState<NutritionistConsultation[]>([]);
-  const [selected, setSelected] = useState<NutritionistConsultation | null>(null);
-  const [patientProfile, setPatientProfile] = useState<NutritionistPatientProfile | null>(null);
+  const [consultations, setConsultations] = useState<
+    NutritionistConsultation[]
+  >([]);
+  const [selected, setSelected] = useState<NutritionistConsultation | null>(
+    null,
+  );
+  const [patientProfile, setPatientProfile] =
+    useState<NutritionistPatientProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [zoomLink, setZoomLink] = useState("");
   const [noteInput, setNoteInput] = useState("");
@@ -76,9 +105,17 @@ export default function ConsultationsPage() {
     try {
       await patchConsultationZoomLink(selected.id, zoomLink.trim());
       setConsultations((prev) =>
-        prev.map((row) => (row.id === selected.id ? { ...row, zoom_link: zoomLink.trim(), status: "notified" } : row)),
+        prev.map((row) =>
+          row.id === selected.id
+            ? { ...row, zoom_link: zoomLink.trim(), status: "notified" }
+            : row,
+        ),
       );
-      setSelected((prev) => (prev ? { ...prev, zoom_link: zoomLink.trim(), status: "notified" } : prev));
+      setSelected((prev) =>
+        prev
+          ? { ...prev, zoom_link: zoomLink.trim(), status: "notified" }
+          : prev,
+      );
       toast.success("Zoom link saved and client notified.");
     } catch {
       toast.error("Could not update zoom link.");
@@ -91,8 +128,12 @@ export default function ConsultationsPage() {
     if (!selected || !noteInput.trim()) return;
     setIsSavingNote(true);
     try {
-      await addNutritionistPatientNote(selected.client_id, { note_content: noteInput.trim() });
-      setPatientProfile((prev) => (prev ? { ...prev, notes: [noteInput.trim(), ...prev.notes] } : prev));
+      await addNutritionistPatientNote(selected.client_id, {
+        note_content: noteInput.trim(),
+      });
+      setPatientProfile((prev) =>
+        prev ? { ...prev, notes: [noteInput.trim(), ...prev.notes] } : prev,
+      );
       setNoteInput("");
       toast.success("Patient note added.");
     } catch {
@@ -116,14 +157,21 @@ export default function ConsultationsPage() {
     }
   };
 
-  if (isLoading) return <div className="text-sm text-muted-foreground">Loading consultations...</div>;
+  if (isLoading)
+    return (
+      <div className="text-sm text-muted-foreground">
+        Loading consultations...
+      </div>
+    );
 
   return (
     <div className="grid grid-cols-1 gap-6">
       <Card className="h-fit">
         <CardHeader>
           <CardTitle>Upcoming Consultations</CardTitle>
-          <CardDescription>Select an appointment to open the consultation workspace modal.</CardDescription>
+          <CardDescription>
+            Select an appointment to open the consultation workspace modal.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -139,7 +187,9 @@ export default function ConsultationsPage() {
               {consultations.map((consultation) => (
                 <TableRow key={consultation.id}>
                   <TableCell>
-                    <div className="font-medium">{consultation.client_name || "Unknown Patient"}</div>
+                    <div className="font-medium">
+                      {consultation.client_username || "Unknown Patient"}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {consultation.start_time} - {consultation.end_time}
                     </div>
@@ -147,7 +197,11 @@ export default function ConsultationsPage() {
                   <TableCell>{consultation.appointment_date}</TableCell>
                   <TableCell>{statusBadge(consultation.status)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => setSelected(consultation)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelected(consultation)}
+                    >
                       Open
                     </Button>
                   </TableCell>
@@ -164,14 +218,22 @@ export default function ConsultationsPage() {
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border">
-                  <AvatarFallback>{selected.client_name?.charAt(0) || "P"}</AvatarFallback>
+                  <AvatarFallback>
+                    {selected.client_username?.charAt(0) || "P"}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <CardTitle>Consultation Workspace</CardTitle>
-                  <CardDescription>Managing {selected.client_name || "Patient"}</CardDescription>
+                  <CardDescription>
+                    Managing {selected.client_username || "Patient"}
+                  </CardDescription>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setSelected(null)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelected(null)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
@@ -185,7 +247,10 @@ export default function ConsultationsPage() {
                   onChange={(event) => setZoomLink(event.target.value)}
                 />
                 <div className="flex flex-wrap gap-3 pt-2">
-                  <Button onClick={saveZoomLink} disabled={isSavingZoom || !zoomLink.trim()}>
+                  <Button
+                    onClick={saveZoomLink}
+                    disabled={isSavingZoom || !zoomLink.trim()}
+                  >
                     {isSavingZoom ? "Saving..." : "Update & Notify"}
                   </Button>
                   <div className="flex-1" />
@@ -213,14 +278,23 @@ export default function ConsultationsPage() {
               {patientProfile ? (
                 <div className="space-y-3 rounded-md border p-3">
                   <h4 className="font-semibold">Patient profile history</h4>
-                  <p className="text-sm">BMI: {patientProfile.bmi} | BMR: {patientProfile.bmr}</p>
+                  <p className="text-sm">
+                    BMI: {patientProfile.bmi} | BMR: {patientProfile.bmr}
+                  </p>
                   <p className="text-sm">Goal: {patientProfile.goal_name}</p>
-                  <p className="text-sm text-muted-foreground">{patientProfile.health_history}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {patientProfile.health_history}
+                  </p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="rounded-md border p-2 text-sm">Current: {patientProfile.progress.current_weight} kg</div>
-                    <div className="rounded-md border p-2 text-sm">Goal: {patientProfile.progress.goal_weight} kg</div>
                     <div className="rounded-md border p-2 text-sm">
-                      Progress adherence: {patientProfile.progress.adherence_score}%
+                      Current: {patientProfile.progress.current_weight} kg
+                    </div>
+                    <div className="rounded-md border p-2 text-sm">
+                      Goal: {patientProfile.progress.goal_weight} kg
+                    </div>
+                    <div className="rounded-md border p-2 text-sm">
+                      Progress adherence:{" "}
+                      {patientProfile.progress.adherence_score}%
                     </div>
                   </div>
                 </div>
@@ -235,7 +309,11 @@ export default function ConsultationsPage() {
                   onChange={(event) => setNoteInput(event.target.value)}
                   placeholder="Clinical note for follow-up..."
                 />
-                <Button variant="outline" onClick={savePatientNote} disabled={isSavingNote || !noteInput.trim()}>
+                <Button
+                  variant="outline"
+                  onClick={savePatientNote}
+                  disabled={isSavingNote || !noteInput.trim()}
+                >
                   {isSavingNote ? "Saving note..." : "Save Note"}
                 </Button>
               </div>
@@ -244,7 +322,10 @@ export default function ConsultationsPage() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Recent notes</p>
                   {patientProfile.notes.slice(0, 3).map((note, index) => (
-                    <p key={`${note}-${index}`} className="rounded-md border p-2 text-sm text-muted-foreground">
+                    <p
+                      key={`${note}-${index}`}
+                      className="rounded-md border p-2 text-sm text-muted-foreground"
+                    >
                       {note}
                     </p>
                   ))}
@@ -257,4 +338,3 @@ export default function ConsultationsPage() {
     </div>
   );
 }
-
