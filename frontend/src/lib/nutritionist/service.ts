@@ -46,7 +46,7 @@ export interface NutritionistSchedule {
 export interface NutritionistConsultation {
   id: number;
   client_id: number;
-  client_name: string;
+  client_username: string;
   appointment_date: string;
   start_time: string;
   end_time: string;

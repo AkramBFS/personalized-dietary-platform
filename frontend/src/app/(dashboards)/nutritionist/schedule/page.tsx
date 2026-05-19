@@ -425,7 +425,7 @@ export default function SchedulePage() {
 
                           {/* Full Day Holiday Override Overlay */}
                           {isHoliday && (
-                            <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center pointer-events-none z-100">
+                            <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center pointer-events-none z-10">
                               <span className="bg-destructive/20 text-destructive text-xs px-2 py-1 rounded font-semibold border border-destructive/30 rotate-90 whitespace-nowrap tracking-widest shadow-sm">
                                 HOLIDAY
                               </span>
@@ -608,7 +608,7 @@ export default function SchedulePage() {
                             }
                             className="w-full h-11 border-border focus-visible:ring-destructive"
                           />
-                           <Button
+                          <Button
                             type="submit"
                             variant="outline"
                             disabled={isAddingHoliday}
@@ -734,7 +734,7 @@ export default function SchedulePage() {
                         placeholder="https://zoom.us/j/..."
                       />
                     </div>
-                     <Button
+                    <Button
                       type="submit"
                       disabled={isUpdatingZoom}
                       className="w-full mt-2 active:scale-95 transition-all duration-200"
