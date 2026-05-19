@@ -113,7 +113,7 @@ export default function SchedulePage() {
           Array.isArray(consultationsData)
             ? consultationsData.map((c) => ({
                 id: c.id,
-                patientName: c.client_name,
+                patientName: c.client_username,
                 date: c.appointment_date,
                 startTime: c.start_time,
                 endTime: c.end_time,
