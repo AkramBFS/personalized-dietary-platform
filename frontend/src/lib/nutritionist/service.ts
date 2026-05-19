@@ -247,7 +247,7 @@ const mockConsultations: NutritionistConsultation[] = [
   {
     id: 1,
     client_id: 101,
-    client_name: "Alex Johnson",
+    client_username: "Alex Johnson",
     appointment_date: "2026-04-17",
     start_time: "10:00",
     end_time: "11:00",
@@ -258,7 +258,7 @@ const mockConsultations: NutritionistConsultation[] = [
   {
     id: 2,
     client_id: 102,
-    client_name: "Sarah Smith",
+    client_username: "Sarah Smith",
     appointment_date: "2026-04-17",
     start_time: "14:00",
     end_time: "15:00",
