@@ -28,7 +28,7 @@ export default function NutritionConsultations() {
           transition={{ duration: 0.6 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-32 items-center relative z-10"
         >
-          <div className="space-y-6">
+          <div className="space-y-6 md:order-2">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand/10 border border-brand/20 rounded-full text-brand text-xs font-bold uppercase tracking-widest">
               <Stethoscope className="w-4 h-4" />
               Clinical Precision
@@ -64,7 +64,7 @@ export default function NutritionConsultations() {
             </div>
           </div>
 
-          <div className="relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-2xl bg-card border border-border">
+          <div className="relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-2xl bg-card border border-border md:order-1">
             <img
               alt="Consultation Placeholder"
               className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity"
