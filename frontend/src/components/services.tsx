@@ -278,7 +278,8 @@ export default function ServicesPage() {
                 <div className="mt-6 bg-accent/40 p-4 rounded-xl border border-border flex items-start gap-3 relative z-10 backdrop-blur-md">
                   <Check className="w-5 h-5 text-brand shrink-0" />
                   <p className="text-sm text-foreground/90 font-medium">
-                    "Every consultation includes a personalized dietary plan."
+                    "Consultation can include personalized plans or general
+                    guidance based on your needs."
                   </p>
                 </div>
               </div>

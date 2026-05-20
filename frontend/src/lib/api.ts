@@ -198,6 +198,25 @@ export interface SubscriptionPurchasePayload {
   transaction_number: string;
 }
 
+export interface CheckoutSessionCreatePayload {
+  item_type: "MEAL_PLAN" | "CONSULTATION" | "SUBSCRIPTION";
+  item_id: number | string;
+  [key: string]: unknown;
+}
+
+export interface CheckoutSessionCreateResult {
+  checkout_id: string;
+  expires_at: string;
+}
+
+export interface CheckoutSessionSummary {
+  type: "MEAL_PLAN" | "CONSULTATION" | "SUBSCRIPTION";
+  type_label: string;
+  price: number;
+  currency: string;
+  details: Record<string, unknown>;
+}
+
 export function slugifyPlanTitle(title: string): string {
   return title
     .normalize("NFKD")
@@ -240,6 +259,43 @@ export const getNutritionistAvailability = async (id: string, date: string) => {
   const response = await api.get(`marketplace/nutritionists/${id}/availability/`, {
     params: { date }
   });
+  return unwrapResponse(response.data);
+};
+
+/**
+ * POST /checkout/create/
+ * Create a backend-owned checkout session.
+ */
+export const createCheckoutSession = async (
+  payload: CheckoutSessionCreatePayload,
+): Promise<CheckoutSessionCreateResult> => {
+  const response = await api.post<ApiEnvelope<CheckoutSessionCreateResult> | CheckoutSessionCreateResult>(
+    "checkout/create/",
+    payload,
+  );
+  return unwrapResponse(response.data);
+};
+
+/**
+ * GET /checkout/{checkoutId}/
+ * Load checkout summary for the payment page.
+ */
+export const getCheckoutSession = async (checkoutId: string): Promise<CheckoutSessionSummary> => {
+  const response = await api.get<ApiEnvelope<CheckoutSessionSummary> | CheckoutSessionSummary>(
+    `checkout/${checkoutId}/`,
+  );
+  return unwrapResponse(response.data);
+};
+
+/**
+ * POST /checkout/{checkoutId}/confirm/
+ * Finalize a backend-owned checkout session.
+ */
+export const confirmCheckoutSession = async (
+  checkoutId: string,
+  payload: Record<string, unknown> & { transaction_number: string },
+) => {
+  const response = await api.post(`checkout/${checkoutId}/confirm/`, payload);
   return unwrapResponse(response.data);
 };
 

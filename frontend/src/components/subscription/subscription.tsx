@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   CheckCircle,
   Zap,
@@ -16,8 +15,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useState, useEffect } from "react";
-import { buildPaymentUrl, getSubscriptionAmount, DEFAULT_SUBSCRIPTION_PRICES } from "@/lib/payment";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { createCheckoutSession } from "@/lib/api";
+import {
+  buildPaymentUrl,
+  getSubscriptionAmount,
+  getSubscriptionCheckoutItemId,
+  SubscriptionPlanType,
+} from "@/lib/payment";
 
 type FaqItem = {
   id: string;
@@ -26,25 +32,36 @@ type FaqItem = {
 };
 
 export default function SubscriptionPlans() {
-  const [mounted, setMounted] = useState(false);
-  const [prices, setPrices] = useState(DEFAULT_SUBSCRIPTION_PRICES);
-
-  useEffect(() => {
-    setMounted(true);
-    setPrices({
+  const router = useRouter();
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<SubscriptionPlanType | null>(null);
+  const prices = useMemo(
+    () => ({
       monthly: getSubscriptionAmount("monthly"),
       yearly: getSubscriptionAmount("yearly"),
-    });
-  }, []);
+    }),
+    [],
+  );
 
-  const monthlyPaymentHref = buildPaymentUrl({
-    type: "subscription",
-    planType: "monthly",
-  });
-  const yearlyPaymentHref = buildPaymentUrl({
-    type: "subscription",
-    planType: "yearly",
-  });
+  const startSubscriptionCheckout = async (planType: SubscriptionPlanType) => {
+    try {
+      setCheckoutPlan(planType);
+      setCheckoutError(null);
+      const session = await createCheckoutSession({
+        item_type: "SUBSCRIPTION",
+        item_id: getSubscriptionCheckoutItemId(planType),
+      });
+      router.push(buildPaymentUrl(session.checkout_id));
+    } catch (checkoutIssue) {
+      console.error("Failed to create subscription checkout session", checkoutIssue);
+      router.push(
+        buildPaymentUrl({
+          type: "subscription",
+          planType,
+        }),
+      );
+    }
+  };
 
   const faqItems: FaqItem[] = [
     {
@@ -241,7 +258,7 @@ export default function SubscriptionPlans() {
 
               <div className="mb-8 pb-6 border-b border-border">
                 <div className="text-3xl font-[Syne] font-bold text-foreground">
-                  {mounted ? `$${prices.yearly}` : `$${DEFAULT_SUBSCRIPTION_PRICES.yearly}`}
+                  ${prices.yearly}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Billed yearly (Save 15%)
@@ -268,15 +285,16 @@ export default function SubscriptionPlans() {
               </ul>
             </div>
 
-            <Link href={yearlyPaymentHref} className="mt-auto">
-              <motion.span
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 rounded-xl bg-button-primary text-button-primary-foreground bg-btn-primary font-bold shadow-brand hover:shadow-brand/50 transition-all relative z-10 inline-flex items-center justify-center"
-              >
-                Get Yearly Pro
-              </motion.span>
-            </Link>
+            <motion.button
+              whileHover={{ scale: checkoutPlan ? 1 : 1.02 }}
+              whileTap={{ scale: checkoutPlan ? 1 : 0.98 }}
+              type="button"
+              onClick={() => void startSubscriptionCheckout("yearly")}
+              disabled={checkoutPlan !== null}
+              className="w-full py-4 rounded-xl bg-button-primary text-button-primary-foreground bg-btn-primary font-bold shadow-brand hover:shadow-brand/50 transition-all relative z-10 inline-flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed mt-auto"
+            >
+              {checkoutPlan === "yearly" ? "Starting Checkout..." : "Get Yearly Pro"}
+            </motion.button>
           </motion.div>
 
           <motion.div
@@ -301,7 +319,7 @@ export default function SubscriptionPlans() {
 
               <div className="mb-8 pb-6 border-b border-border">
                 <div className="text-3xl font-[Syne] font-bold text-foreground">
-                  {mounted ? `$${prices.monthly}` : `$${DEFAULT_SUBSCRIPTION_PRICES.monthly}`}
+                  ${prices.monthly}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Monthly subscription
@@ -328,17 +346,21 @@ export default function SubscriptionPlans() {
               </ul>
             </div>
 
-            <Link href={monthlyPaymentHref} className="mt-auto">
-              <motion.span
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-3 rounded-xl border border-brand/50 text-foreground font-medium hover:bg-brand/10 transition-colors inline-flex items-center justify-center"
-              >
-                Get Monthly Pro
-              </motion.span>
-            </Link>
+            <motion.button
+              whileHover={{ scale: checkoutPlan ? 1 : 1.02 }}
+              whileTap={{ scale: checkoutPlan ? 1 : 0.98 }}
+              type="button"
+              onClick={() => void startSubscriptionCheckout("monthly")}
+              disabled={checkoutPlan !== null}
+              className="w-full py-3 rounded-xl border border-brand/50 text-foreground font-medium hover:bg-brand/10 transition-colors inline-flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed mt-auto"
+            >
+              {checkoutPlan === "monthly" ? "Starting Checkout..." : "Get Monthly Pro"}
+            </motion.button>
           </motion.div>
         </div>
+        {checkoutError ? (
+          <p className="mt-6 text-center text-sm text-destructive">{checkoutError}</p>
+        ) : null}
       </section>
 
       <motion.section

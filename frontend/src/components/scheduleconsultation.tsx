@@ -17,6 +17,7 @@ import {
 import { format, addDays, isSameDay, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
+  createCheckoutSession,
   getNutritionistAvailability,
   getNutritionistProfile,
   MarketplaceNutritionistProfile,
@@ -86,6 +87,7 @@ export default function ScheduleConsultation({
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const [isHoliday, setIsHoliday] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
@@ -233,21 +235,59 @@ export default function ScheduleConsultation({
   };
 
   const handleContinueToPayment = () => {
-    if (!selectedSlot || !nutritionist) return;
+    if (!selectedSlot || !nutritionist || isRedirectingToPayment) return;
 
-    setIsRedirectingToPayment(true);
-    const totalPrice = (nutritionist?.consultation_price ?? 0) + (consultationType === "plan_included" ? 50 : 0);
+    const startCheckout = async () => {
+      try {
+        setIsRedirectingToPayment(true);
+        setCheckoutError(null);
 
-    const paymentHref = buildPaymentUrl({
-      type: "consultation",
-      nutritionistId: Number(nutritionist.id),
-      appointmentDate: format(selectedDate, "yyyy-MM-dd"),
-      startTime: selectedSlot.start_time,
-      endTime: selectedSlot.end_time,
-      consultationType,
-      amount: totalPrice,
-    });
-    router.push(paymentHref);
+        const session = await createCheckoutSession({
+          item_type: "CONSULTATION",
+          item_id: Number(nutritionist.id),
+          appointment_date: format(selectedDate, "yyyy-MM-dd"),
+          start_time: selectedSlot.start_time,
+          end_time: selectedSlot.end_time,
+          consultation_type: consultationType,
+          metadata: {
+            appointment_date: format(selectedDate, "yyyy-MM-dd"),
+            start_time: selectedSlot.start_time,
+            end_time: selectedSlot.end_time,
+            consultation_type: consultationType,
+          },
+        });
+
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(
+            `checkout-consultation:${session.checkout_id}`,
+            JSON.stringify({
+              appointment_date: format(selectedDate, "yyyy-MM-dd"),
+              start_time: selectedSlot.start_time,
+              end_time: selectedSlot.end_time,
+              consultation_type: consultationType,
+            }),
+          );
+        }
+
+        router.push(buildPaymentUrl(session.checkout_id));
+      } catch (checkoutIssue) {
+        console.error("Failed to create consultation checkout session", checkoutIssue);
+        const totalPrice = (nutritionist.consultation_price ?? 0) + (consultationType === "plan_included" ? 50 : 0);
+        router.push(
+          buildPaymentUrl({
+            type: "consultation",
+            nutritionistId: Number(nutritionist.id),
+            appointmentDate: format(selectedDate, "yyyy-MM-dd"),
+            startTime: selectedSlot.start_time,
+            endTime: selectedSlot.end_time,
+            consultationType,
+            amount: totalPrice,
+          }),
+        );
+      }
+    };
+
+    void startCheckout();
   };
 
   return (
@@ -521,6 +561,10 @@ export default function ScheduleConsultation({
                 "Confirm & Proceed to Payment"
               )}
             </button>
+
+            {checkoutError ? (
+              <p className="text-sm text-destructive">{checkoutError}</p>
+            ) : null}
 
             <div className="border-t border-border pt-6 mt-2 flex flex-col gap-4">
               <div className="flex gap-3 items-start">
