@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   BadgeCheck,
@@ -17,6 +18,7 @@ import {
   UserRound,
 } from "lucide-react";
 import {
+  createCheckoutSession,
   getMarketplacePlanPreview,
   getNutritionistProfile,
   MarketplaceNutritionistProfile,
@@ -71,11 +73,14 @@ function mealEntries(day: MarketplacePlanDayContent) {
 }
 
 export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
+  const router = useRouter();
   const [plan, setPlan] = useState<MarketplacePlanDetail | null>(null);
   const [nutritionist, setNutritionist] =
     useState<MarketplaceNutritionistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const detailRequestIdRef = useRef(0);
 
   const planId = useMemo(() => parseMarketplacePlanIdFromSlug(slug), [slug]);
@@ -172,10 +177,27 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
     plan.specialization_name ||
     nutritionist?.specialization_name ||
     "Nutrition Specialist";
-  const paymentHref = buildPaymentUrl({
-    type: "marketplace-plan",
-    planId: plan.id,
-  });
+  const handlePurchasePlan = async () => {
+    if (isStartingCheckout) return;
+
+    try {
+      setIsStartingCheckout(true);
+      setCheckoutError(null);
+      const session = await createCheckoutSession({
+        item_type: "MEAL_PLAN",
+        item_id: plan.id,
+      });
+      router.push(buildPaymentUrl(session.checkout_id));
+    } catch (checkoutIssue) {
+      console.error("Failed to create marketplace checkout session", checkoutIssue);
+      router.push(
+        buildPaymentUrl({
+          type: "marketplace-plan",
+          planId: plan.id,
+        }),
+      );
+    }
+  };
 
   return (
     <div className="bg-background text-foreground font-sans min-h-screen flex flex-col selection:bg-brand selection:text-brand-foreground mt-8">
@@ -231,13 +253,19 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 mt-2">
-              <Link
-                href={paymentHref}
-                className="flex items-center justify-center gap-3 bg-brand text-brand-foreground px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:opacity-90 transition-all duration-300 shadow-lg shadow-brand/20 cursor-pointer"
+              <button
+                type="button"
+                onClick={() => void handlePurchasePlan()}
+                disabled={isStartingCheckout}
+                className="flex items-center justify-center gap-3 bg-brand text-brand-foreground px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:opacity-90 transition-all duration-300 shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <ShoppingCart className="w-5 h-5" />
+                {isStartingCheckout ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ShoppingCart className="w-5 h-5" />
+                )}
                 Purchase Plan
-              </Link>
+              </button>
               <button
                 className="flex items-center justify-center gap-2 border border-border text-foreground px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-muted transition-all duration-300 cursor-pointer"
                 onClick={() =>
@@ -250,6 +278,10 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
                 View Sample Menu
               </button>
             </div>
+
+            {checkoutError ? (
+              <p className="text-sm text-destructive">{checkoutError}</p>
+            ) : null}
 
             <div className="flex items-center gap-4 mt-4">
               {renderStars(plan.rating_avg)}
