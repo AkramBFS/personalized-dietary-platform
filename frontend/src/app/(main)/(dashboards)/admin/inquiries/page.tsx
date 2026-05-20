@@ -13,7 +13,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { X } from "lucide-react";
-import { getAdminInquiries, respondToInquiry, type InquiryTicket } from "@/lib/admin";
+import {
+  getAdminInquiries,
+  respondToInquiry,
+  type InquiryTicket,
+} from "@/lib/admin";
 import { toast } from "sonner";
 
 export default function AdminInquiriesPage() {
@@ -124,7 +128,7 @@ export default function AdminInquiriesPage() {
             </div>
 
             {/* 2. Modal Body (Scrollable) */}
-            <div className="p-6 overflow-y-auto space-y-6">
+            <div className="p-6 overflow-y-auto space-y-6" data-lenis-prevent>
               {/* User's Original Message Area */}
               <div className="rounded-lg bg-muted/50 border p-5 space-y-3">
                 <h3 className="font-medium text-lg leading-none">

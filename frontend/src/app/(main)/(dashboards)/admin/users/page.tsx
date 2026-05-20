@@ -23,7 +23,18 @@ import {
 } from "@/lib/admin";
 import { toast } from "sonner";
 import GenericDropdown from "@/components/ui/GenericDropdown";
-import { Eye, Search, X, Trash2, User, Mail, Calendar, Shield, Activity, UserCircle } from "lucide-react";
+import {
+  Eye,
+  Search,
+  X,
+  Trash2,
+  User,
+  Mail,
+  Calendar,
+  Shield,
+  Activity,
+  UserCircle,
+} from "lucide-react";
 
 const getDisplayRole = (role?: string) => {
   if (!role) return "Unknown";
@@ -86,7 +97,11 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (user: AdminUser) => {
-    if (!confirm(`Are you sure you want to delete user ${user.username}? This action is irreversible.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete user ${user.username}? This action is irreversible.`,
+      )
+    ) {
       return;
     }
 
@@ -255,7 +270,10 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            <div
+              className="flex-1 overflow-y-auto p-6 space-y-8"
+              data-lenis-prevent
+            >
               {detailsLoading ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-3 gap-4">
@@ -272,14 +290,20 @@ export default function AdminUsersPage() {
                     <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Shield className="w-4 h-4" />
-                        <span className="text-xs font-semibold uppercase tracking-wider">Role</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider">
+                          Role
+                        </span>
                       </div>
-                      <p className="font-bold capitalize">{getDisplayRole(userDetails.role)}</p>
+                      <p className="font-bold capitalize">
+                        {getDisplayRole(userDetails.role)}
+                      </p>
                     </div>
                     <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Activity className="w-4 h-4" />
-                        <span className="text-xs font-semibold uppercase tracking-wider">Status</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider">
+                          Status
+                        </span>
                       </div>
                       <Badge
                         variant="outline"
@@ -295,7 +319,9 @@ export default function AdminUsersPage() {
                     <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Calendar className="w-4 h-4" />
-                        <span className="text-xs font-semibold uppercase tracking-wider">Joined</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider">
+                          Joined
+                        </span>
                       </div>
                       <p className="font-bold">
                         {new Date(userDetails.created_at).toLocaleDateString()}
@@ -310,15 +336,25 @@ export default function AdminUsersPage() {
                     </h3>
                     <div className="bg-card border border-border rounded-xl p-4 space-y-2">
                       <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
-                        <span className="text-sm text-muted-foreground">Email Address</span>
-                        <span className="text-sm font-medium">{userDetails.email}</span>
+                        <span className="text-sm text-muted-foreground">
+                          Email Address
+                        </span>
+                        <span className="text-sm font-medium">
+                          {userDetails.email}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
-                        <span className="text-sm text-muted-foreground">Username</span>
-                        <span className="text-sm font-medium">{userDetails.username}</span>
+                        <span className="text-sm text-muted-foreground">
+                          Username
+                        </span>
+                        <span className="text-sm font-medium">
+                          {userDetails.username}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
-                        <span className="text-sm text-muted-foreground">Staff Status</span>
+                        <span className="text-sm text-muted-foreground">
+                          Staff Status
+                        </span>
                         <Badge variant="secondary" className="font-mono">
                           {userDetails.is_staff ? "Yes" : "No"}
                         </Badge>
@@ -335,57 +371,89 @@ export default function AdminUsersPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
                           <p className="text-xs text-muted-foreground">Age</p>
-                          <p className="text-lg font-bold text-primary">{userDetails.client.age}</p>
+                          <p className="text-lg font-bold text-primary">
+                            {userDetails.client.age}
+                          </p>
                         </div>
                         <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
-                          <p className="text-xs text-muted-foreground">Weight</p>
-                          <p className="text-lg font-bold text-primary">{userDetails.client.weight}kg</p>
+                          <p className="text-xs text-muted-foreground">
+                            Weight
+                          </p>
+                          <p className="text-lg font-bold text-primary">
+                            {userDetails.client.weight}kg
+                          </p>
                         </div>
                         <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
-                          <p className="text-xs text-muted-foreground">Height</p>
-                          <p className="text-lg font-bold text-primary">{userDetails.client.height}cm</p>
+                          <p className="text-xs text-muted-foreground">
+                            Height
+                          </p>
+                          <p className="text-lg font-bold text-primary">
+                            {userDetails.client.height}cm
+                          </p>
                         </div>
                         <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 text-center">
                           <p className="text-xs text-muted-foreground">BMI</p>
-                          <p className="text-lg font-bold text-primary">{userDetails.client.bmi}</p>
+                          <p className="text-lg font-bold text-primary">
+                            {userDetails.client.bmi}
+                          </p>
                         </div>
                       </div>
                       <div className="bg-muted/20 p-4 rounded-xl border border-border">
-                         <p className="text-sm font-medium mb-1">Health History</p>
-                         <p className="text-sm text-muted-foreground italic">
-                           {userDetails.client.health_history || "No recorded history"}
-                         </p>
+                        <p className="text-sm font-medium mb-1">
+                          Health History
+                        </p>
+                        <p className="text-sm text-muted-foreground italic">
+                          {userDetails.client.health_history ||
+                            "No recorded history"}
+                        </p>
                       </div>
                     </div>
                   )}
 
-                  {userDetails.role === "nutritionist" && userDetails.nutritionist && (
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-                        Professional Profile
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Specialization</p>
-                          <p className="font-medium">{userDetails.nutritionist.specialization?.name || "N/A"}</p>
+                  {userDetails.role === "nutritionist" &&
+                    userDetails.nutritionist && (
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+                          Professional Profile
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">
+                              Specialization
+                            </p>
+                            <p className="font-medium">
+                              {userDetails.nutritionist.specialization?.name ||
+                                "N/A"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">
+                              Experience
+                            </p>
+                            <p className="font-medium">
+                              {userDetails.nutritionist.years_experience} Years
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">
+                              Rate
+                            </p>
+                            <p className="font-medium text-emerald-600">
+                              ${userDetails.nutritionist.consultation_price}
+                              /session
+                            </p>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Experience</p>
-                          <p className="font-medium">{userDetails.nutritionist.years_experience} Years</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Rate</p>
-                          <p className="font-medium text-emerald-600">${userDetails.nutritionist.consultation_price}/session</p>
+                        <div className="bg-muted/20 p-4 rounded-xl border border-border">
+                          <p className="text-sm font-medium mb-1">
+                            Professional Bio
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {userDetails.nutritionist.bio}
+                          </p>
                         </div>
                       </div>
-                      <div className="bg-muted/20 p-4 rounded-xl border border-border">
-                         <p className="text-sm font-medium mb-1">Professional Bio</p>
-                         <p className="text-sm text-muted-foreground">
-                           {userDetails.nutritionist.bio}
-                         </p>
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -409,23 +477,29 @@ export default function AdminUsersPage() {
                 Close
               </Button>
               <div className="flex gap-3">
-                 <Button
-                    variant={(userDetails?.is_active ?? selectedUser?.is_active) ? "outline" : "default"}
-                    onClick={() => selectedUser && handleBanToggle(selectedUser)}
-                    className="rounded-full px-6"
-                    disabled={detailsLoading}
-                  >
-                    {(userDetails?.is_active ?? selectedUser?.is_active) ? "Ban User" : "Unban User"}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => selectedUser && handleDeleteUser(selectedUser)}
-                    className="rounded-full px-6 flex items-center gap-2"
-                    disabled={detailsLoading}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Permanent
-                  </Button>
+                <Button
+                  variant={
+                    (userDetails?.is_active ?? selectedUser?.is_active)
+                      ? "outline"
+                      : "default"
+                  }
+                  onClick={() => selectedUser && handleBanToggle(selectedUser)}
+                  className="rounded-full px-6"
+                  disabled={detailsLoading}
+                >
+                  {(userDetails?.is_active ?? selectedUser?.is_active)
+                    ? "Ban User"
+                    : "Unban User"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => selectedUser && handleDeleteUser(selectedUser)}
+                  className="rounded-full px-6 flex items-center gap-2"
+                  disabled={detailsLoading}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Permanent
+                </Button>
               </div>
             </div>
           </div>

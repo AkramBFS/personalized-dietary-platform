@@ -214,7 +214,10 @@ export default function ConsultationsPage() {
 
       {selected ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 py-6 backdrop-blur-sm">
-          <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border-border">
+          <Card
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border-border"
+            data-lenis-prevent
+          >
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border">

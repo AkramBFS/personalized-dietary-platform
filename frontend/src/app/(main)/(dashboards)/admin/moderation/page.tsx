@@ -15,7 +15,13 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Eye, Check, X, AlertCircle } from "lucide-react";
-import { getModerationPosts, approvePost, rejectPost, deletePost, type ModerationPost } from "@/lib/admin";
+import {
+  getModerationPosts,
+  approvePost,
+  rejectPost,
+  deletePost,
+  type ModerationPost,
+} from "@/lib/admin";
 import { resolveApiUrl } from "@/lib/api";
 
 export default function AdminModerationPage() {
@@ -206,7 +212,10 @@ export default function AdminModerationPage() {
 
       {isModalOpen && selectedPost && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+          <div
+            className="bg-card rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border"
+            data-lenis-prevent
+          >
             <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-lg font-semibold">Post Review</h2>
               <button
@@ -239,7 +248,9 @@ export default function AdminModerationPage() {
                   </div>
                   {selectedPost.image_url && (
                     <div className="mt-4">
-                      <label className="text-sm font-medium block mb-2">Attached Image</label>
+                      <label className="text-sm font-medium block mb-2">
+                        Attached Image
+                      </label>
                       <img
                         src={resolveApiUrl(selectedPost.image_url)}
                         alt="Post Attachment"

@@ -19,7 +19,14 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Check, X, Archive, Edit, Trash2 } from "lucide-react";
-import { getModerationPlans, getPlanDetail, approvePlan, rejectPlan, archivePlan, type ModerationPlan } from "@/lib/admin";
+import {
+  getModerationPlans,
+  getPlanDetail,
+  approvePlan,
+  rejectPlan,
+  archivePlan,
+  type ModerationPlan,
+} from "@/lib/admin";
 import { getMarketplacePlans, getMarketplacePlanDetail } from "@/lib/api";
 
 export default function AdminPlansPage() {
@@ -35,19 +42,28 @@ export default function AdminPlansPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const filteredPending = useMemo(() => 
-    pendingPlans.filter(p => p.title?.toLowerCase().includes(debouncedSearch.toLowerCase())),
-    [pendingPlans, debouncedSearch]
+  const filteredPending = useMemo(
+    () =>
+      pendingPlans.filter((p) =>
+        p.title?.toLowerCase().includes(debouncedSearch.toLowerCase()),
+      ),
+    [pendingPlans, debouncedSearch],
   );
-  
-  const filteredLive = useMemo(() => 
-    livePlans.filter(p => p.title?.toLowerCase().includes(debouncedSearch.toLowerCase())),
-    [livePlans, debouncedSearch]
+
+  const filteredLive = useMemo(
+    () =>
+      livePlans.filter((p) =>
+        p.title?.toLowerCase().includes(debouncedSearch.toLowerCase()),
+      ),
+    [livePlans, debouncedSearch],
   );
-  
-  const filteredSeasonal = useMemo(() => 
-    seasonalPlans.filter(p => p.title?.toLowerCase().includes(debouncedSearch.toLowerCase())),
-    [seasonalPlans, debouncedSearch]
+
+  const filteredSeasonal = useMemo(
+    () =>
+      seasonalPlans.filter((p) =>
+        p.title?.toLowerCase().includes(debouncedSearch.toLowerCase()),
+      ),
+    [seasonalPlans, debouncedSearch],
   );
 
   useEffect(() => {
@@ -59,11 +75,15 @@ export default function AdminPlansPage() {
         setPendingPlans(plans.filter((p) => p.status === "pending"));
 
         // Fetch approved marketplace plans
-        const marketplacePayload = await getMarketplacePlans({ page_size: 200 });
+        const marketplacePayload = await getMarketplacePlans({
+          page_size: 200,
+        });
         const approvedPlans = marketplacePayload?.results || [];
 
         setLivePlans(approvedPlans.filter((p) => p.category !== "seasonal"));
-        setSeasonalPlans(approvedPlans.filter((p) => p.category === "seasonal"));
+        setSeasonalPlans(
+          approvedPlans.filter((p) => p.category === "seasonal"),
+        );
       } catch (error) {
         console.error("Failed to fetch plans", error);
         toast.error("Failed to fetch plans");
@@ -84,7 +104,10 @@ export default function AdminPlansPage() {
       try {
         data = await getPlanDetail(plan.id);
       } catch (err) {
-        console.warn("Admin getPlanDetail failed, trying getMarketplacePlanDetail", err);
+        console.warn(
+          "Admin getPlanDetail failed, trying getMarketplacePlanDetail",
+          err,
+        );
       }
 
       // Fallback/alternative to marketplace endpoint
@@ -105,11 +128,11 @@ export default function AdminPlansPage() {
     setSubmitting(true);
     try {
       await approvePlan(planId);
-      
+
       // Find the approved plan in pendingPlans to move it to the correct approved list immediately
       const approvedPlan = pendingPlans.find((p) => p.id === planId);
       setPendingPlans((prev) => prev.filter((p) => p.id !== planId));
-      
+
       if (approvedPlan) {
         const updatedPlan = { ...approvedPlan, status: "approved" };
         if (approvedPlan.category === "seasonal") {
@@ -118,7 +141,7 @@ export default function AdminPlansPage() {
           setLivePlans((prev) => [updatedPlan, ...prev]);
         }
       }
-      
+
       setIsModalOpen(false);
       setSelectedPlan(null);
       toast.success("Plan approved successfully.");
@@ -261,66 +284,71 @@ export default function AdminPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading
-                    ? Array.from({ length: 3 }).map((_, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell colSpan={5}>
-                            <Skeleton className="h-8 w-full" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    : filteredLive.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                            No approved live plans found.
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredLive.map((plan) => (
-                        <TableRow key={plan.id}>
-                          <TableCell className="font-medium">
-                            {plan.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {plan.plan_type?.replace("-", " ") || "Public"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>${plan.price}</TableCell>
-                          <TableCell>
-                            {new Date(plan.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewPlan(plan)}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              View
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleArchivePlan(plan.id)}
-                            >
-                              <Archive className="w-4 h-4 mr-2" />
-                              Archive
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell colSpan={5}>
+                          <Skeleton className="h-8 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : filteredLive.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground py-6"
+                      >
+                        No approved live plans found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredLive.map((plan) => (
+                      <TableRow key={plan.id}>
+                        <TableCell className="font-medium">
+                          {plan.title}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {plan.plan_type?.replace("-", " ") || "Public"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>${plan.price}</TableCell>
+                        <TableCell>
+                          {new Date(plan.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewPlan(plan)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleArchivePlan(plan.id)}
+                          >
+                            <Archive className="w-4 h-4 mr-2" />
+                            Archive
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -344,58 +372,63 @@ export default function AdminPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading
-                    ? Array.from({ length: 3 }).map((_, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell colSpan={5}>
-                            <Skeleton className="h-8 w-full" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    : filteredSeasonal.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                            No seasonal plans found.
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredSeasonal.map((plan) => (
-                        <TableRow key={plan.id}>
-                          <TableCell className="font-medium">
-                            {plan.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {plan.plan_type?.replace("-", " ") || "Public"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>${plan.price}</TableCell>
-                          <TableCell>
-                            {new Date(plan.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewPlan(plan)}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              View
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleArchivePlan(plan.id)}
-                            >
-                              <Archive className="w-4 h-4 mr-2" />
-                              Archive
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell colSpan={5}>
+                          <Skeleton className="h-8 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : filteredSeasonal.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground py-6"
+                      >
+                        No seasonal plans found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSeasonal.map((plan) => (
+                      <TableRow key={plan.id}>
+                        <TableCell className="font-medium">
+                          {plan.title}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {plan.plan_type?.replace("-", " ") || "Public"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>${plan.price}</TableCell>
+                        <TableCell>
+                          {new Date(plan.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewPlan(plan)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleArchivePlan(plan.id)}
+                          >
+                            <Archive className="w-4 h-4 mr-2" />
+                            Archive
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -405,7 +438,10 @@ export default function AdminPlansPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+          <div
+            className="bg-card rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border"
+            data-lenis-prevent
+          >
             <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-lg font-semibold">
                 Plan Review - {selectedPlan?.title}
@@ -436,7 +472,8 @@ export default function AdminPlansPage() {
                     <div>
                       <label className="text-sm font-medium">Type</label>
                       <p className="text-sm text-muted-foreground capitalize">
-                        {planDetails.plan_type?.replace("-", " ") || "Public Predefined"}
+                        {planDetails.plan_type?.replace("-", " ") ||
+                          "Public Predefined"}
                       </p>
                     </div>
                     <div>
@@ -448,7 +485,9 @@ export default function AdminPlansPage() {
                     <div>
                       <label className="text-sm font-medium">Creator</label>
                       <p className="text-sm text-muted-foreground">
-                        {planDetails.creator || planDetails.nutritionist_username || "Nutritionist"}
+                        {planDetails.creator ||
+                          planDetails.nutritionist_username ||
+                          "Nutritionist"}
                       </p>
                     </div>
                   </div>
@@ -458,43 +497,88 @@ export default function AdminPlansPage() {
                       {planDetails.description || "No description provided."}
                     </p>
                   </div>
-                  {planDetails.content_json && Array.isArray(planDetails.content_json) ? (
+                  {planDetails.content_json &&
+                  Array.isArray(planDetails.content_json) ? (
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Day-by-Day Plan Content</label>
-                      <div className="space-y-4 max-h-80 overflow-y-auto bg-muted p-4 rounded-md">
+                      <label className="text-sm font-medium mb-2 block">
+                        Day-by-Day Plan Content
+                      </label>
+                      <div
+                        className="space-y-4 max-h-80 overflow-y-auto bg-muted p-4 rounded-md"
+                        data-lenis-prevent
+                      >
                         {planDetails.content_json.map((day: any) => (
-                          <div key={day.day_index} className="border-b border-border pb-3 last:border-b-0 last:pb-0">
-                            <h4 className="font-bold text-sm text-foreground">Day {day.day_index + 1}</h4>
+                          <div
+                            key={day.day_index}
+                            className="border-b border-border pb-3 last:border-b-0 last:pb-0"
+                          >
+                            <h4 className="font-bold text-sm text-foreground">
+                              Day {day.day_index + 1}
+                            </h4>
                             {day.instructions && (
-                              <p className="text-xs text-muted-foreground mt-1 mb-2 italic">Instructions: {day.instructions}</p>
+                              <p className="text-xs text-muted-foreground mt-1 mb-2 italic">
+                                Instructions: {day.instructions}
+                              </p>
                             )}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                               {day.breakfast && (
                                 <div className="bg-background/50 p-2 rounded text-xs">
-                                  <span className="font-semibold block text-primary">Breakfast</span>
-                                  <span className="text-muted-foreground truncate block">{day.breakfast.name}</span>
-                                  {day.breakfast.calories && <span className="text-[10px] text-muted-foreground">{day.breakfast.calories} kcal</span>}
+                                  <span className="font-semibold block text-primary">
+                                    Breakfast
+                                  </span>
+                                  <span className="text-muted-foreground truncate block">
+                                    {day.breakfast.name}
+                                  </span>
+                                  {day.breakfast.calories && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {day.breakfast.calories} kcal
+                                    </span>
+                                  )}
                                 </div>
                               )}
                               {day.lunch && (
                                 <div className="bg-background/50 p-2 rounded text-xs">
-                                  <span className="font-semibold block text-primary">Lunch</span>
-                                  <span className="text-muted-foreground truncate block">{day.lunch.name}</span>
-                                  {day.lunch.calories && <span className="text-[10px] text-muted-foreground">{day.lunch.calories} kcal</span>}
+                                  <span className="font-semibold block text-primary">
+                                    Lunch
+                                  </span>
+                                  <span className="text-muted-foreground truncate block">
+                                    {day.lunch.name}
+                                  </span>
+                                  {day.lunch.calories && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {day.lunch.calories} kcal
+                                    </span>
+                                  )}
                                 </div>
                               )}
                               {day.dinner && (
                                 <div className="bg-background/50 p-2 rounded text-xs">
-                                  <span className="font-semibold block text-primary">Dinner</span>
-                                  <span className="text-muted-foreground truncate block">{day.dinner.name}</span>
-                                  {day.dinner.calories && <span className="text-[10px] text-muted-foreground">{day.dinner.calories} kcal</span>}
+                                  <span className="font-semibold block text-primary">
+                                    Dinner
+                                  </span>
+                                  <span className="text-muted-foreground truncate block">
+                                    {day.dinner.name}
+                                  </span>
+                                  {day.dinner.calories && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {day.dinner.calories} kcal
+                                    </span>
+                                  )}
                                 </div>
                               )}
                               {day.snacks && (
                                 <div className="bg-background/50 p-2 rounded text-xs">
-                                  <span className="font-semibold block text-primary">Snacks</span>
-                                  <span className="text-muted-foreground truncate block">{day.snacks.name}</span>
-                                  {day.snacks.calories && <span className="text-[10px] text-muted-foreground">{day.snacks.calories} kcal</span>}
+                                  <span className="font-semibold block text-primary">
+                                    Snacks
+                                  </span>
+                                  <span className="text-muted-foreground truncate block">
+                                    {day.snacks.name}
+                                  </span>
+                                  {day.snacks.calories && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {day.snacks.calories} kcal
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -505,8 +589,12 @@ export default function AdminPlansPage() {
                   ) : (
                     <div>
                       <label className="text-sm font-medium">Content</label>
-                      <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md max-h-60 overflow-y-auto">
-                        {planDetails.content || "No plan content details available."}
+                      <div
+                        className="text-sm text-muted-foreground bg-muted p-4 rounded-md max-h-60 overflow-y-auto"
+                        data-lenis-prevent
+                      >
+                        {planDetails.content ||
+                          "No plan content details available."}
                       </div>
                     </div>
                   )}
