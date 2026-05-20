@@ -236,7 +236,10 @@ export default function RegistrationFlow() {
         const payload = new FormData();
 
         // Basic Info[cite: 2]
-        payload.append("username", `${formData.firstName} ${formData.lastName}`); // Concatenated first and last name as username
+        payload.append(
+          "username",
+          `${formData.firstName} ${formData.lastName}`,
+        ); // Concatenated first and last name as username
         payload.append("email", formData.email);
         payload.append("password", formData.password);
 
@@ -360,6 +363,7 @@ export default function RegistrationFlow() {
 
           <div
             ref={scrollContainerRef}
+            data-lenis-prevent
             className="relative mt-4 flex-1 overflow-y-auto overflow-x-hidden px-6 py-2 custom-scrollbar"
           >
             {renderStep()}
