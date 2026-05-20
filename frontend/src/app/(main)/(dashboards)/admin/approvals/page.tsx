@@ -169,7 +169,10 @@ export default function AdminApprovalsPage() {
 
       {isModalOpen && selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+          <div
+            className="bg-card rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border"
+            data-lenis-prevent
+          >
             <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-lg font-semibold">Applicant Review</h2>
               <button

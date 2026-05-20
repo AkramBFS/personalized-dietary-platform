@@ -148,7 +148,9 @@ export default function CalorieTrackerPage() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [todayLogs, setTodayLogs] = useState<CalorieLog[]>([]);
   const [profile, setProfile] = useState<ClientProfile | null>(null);
-  const [todayProgress, setTodayProgress] = useState<ClientProgress | null>(null);
+  const [todayProgress, setTodayProgress] = useState<ClientProgress | null>(
+    null,
+  );
   const [logsLoading, setLogsLoading] = useState(true);
   const [dailyTarget, setDailyTarget] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -413,7 +415,9 @@ export default function CalorieTrackerPage() {
       (sum, item) => sum + (item.calories || 0),
       0,
     );
-    setEstimatedNutrition((prev) => prev ? ({ ...prev, calories: totalCals }) : { calories: totalCals });
+    setEstimatedNutrition((prev) =>
+      prev ? { ...prev, calories: totalCals } : { calories: totalCals },
+    );
   };
 
   const handleItemChange = (
@@ -560,7 +564,10 @@ export default function CalorieTrackerPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
+          <div
+            className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl"
+            data-lenis-prevent
+          >
             <div className="flex shrink-0 items-center justify-between border-b border-border p-6">
               <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
                 <Target className="h-5 w-5 text-primary" />
@@ -610,7 +617,9 @@ export default function CalorieTrackerPage() {
                       <p className="text-2xl font-black text-primary">
                         {estimatedNutrition.calories.toFixed(0)}
                       </p>
-                      <p className="text-[10px] text-primary/70 font-medium">kcal</p>
+                      <p className="text-[10px] text-primary/70 font-medium">
+                        kcal
+                      </p>
                     </div>
                     <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
@@ -619,7 +628,9 @@ export default function CalorieTrackerPage() {
                       <p className="text-2xl font-black text-foreground">
                         {estimatedNutrition.protein?.toFixed(1) ?? "0.0"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">grams</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        grams
+                      </p>
                     </div>
                     <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
@@ -628,7 +639,9 @@ export default function CalorieTrackerPage() {
                       <p className="text-2xl font-black text-foreground">
                         {estimatedNutrition.carbs?.toFixed(1) ?? "0.0"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">grams</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        grams
+                      </p>
                     </div>
                     <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
@@ -637,7 +650,9 @@ export default function CalorieTrackerPage() {
                       <p className="text-2xl font-black text-foreground">
                         {estimatedNutrition.fats?.toFixed(1) ?? "0.0"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">grams</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        grams
+                      </p>
                     </div>
                   </div>
                 </div>
