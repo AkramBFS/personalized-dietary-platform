@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Crown, Loader2, Shield, Sparkles, XCircle, Zap, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ClientSubscriptionStatus, getClientSubscriptionStatus } from "@/lib/client";
-import { purchaseClientSubscription } from "@/lib/api";
-import { generateTransactionNumber, getSubscriptionAmount } from "@/lib/payment";
+import { createCheckoutSession } from "@/lib/api";
+import { buildPaymentUrl, getSubscriptionAmount, getSubscriptionCheckoutItemId } from "@/lib/payment";
 import { toast } from "sonner";
 
 const PREMIUM_FEATURES = [
@@ -28,6 +29,7 @@ function formatDate(date?: string): string {
 }
 
 export default function SubscriptionPage() {
+  const router = useRouter();
   const [subscriptionStatus, setSubscriptionStatus] = useState<ClientSubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,21 +67,22 @@ export default function SubscriptionPage() {
   const confirmPurchase = async () => {
     setIsProcessing(true);
     try {
-      // Simulate bank delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await purchaseClientSubscription({
-        plan_type: selectedPlan,
-        amount_paid: getSubscriptionAmount(selectedPlan),
-        transaction_number: generateTransactionNumber("subscription"),
+      const session = await createCheckoutSession({
+        item_type: "SUBSCRIPTION",
+        item_id: getSubscriptionCheckoutItemId(selectedPlan),
       });
-      toast.success(`Successfully upgraded to ${selectedPlan} plan!`);
       setShowPaymentModal(false);
-      // Reload status
-      const status = await getClientSubscriptionStatus();
-      setSubscriptionStatus(status);
+      router.push(buildPaymentUrl(session.checkout_id));
     } catch (err) {
-      console.error("Purchase failed", err);
-      toast.error("Payment failed. Please try again.");
+      console.error("Checkout creation failed", err);
+      toast.error("Checkout session was unavailable, so we switched to the standard payment flow.");
+      setShowPaymentModal(false);
+      router.push(
+        buildPaymentUrl({
+          type: "subscription",
+          planType: selectedPlan,
+        }),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -273,7 +276,7 @@ export default function SubscriptionPage() {
                 <div className="flex justify-between text-lg pt-2 border-t border-border">
                   <span className="font-medium text-foreground">Total Due</span>
                   <span className="font-black text-primary">
-                    ${selectedPlan === "monthly" ? "29.99" : "299.99"}
+                    ${getSubscriptionAmount(selectedPlan).toFixed(2)}
                   </span>
                 </div>
               </div>

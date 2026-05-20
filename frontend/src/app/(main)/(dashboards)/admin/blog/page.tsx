@@ -54,13 +54,16 @@ export default function AdminBlogPage() {
       title: title.trim(),
       content: content.trim(),
       cover_image: coverImage.trim() || undefined,
-      tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      tags: tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
     };
     try {
       if (editingId) {
         await updateBlogArticle(editingId, payload);
         setArticles((prev) =>
-          prev.map((a) => (a.id === editingId ? { ...a, ...payload } : a))
+          prev.map((a) => (a.id === editingId ? { ...a, ...payload } : a)),
         );
         toast.success("Article updated successfully.");
       } else {
@@ -116,11 +119,7 @@ export default function AdminBlogPage() {
             Publish and manage articles shown on the platform.
           </p>
         </div>
-        <Button
-          onClick={() => setEditorOpen(true)}
-        >
-          New Article
-        </Button>
+        <Button onClick={() => setEditorOpen(true)}>New Article</Button>
       </div>
 
       {/* Article Cards - Now in a responsive grid */}
@@ -151,10 +150,18 @@ export default function AdminBlogPage() {
                 ))}
               </div>
               <div className="flex gap-2 justify-end pt-4 border-t mt-4">
-                <Button variant="outline" size="sm" onClick={() => handleEditClick(article)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditClick(article)}
+                >
                   Edit
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(article.id)}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDelete(article.id)}
+                >
                   Delete
                 </Button>
               </div>
@@ -174,7 +181,9 @@ export default function AdminBlogPage() {
                   {editingId ? "Edit Article" : "New Article"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {editingId ? "Update existing article details." : "Draft and publish a new blog post."}
+                  {editingId
+                    ? "Update existing article details."
+                    : "Draft and publish a new blog post."}
                 </p>
               </div>
               <button
@@ -186,7 +195,7 @@ export default function AdminBlogPage() {
             </div>
 
             {/* Modal Body (Scrollable Form) */}
-            <div className="p-6 overflow-y-auto space-y-6">
+            <div className="p-6 overflow-y-auto space-y-6" data-lenis-prevent>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Article Title</label>
                 <Input
@@ -236,11 +245,14 @@ export default function AdminBlogPage() {
               <Button variant="ghost" onClick={closeEditor}>
                 Cancel
               </Button>
-              <Button
-                disabled={submitting}
-                onClick={handleSubmit}
-              >
-                {submitting ? (editingId ? "Updating..." : "Publishing...") : (editingId ? "Update Article" : "Publish Article")}
+              <Button disabled={submitting} onClick={handleSubmit}>
+                {submitting
+                  ? editingId
+                    ? "Updating..."
+                    : "Publishing..."
+                  : editingId
+                    ? "Update Article"
+                    : "Publish Article"}
               </Button>
             </div>
           </div>

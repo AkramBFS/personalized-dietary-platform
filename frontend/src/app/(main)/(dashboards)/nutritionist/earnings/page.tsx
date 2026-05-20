@@ -1,8 +1,21 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/Card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -15,9 +28,31 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Wallet, TrendingUp, BadgePercent, ArrowUpRight, ArrowDownRight, Clock, Receipt, Eye, X, Download, Calendar, FileText, CreditCard } from "lucide-react";
-import { getNutritionistEarnings, NutritionistEarningsSummary, groupTransactionsByMonth } from "@/lib/nutritionist";
-import { getNutritionistInvoices, getInvoiceDetail, type NutritionistInvoice } from "@/lib/api";
+import {
+  Wallet,
+  TrendingUp,
+  BadgePercent,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  Receipt,
+  Eye,
+  X,
+  Download,
+  Calendar,
+  FileText,
+  CreditCard,
+} from "lucide-react";
+import {
+  getNutritionistEarnings,
+  NutritionistEarningsSummary,
+  groupTransactionsByMonth,
+} from "@/lib/nutritionist";
+import {
+  getNutritionistInvoices,
+  getInvoiceDetail,
+  type NutritionistInvoice,
+} from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,48 +69,111 @@ interface Payout {
   paidAt: string | null;
 }
 
-
-
 const mockPayouts: Payout[] = [
-  { id: 1, periodStart: "2026-03-16", periodEnd: "2026-03-31", grossAmount: 1280.00, commission: 192.00, netAmount: 1088.00, status: "completed", paidAt: "2026-04-02" },
-  { id: 2, periodStart: "2026-04-01", periodEnd: "2026-04-15", grossAmount: 965.00, commission: 144.75, netAmount: 820.25, status: "processing", paidAt: null },
-  { id: 3, periodStart: "2026-04-16", periodEnd: "2026-04-30", grossAmount: 0, commission: 0, netAmount: 0, status: "upcoming", paidAt: null },
+  {
+    id: 1,
+    periodStart: "2026-03-16",
+    periodEnd: "2026-03-31",
+    grossAmount: 1280.0,
+    commission: 192.0,
+    netAmount: 1088.0,
+    status: "completed",
+    paidAt: "2026-04-02",
+  },
+  {
+    id: 2,
+    periodStart: "2026-04-01",
+    periodEnd: "2026-04-15",
+    grossAmount: 965.0,
+    commission: 144.75,
+    netAmount: 820.25,
+    status: "processing",
+    paidAt: null,
+  },
+  {
+    id: 3,
+    periodStart: "2026-04-16",
+    periodEnd: "2026-04-30",
+    grossAmount: 0,
+    commission: 0,
+    netAmount: 0,
+    status: "upcoming",
+    paidAt: null,
+  },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 const serviceBadge = (service: string) => {
   switch (service) {
     case "consultation_advice":
-      return <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0 text-xs">Advice</Badge>;
+      return (
+        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0 text-xs">
+          Advice
+        </Badge>
+      );
     case "consultation_custom":
-      return <Badge className="bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 shadow-none border-0 text-xs">Custom Plan</Badge>;
+      return (
+        <Badge className="bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 shadow-none border-0 text-xs">
+          Custom Plan
+        </Badge>
+      );
     case "plan":
-      return <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0 text-xs">Plan Sale</Badge>;
+      return (
+        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0 text-xs">
+          Plan Sale
+        </Badge>
+      );
     default:
-      return <Badge className="bg-muted text-muted-foreground shadow-none border-0 text-xs capitalize">{service.replace("_", " ")}</Badge>;
+      return (
+        <Badge className="bg-muted text-muted-foreground shadow-none border-0 text-xs capitalize">
+          {service.replace("_", " ")}
+        </Badge>
+      );
   }
 };
 
 const payoutStatusBadge = (status: Payout["status"]) => {
   switch (status) {
     case "completed":
-      return <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0">Completed</Badge>;
+      return (
+        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 shadow-none border-0">
+          Completed
+        </Badge>
+      );
     case "processing":
-      return <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 shadow-none border-0">Processing</Badge>;
+      return (
+        <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 shadow-none border-0">
+          Processing
+        </Badge>
+      );
     case "upcoming":
-      return <Badge className="bg-secondary text-muted-foreground hover:bg-secondary/80 shadow-none border-0">Upcoming</Badge>;
+      return (
+        <Badge className="bg-secondary text-muted-foreground hover:bg-secondary/80 shadow-none border-0">
+          Upcoming
+        </Badge>
+      );
   }
 };
 
 // ── Custom tooltip ──────────────────────────────────────────────────────
-const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string }>; label?: string }) => {
+const ChartTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value: number; dataKey: string }>;
+  label?: string;
+}) => {
   if (!active || !payload) return null;
   return (
     <div className="bg-card border border-border rounded-lg p-3 shadow-xl text-card-foreground text-sm">
       <p className="font-semibold mb-1.5">{label}</p>
       {payload.map((entry, i) => (
         <p key={i} className="flex justify-between gap-6">
-          <span className="text-muted-foreground capitalize">{entry.dataKey}:</span>
+          <span className="text-muted-foreground capitalize">
+            {entry.dataKey}:
+          </span>
           <span className="font-medium">${entry.value.toLocaleString()}</span>
         </p>
       ))}
@@ -85,12 +183,16 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 
 // ── Component ───────────────────────────────────────────────────────────
 export default function EarningsPage() {
-  const [earnings, setEarnings] = useState<NutritionistEarningsSummary | null>(null);
+  const [earnings, setEarnings] = useState<NutritionistEarningsSummary | null>(
+    null,
+  );
   const [invoices, setInvoices] = useState<NutritionistInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [selectedInvoice, setSelectedInvoice] = useState<NutritionistInvoice | null>(null);
-  const [invoiceDetail, setInvoiceDetail] = useState<NutritionistInvoice | null>(null);
+
+  const [selectedInvoice, setSelectedInvoice] =
+    useState<NutritionistInvoice | null>(null);
+  const [invoiceDetail, setInvoiceDetail] =
+    useState<NutritionistInvoice | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -99,7 +201,7 @@ export default function EarningsPage() {
       try {
         const [earningsData, invoicesData] = await Promise.all([
           getNutritionistEarnings(),
-          getNutritionistInvoices()
+          getNutritionistInvoices(),
         ]);
         setEarnings(earningsData);
         setInvoices(invoicesData);
@@ -144,11 +246,17 @@ export default function EarningsPage() {
   }, [invoices]);
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading earnings...</div>;
+    return (
+      <div className="text-sm text-muted-foreground">Loading earnings...</div>
+    );
   }
 
   if (!earnings) {
-    return <div className="text-sm text-muted-foreground">Earnings data unavailable.</div>;
+    return (
+      <div className="text-sm text-muted-foreground">
+        Earnings data unavailable.
+      </div>
+    );
   }
 
   return (
@@ -159,7 +267,8 @@ export default function EarningsPage() {
           Earnings & Payouts
         </h1>
         <p className="text-muted-foreground mt-1">
-          Track your revenue streams, review transactions, and monitor payout cycles.
+          Track your revenue streams, review transactions, and monitor payout
+          cycles.
         </p>
       </div>
 
@@ -173,8 +282,15 @@ export default function EarningsPage() {
                 <Wallet className="w-6 h-6" />
               </div>
               <div className="space-y-1 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Available Balance</p>
-                <p className="text-2xl font-bold text-foreground">${availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Available Balance
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  $
+                  {availableBalance.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
                 <p className="text-sm text-primary font-medium flex items-center gap-1">
                   <ArrowUpRight className="w-3.5 h-3.5" /> Ready to withdraw
                 </p>
@@ -191,9 +307,18 @@ export default function EarningsPage() {
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div className="space-y-1 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Earned (All-Time)</p>
-                <p className="text-2xl font-bold text-foreground">${earnings.total_gross.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                <p className="text-sm text-muted-foreground">Gross revenue before fees</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Total Earned (All-Time)
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  $
+                  {earnings.total_gross.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Gross revenue before fees
+                </p>
               </div>
             </div>
           </CardContent>
@@ -207,8 +332,15 @@ export default function EarningsPage() {
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div className="space-y-1 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Commission Deducted</p>
-                <p className="text-2xl font-bold text-foreground">${earnings.total_commission.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Commission Deducted
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  $
+                  {earnings.total_commission.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
                 <p className="text-sm text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                   <ArrowDownRight className="w-3.5 h-3.5" /> 15% platform fee
                 </p>
@@ -226,8 +358,16 @@ export default function EarningsPage() {
           </h2>
           <div className="w-full h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyIncome} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" className="opacity-30" />
+              <BarChart
+                data={monthlyIncome}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                  className="opacity-30"
+                />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
@@ -241,16 +381,36 @@ export default function EarningsPage() {
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                   tickFormatter={(v) => `$${v}`}
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--primary)", fillOpacity: 0.08 }} />
+                <Tooltip
+                  content={<ChartTooltip />}
+                  cursor={{ fill: "var(--primary)", fillOpacity: 0.08 }}
+                />
                 <Legend
                   verticalAlign="top"
                   align="right"
                   iconType="circle"
                   iconSize={8}
-                  wrapperStyle={{ fontSize: 12, paddingBottom: 12, color: "var(--muted-foreground)" }}
+                  wrapperStyle={{
+                    fontSize: 12,
+                    paddingBottom: 12,
+                    color: "var(--muted-foreground)",
+                  }}
                 />
-                <Bar dataKey="gross" name="Gross" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={28} />
-                <Bar dataKey="net" name="Net" fill="var(--primary)" fillOpacity={0.7} radius={[6, 6, 0, 0]} barSize={28} />
+                <Bar
+                  dataKey="gross"
+                  name="Gross"
+                  fill="var(--primary)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={28}
+                />
+                <Bar
+                  dataKey="net"
+                  name="Net"
+                  fill="var(--primary)"
+                  fillOpacity={0.7}
+                  radius={[6, 6, 0, 0]}
+                  barSize={28}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -279,35 +439,46 @@ export default function EarningsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Array.isArray(invoices) && invoices.map((invoice) => (
-                  <TableRow key={invoice.id} className="hover:bg-primary/5 transition-colors group">
-                    <TableCell className="text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        {new Date(invoice.created_at).toLocaleString()}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{invoice.transaction_number}</TableCell>
-                    <TableCell className="font-semibold text-foreground">
-                      {invoice.client_username ? `@${invoice.client_username}` : "—"}
-                    </TableCell>
-                    <TableCell>{serviceBadge(invoice.item_type)}</TableCell>
-                    <TableCell className="text-right font-bold text-primary">
-                      +{invoice.net_earnings ? `$${invoice.net_earnings.toFixed(2)}` : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(invoice)}
-                        className="rounded-lg hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {Array.isArray(invoices) &&
+                  invoices.map((invoice) => (
+                    <TableRow
+                      key={invoice.id}
+                      className="hover:bg-primary/5 transition-colors group"
+                    >
+                      <TableCell className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          {new Date(invoice.created_at).toLocaleString()}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {invoice.transaction_number}
+                      </TableCell>
+                      <TableCell className="font-semibold text-foreground">
+                        {invoice.client_username
+                          ? `@${invoice.client_username}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell>{serviceBadge(invoice.item_type)}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">
+                        +
+                        {invoice.net_earnings
+                          ? `$${invoice.net_earnings.toFixed(2)}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(invoice)}
+                          className="rounded-lg hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
             <div className="px-6 py-3 bg-muted/30 border-t border-border text-xs text-muted-foreground text-center">
@@ -324,7 +495,9 @@ export default function EarningsPage() {
                 <CardTitle className="text-base">Payout Cycles</CardTitle>
               </div>
               <CardDescription className="text-sm">
-                Payouts are automatically processed every <span className="font-semibold text-primary">15 days</span>. No manual withdrawal needed.
+                Payouts are automatically processed every{" "}
+                <span className="font-semibold text-primary">15 days</span>. No
+                manual withdrawal needed.
               </CardDescription>
             </CardHeader>
             <Table>
@@ -344,7 +517,9 @@ export default function EarningsPage() {
                     <TableCell className="text-sm font-medium text-foreground">
                       {payout.periodStart} → {payout.periodEnd}
                     </TableCell>
-                    <TableCell className="text-sm text-foreground">${payout.grossAmount.toFixed(2)}</TableCell>
+                    <TableCell className="text-sm text-foreground">
+                      ${payout.grossAmount.toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-sm text-amber-600 dark:text-amber-400">
                       -${payout.commission.toFixed(2)}
                     </TableCell>
@@ -375,8 +550,12 @@ export default function EarningsPage() {
                     <Receipt className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold tracking-tight">Invoice Details</h2>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">#{selectedInvoice?.transaction_number}</p>
+                    <h2 className="text-xl font-bold tracking-tight">
+                      Invoice Details
+                    </h2>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                      #{selectedInvoice?.transaction_number}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -387,8 +566,11 @@ export default function EarningsPage() {
                 </button>
               </div>
             </div>
-            
-            <div className="p-8 overflow-y-auto custom-scrollbar">
+
+            <div
+              className="p-8 overflow-y-auto custom-scrollbar"
+              data-lenis-prevent
+            >
               {detailsLoading ? (
                 <div className="space-y-6">
                   <Skeleton className="h-24 w-full rounded-2xl" />
@@ -404,15 +586,23 @@ export default function EarningsPage() {
                   <div className="relative group overflow-hidden">
                     <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors duration-500 rounded-2xl" />
                     <div className="relative p-8 text-center border border-primary/10 rounded-2xl">
-                      <p className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-2">Your Net Earnings</p>
+                      <p className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-2">
+                        Your Net Earnings
+                      </p>
                       <h3 className="text-5xl font-black text-foreground tabular-nums">
                         ${(invoiceDetail.net_earnings ?? 0).toFixed(2)}
                       </h3>
                       <div className="mt-3 flex items-center justify-center gap-2">
-                        <Badge variant="outline" className="bg-background/50 border-primary/20 text-[10px] py-0 px-2 h-5">
+                        <Badge
+                          variant="outline"
+                          className="bg-background/50 border-primary/20 text-[10px] py-0 px-2 h-5"
+                        >
                           GROSS: ${(invoiceDetail.total_paid ?? 0).toFixed(2)}
                         </Badge>
-                        <Badge variant="outline" className="bg-background/50 border-primary/20 text-[10px] py-0 px-2 h-5">
+                        <Badge
+                          variant="outline"
+                          className="bg-background/50 border-primary/20 text-[10px] py-0 px-2 h-5"
+                        >
                           FEE: {invoiceDetail.commission_rate ?? 0}%
                         </Badge>
                       </div>
@@ -427,13 +617,16 @@ export default function EarningsPage() {
                         Date Issued
                       </div>
                       <p className="text-sm font-semibold text-foreground bg-muted/30 p-3 rounded-xl">
-                        {new Date(invoiceDetail.created_at).toLocaleString(undefined, {
-                          dateStyle: 'medium',
-                          timeStyle: 'short'
-                        })}
+                        {new Date(invoiceDetail.created_at).toLocaleString(
+                          undefined,
+                          {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          },
+                        )}
                       </p>
                     </div>
-                    
+
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                         <FileText className="w-3 h-3 text-primary/60" />
@@ -469,18 +662,32 @@ export default function EarningsPage() {
                   <div className="pt-6 border-t border-dashed border-border">
                     <div className="bg-muted/20 rounded-2xl p-5 space-y-3">
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Transaction Total</span>
-                        <span className="font-medium">${(invoiceDetail.total_paid ?? 0).toFixed(2)}</span>
+                        <span className="text-muted-foreground">
+                          Transaction Total
+                        </span>
+                        <span className="font-medium">
+                          ${(invoiceDetail.total_paid ?? 0).toFixed(2)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Platform Fee ({invoiceDetail.commission_rate ?? 0}%)</span>
+                        <span className="text-muted-foreground">
+                          Platform Fee ({invoiceDetail.commission_rate ?? 0}%)
+                        </span>
                         <span className="text-destructive font-medium">
-                          -${((invoiceDetail.total_paid ?? 0) * ((invoiceDetail.commission_rate ?? 0) / 100)).toFixed(2)}
+                          -$
+                          {(
+                            (invoiceDetail.total_paid ?? 0) *
+                            ((invoiceDetail.commission_rate ?? 0) / 100)
+                          ).toFixed(2)}
                         </span>
                       </div>
                       <div className="pt-3 mt-1 border-t border-border flex justify-between items-center">
-                        <span className="text-sm font-bold text-foreground">Total Net Earning</span>
-                        <span className="text-lg font-black text-primary">${(invoiceDetail.net_earnings ?? 0).toFixed(2)}</span>
+                        <span className="text-sm font-bold text-foreground">
+                          Total Net Earning
+                        </span>
+                        <span className="text-lg font-black text-primary">
+                          ${(invoiceDetail.net_earnings ?? 0).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -492,9 +699,9 @@ export default function EarningsPage() {
                       <Download className="w-5 h-5 mr-2 group-hover:translate-y-0.5 transition-transform" />
                       Download Statement
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full h-12 rounded-xl text-muted-foreground hover:text-foreground" 
+                    <Button
+                      variant="ghost"
+                      className="w-full h-12 rounded-xl text-muted-foreground hover:text-foreground"
                       onClick={() => setIsModalOpen(false)}
                     >
                       Close Details
@@ -503,8 +710,16 @@ export default function EarningsPage() {
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <p className="text-destructive font-medium">Failed to load detailed invoice information.</p>
-                  <Button variant="ghost" className="mt-4" onClick={() => setIsModalOpen(false)}>Back to list</Button>
+                  <p className="text-destructive font-medium">
+                    Failed to load detailed invoice information.
+                  </p>
+                  <Button
+                    variant="ghost"
+                    className="mt-4"
+                    onClick={() => setIsModalOpen(false)}
+                  >
+                    Back to list
+                  </Button>
                 </div>
               )}
             </div>

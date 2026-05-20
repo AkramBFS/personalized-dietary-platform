@@ -248,7 +248,7 @@ export default function LoginPage() {
 
             <motion.div className="mb-8" variants={itemVariants}>
               <h2 className="text-4xl text-foreground font-medium mb-2">
-                Dieton account
+                NutriPlatform account
               </h2>
               <p className="text-xl text-muted-foreground">
                 Sign in to continue

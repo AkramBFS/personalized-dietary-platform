@@ -22,7 +22,10 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import {
+  CheckoutSessionSummary,
   bookConsultation,
+  confirmCheckoutSession,
+  getCheckoutSession,
   getMarketplacePlanDetail,
   getNutritionistProfile,
   purchaseClientSubscription,
@@ -32,6 +35,7 @@ import {
   formatPaymentAmount,
   generateTransactionNumber,
   getSubscriptionAmount,
+  parseCheckoutId,
   parsePaymentContext,
   PaymentContext,
 } from "@/lib/payment";
@@ -45,11 +49,16 @@ type FormState = {
 };
 
 type SummaryState = {
+  itemType: CheckoutSessionSummary["type"];
   title: string;
   provider: string;
   amount: number;
+  currency: string;
   description: string;
+  backHref: string;
 };
+
+type CheckoutDetails = Record<string, unknown>;
 
 const INITIAL_FORM_STATE: FormState = {
   cardName: "",
@@ -59,17 +68,135 @@ const INITIAL_FORM_STATE: FormState = {
   zip: "",
 };
 
-function getBackHref(context: PaymentContext | null): string {
-  if (!context) return "/";
-  if (context.type === "marketplace-plan") return "/marketplace";
-  if (context.type === "consultation") {
-    return `/consultations/schedule?id=${context.nutritionistId}`;
+function getDetailString(details: CheckoutDetails, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = details[key];
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
   }
-  return "/subscription";
+
+  return null;
 }
 
-function getConsultationTypeLabel(type: "advice_only" | "plan_included"): string {
-  return type === "plan_included" ? "Consultation + Plan" : "Consultation";
+function getDetailNumber(details: CheckoutDetails, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = details[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
+
+function buildSummaryFromCheckout(checkout: CheckoutSessionSummary): SummaryState {
+  const details = checkout.details ?? {};
+
+  if (checkout.type === "MEAL_PLAN") {
+    const durationDays = getDetailNumber(details, ["duration_days"]);
+    return {
+      itemType: checkout.type,
+      title: getDetailString(details, ["plan_title", "title"]) ?? checkout.type_label,
+      provider:
+        getDetailString(details, ["nutritionist", "nutritionist_username", "provider"]) ?? "Nutritionist",
+      amount: checkout.price,
+      currency: checkout.currency,
+      description: durationDays
+        ? `${durationDays}-day nutritionist-designed meal plan.`
+        : "Nutritionist-designed meal plan purchase.",
+      backHref: "/marketplace",
+    };
+  }
+
+  if (checkout.type === "CONSULTATION") {
+    const appointmentDate = getDetailString(details, ["appointment_date"]);
+    const startTime = getDetailString(details, ["start_time"]);
+    const endTime = getDetailString(details, ["end_time"]);
+    const consultationType = getDetailString(details, ["consultation_type"]);
+    const nutritionistId =
+      getDetailString(details, ["nutritionist_id"]) ??
+      (getDetailNumber(details, ["nutritionist_id"])?.toString() ?? null);
+
+    return {
+      itemType: checkout.type,
+      title:
+        consultationType === "plan_included"
+          ? "Consultation + Plan"
+          : checkout.type_label || "Consultation",
+      provider:
+        getDetailString(details, ["nutritionist_name", "nutritionist", "nutritionist_username", "provider"]) ??
+        "Nutritionist",
+      amount: checkout.price,
+      currency: checkout.currency,
+      description:
+        appointmentDate && startTime && endTime
+          ? `Scheduled for ${appointmentDate} from ${startTime} to ${endTime}.`
+          : "Private nutrition consultation checkout.",
+      backHref: nutritionistId
+        ? `/consultations/schedule?id=${nutritionistId}`
+        : "/consultations/nutritionists",
+    };
+  }
+
+  const planType = getDetailString(details, ["plan_type", "subscription_plan"]);
+  return {
+    itemType: checkout.type,
+    title:
+      planType === "yearly"
+        ? "Yearly Pro"
+        : planType === "monthly"
+          ? "Monthly Pro"
+          : checkout.type_label,
+    provider: "Dieton Premium",
+    amount: checkout.price,
+    currency: checkout.currency,
+    description:
+      planType === "yearly"
+        ? "Annual premium access billed once per year."
+        : "Monthly premium access billed once per month.",
+    backHref: "/subscription",
+  };
+}
+
+function buildSummaryFromLegacyContext(
+  context: PaymentContext,
+  args: {
+    provider: string;
+    amount: number;
+    title: string;
+    description: string;
+  },
+): SummaryState {
+  return {
+    itemType:
+      context.type === "marketplace-plan"
+        ? "MEAL_PLAN"
+        : context.type === "consultation"
+          ? "CONSULTATION"
+          : "SUBSCRIPTION",
+    title: args.title,
+    provider: args.provider,
+    amount: args.amount,
+    currency: "USD",
+    description: args.description,
+    backHref:
+      context.type === "marketplace-plan"
+        ? "/marketplace"
+        : context.type === "consultation"
+          ? `/consultations/schedule?id=${context.nutritionistId}`
+          : "/subscription",
+  };
+}
+
+function getConsultationStorageKey(checkoutId: string): string {
+  return `checkout-consultation:${checkoutId}`;
 }
 
 function normalizeCardNumber(value: string): string {
@@ -97,6 +224,17 @@ function validateForm(form: FormState): string | null {
   return null;
 }
 
+function formatCheckoutAmount(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency || "USD",
+    }).format(amount);
+  } catch {
+    return formatPaymentAmount(amount);
+  }
+}
+
 function getAxiosErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message;
@@ -112,10 +250,10 @@ function getAxiosErrorMessage(error: unknown): string {
   return "We couldn't complete this payment. Please try again.";
 }
 
-function getWhatHappensNext(context: PaymentContext | null, provider: string) {
-  if (!context) return [];
+function getWhatHappensNext(itemType: CheckoutSessionSummary["type"] | null, provider: string) {
+  if (!itemType) return [];
 
-  if (context.type === "marketplace-plan") {
+  if (itemType === "MEAL_PLAN") {
     return [
       {
         icon: CheckCircle,
@@ -135,7 +273,7 @@ function getWhatHappensNext(context: PaymentContext | null, provider: string) {
     ];
   }
 
-  if (context.type === "consultation") {
+  if (itemType === "CONSULTATION") {
     return [
       {
         icon: CheckCircle,
@@ -177,7 +315,8 @@ function getWhatHappensNext(context: PaymentContext | null, provider: string) {
 export default function SecurePayment() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const context = useMemo(() => parsePaymentContext(searchParams), [searchParams]);
+  const checkoutId = useMemo(() => parseCheckoutId(searchParams), [searchParams]);
+  const legacyContext = useMemo(() => parsePaymentContext(searchParams), [searchParams]);
   const [form, setForm] = useState<FormState>(INITIAL_FORM_STATE);
   const [summary, setSummary] = useState<SummaryState | null>(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
@@ -191,9 +330,9 @@ export default function SecurePayment() {
     let isActive = true;
 
     const loadContext = async () => {
-      if (!context) {
+      if (!checkoutId && !legacyContext) {
         setSummary(null);
-        setLoadError("This payment link is invalid or missing required details.");
+        setLoadError("This payment link is invalid or missing its checkout information.");
         setIsLoadingContext(false);
         return;
       }
@@ -205,44 +344,64 @@ export default function SecurePayment() {
       setTransactionNumber(null);
 
       try {
-        if (context.type === "marketplace-plan") {
-          const planDetail = await getMarketplacePlanDetail(context.planId);
+        if (checkoutId) {
+          const checkout = await getCheckoutSession(checkoutId);
+          if (!isActive) return;
+          setSummary(buildSummaryFromCheckout(checkout));
+          return;
+        }
+
+        if (!legacyContext) {
+          throw new Error("Missing payment context.");
+        }
+
+        if (legacyContext.type === "marketplace-plan") {
+          const planDetail = await getMarketplacePlanDetail(legacyContext.planId);
           const profile = await getNutritionistProfile(planDetail.nutritionist_id).catch(() => null);
           if (!isActive) return;
 
-          setSummary({
-            title: planDetail.title,
-            provider: profile?.user?.username || profile?.username || planDetail.nutritionist_username,
-            amount: planDetail.price,
-            description: planDetail.description,
-          });
+          setSummary(
+            buildSummaryFromLegacyContext(legacyContext, {
+              title: planDetail.title,
+              provider:
+                profile?.user?.username || profile?.username || planDetail.nutritionist_username || "Nutritionist",
+              amount: planDetail.price,
+              description: planDetail.description,
+            }),
+          );
           return;
         }
 
-        if (context.type === "consultation") {
-          const profile = await getNutritionistProfile(context.nutritionistId);
+        if (legacyContext.type === "consultation") {
+          const profile = await getNutritionistProfile(legacyContext.nutritionistId);
           if (!isActive) return;
 
-          setSummary({
-            title: getConsultationTypeLabel(context.consultationType),
-            provider: profile.user?.username || profile.username || "Nutritionist",
-            amount: context.amount ?? Number(profile.consultation_price ?? 0),
-            description: `Scheduled for ${context.appointmentDate} from ${context.startTime} to ${context.endTime}.`,
-          });
+          setSummary(
+            buildSummaryFromLegacyContext(legacyContext, {
+              title:
+                legacyContext.consultationType === "plan_included" ? "Consultation + Plan" : "Consultation",
+              provider: profile.user?.username || profile.username || "Nutritionist",
+              amount:
+                legacyContext.amount ??
+                Number(profile.consultation_price ?? 0) +
+                  (legacyContext.consultationType === "plan_included" ? 50 : 0),
+              description: `Scheduled for ${legacyContext.appointmentDate} from ${legacyContext.startTime} to ${legacyContext.endTime}.`,
+            }),
+          );
           return;
         }
 
-        if (!isActive) return;
-        const amount = getSubscriptionAmount(context.planType);
-        setSummary({
-          title: context.planType === "yearly" ? "Yearly Pro" : "Monthly Pro",
-          provider: "Dieton Premium",
-          amount,
-          description:
-            context.planType === "yearly"
-              ? "Annual premium access billed once per year."
-              : "Monthly premium access billed once per month.",
-        });
+        setSummary(
+          buildSummaryFromLegacyContext(legacyContext, {
+            title: legacyContext.planType === "yearly" ? "Yearly Pro" : "Monthly Pro",
+            provider: "Dieton Premium",
+            amount: getSubscriptionAmount(legacyContext.planType),
+            description:
+              legacyContext.planType === "yearly"
+                ? "Annual premium access billed once per year."
+                : "Monthly premium access billed once per month.",
+          }),
+        );
       } catch (error) {
         if (!isActive) return;
         setSummary(null);
@@ -259,17 +418,17 @@ export default function SecurePayment() {
     return () => {
       isActive = false;
     };
-  }, [context]);
+  }, [checkoutId, legacyContext]);
 
-  const backHref = getBackHref(context);
+  const backHref = summary?.backHref ?? "/";
   const nextSteps = useMemo(
-    () => getWhatHappensNext(context, summary?.provider || "the provider"),
-    [context, summary?.provider],
+    () => getWhatHappensNext(summary?.itemType ?? null, summary?.provider || "the provider"),
+    [summary?.itemType, summary?.provider],
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!context || !summary || isSubmitting) return;
+    if ((!checkoutId && !legacyContext) || !summary || isSubmitting) return;
 
     const validationError = validateForm(form);
     if (validationError) {
@@ -280,42 +439,65 @@ export default function SecurePayment() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const generatedTransactionNumber = generateTransactionNumber(context.type);
+    const generatedTransactionNumber = generateTransactionNumber(summary.itemType);
 
     try {
-      if (context.type === "marketplace-plan") {
-        await purchaseMarketplacePlan(context.planId, {
+      if (checkoutId) {
+        const confirmPayload: Record<string, unknown> = {
+          transaction_number: generatedTransactionNumber,
+        };
+
+        if (summary.itemType === "CONSULTATION" && typeof window !== "undefined") {
+          const raw = window.sessionStorage.getItem(getConsultationStorageKey(checkoutId));
+          if (raw) {
+            try {
+              Object.assign(confirmPayload, JSON.parse(raw) as Record<string, unknown>);
+            } catch (storageError) {
+              console.error("Failed to parse stored consultation checkout details", storageError);
+            }
+          }
+        }
+
+        await confirmCheckoutSession(checkoutId, confirmPayload as { transaction_number: string });
+      } else if (legacyContext?.type === "marketplace-plan") {
+        await purchaseMarketplacePlan(legacyContext.planId, {
           transaction_number: generatedTransactionNumber,
           amount_paid: summary.amount,
         });
-        setSuccessMessage("Payment confirmed. Your marketplace plan is now attached to your account.");
-      }
-
-      if (context.type === "consultation") {
+      } else if (legacyContext?.type === "consultation") {
         await bookConsultation({
-          nutritionist_id: String(context.nutritionistId),
-          appointment_date: context.appointmentDate,
-          start_time: context.startTime,
-          end_time: context.endTime,
-          consultation_type: context.consultationType,
-          user_plan_id: context.userPlanId,
-          is_free_from_plan: context.isFreeFromPlan || false,
+          nutritionist_id: String(legacyContext.nutritionistId),
+          appointment_date: legacyContext.appointmentDate,
+          start_time: legacyContext.startTime,
+          end_time: legacyContext.endTime,
+          consultation_type: legacyContext.consultationType,
+          user_plan_id: legacyContext.userPlanId,
+          is_free_from_plan: legacyContext.isFreeFromPlan || false,
           amount_paid: summary.amount,
           transaction_number: generatedTransactionNumber,
         });
-        setSuccessMessage("Payment confirmed. Your consultation booking has been submitted successfully.");
+      } else if (legacyContext?.type === "subscription") {
+        await purchaseClientSubscription({
+          plan_type: legacyContext.planType,
+          amount_paid: summary.amount,
+          transaction_number: generatedTransactionNumber,
+        });
+      } else {
+        throw new Error("Missing payment submission context.");
       }
 
-      if (context.type === "subscription") {
-        await purchaseClientSubscription({
-          plan_type: context.planType,
-          amount_paid: summary.amount,
-          transaction_number: generatedTransactionNumber,
-        });
+      if (summary.itemType === "MEAL_PLAN") {
+        setSuccessMessage("Payment confirmed. Your marketplace plan is now attached to your account.");
+      } else if (summary.itemType === "CONSULTATION") {
+        setSuccessMessage("Payment confirmed. Your consultation booking has been submitted successfully.");
+      } else {
         setSuccessMessage("Payment confirmed. Your premium subscription is now active.");
       }
 
       setTransactionNumber(generatedTransactionNumber);
+      if (checkoutId && summary.itemType === "CONSULTATION" && typeof window !== "undefined") {
+        window.sessionStorage.removeItem(getConsultationStorageKey(checkoutId));
+      }
     } catch (error) {
       setSubmitError(getAxiosErrorMessage(error));
     } finally {
@@ -327,7 +509,9 @@ export default function SecurePayment() {
     router.push(backHref);
   };
 
-  const confirmLabel = summary ? `Confirm Payment - ${formatPaymentAmount(summary.amount)}` : "Confirm Payment";
+  const confirmLabel = summary
+    ? `Confirm Payment - ${formatCheckoutAmount(summary.amount, summary.currency)}`
+    : "Confirm Payment";
 
   if (isLoadingContext) {
     return (
@@ -340,7 +524,7 @@ export default function SecurePayment() {
     );
   }
 
-  if (loadError || !context || !summary) {
+  if (loadError || (!checkoutId && !legacyContext) || !summary) {
     return (
       <main className="max-w-4xl mx-auto px-8 py-20 w-full">
         <div className="bg-card rounded-3xl border border-border shadow-sm p-10 text-center">
@@ -416,7 +600,9 @@ export default function SecurePayment() {
                     Total Due
                   </h3>
                 </div>
-                <div className="text-3xl font-bold text-primary">{formatPaymentAmount(summary.amount)}</div>
+                <div className="text-3xl font-bold text-primary">
+                  {formatCheckoutAmount(summary.amount, summary.currency)}
+                </div>
               </div>
             </div>
           </div>
@@ -632,7 +818,7 @@ export default function SecurePayment() {
                 Canonical Totals
               </span>
               <span className="text-xs text-muted-foreground">
-                Prices come from the current flow source
+                Prices come from the backend checkout session
               </span>
             </div>
             <div className="bg-muted p-6 rounded-2xl flex flex-col items-center text-center">
@@ -651,10 +837,10 @@ export default function SecurePayment() {
               <strong className="font-semibold text-foreground">
                 Need to Know:
               </strong>{" "}
-              This checkout uses a simulated card form for frontend payment handling, then submits only the documented backend payload for the selected flow.
+              This checkout uses a simulated card form on the frontend, while the backend remains the source of truth for the item, price, and final purchase confirmation.
             </p>
             <p className="text-xs opacity-80">
-              By clicking the payment button, you confirm the selected purchase details and allow the application to submit the matching backend request for this service.
+              By clicking the payment button, you confirm the selected purchase details and allow the application to confirm the existing checkout session.
             </p>
           </div>
         </div>

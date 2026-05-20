@@ -1,13 +1,41 @@
 "use client";
 
-export type PaymentFlowType = "marketplace-plan" | "consultation" | "subscription";
+export type CheckoutItemType = "MEAL_PLAN" | "CONSULTATION" | "SUBSCRIPTION";
 export type SubscriptionPlanType = "monthly" | "yearly";
 export type ConsultationPaymentType = "advice_only" | "plan_included";
+export type LegacyPaymentFlowType = "marketplace-plan" | "consultation" | "subscription";
 
 export const DEFAULT_SUBSCRIPTION_PRICES: Record<SubscriptionPlanType, number> = {
   monthly: 19,
   yearly: 190,
 };
+
+export type MarketplaceCheckoutContext = {
+  itemType: "MEAL_PLAN";
+  itemId: number;
+};
+
+export type ConsultationCheckoutContext = {
+  itemType: "CONSULTATION";
+  itemId: number;
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  consultationType: ConsultationPaymentType;
+  userPlanId?: number;
+  isFreeFromPlan?: boolean;
+};
+
+export type SubscriptionCheckoutContext = {
+  itemType: "SUBSCRIPTION";
+  itemId: SubscriptionPlanType;
+  planType: SubscriptionPlanType;
+};
+
+export type CheckoutCreationContext =
+  | MarketplaceCheckoutContext
+  | ConsultationCheckoutContext
+  | SubscriptionCheckoutContext;
 
 export type MarketplacePaymentContext = {
   type: "marketplace-plan";
@@ -57,34 +85,43 @@ export function getSubscriptionAmount(planType: SubscriptionPlanType): number {
   return DEFAULT_SUBSCRIPTION_PRICES[planType];
 }
 
-export function generateTransactionNumber(prefix: PaymentFlowType): string {
+export function generateTransactionNumber(prefix: string): string {
   const normalizedPrefix = prefix.replace(/[^a-z]/gi, "").toUpperCase();
   const random = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `${normalizedPrefix}-${Date.now()}-${random}`;
 }
 
-export function buildPaymentUrl(context: PaymentContext): string {
+export function getSubscriptionCheckoutItemId(planType: SubscriptionPlanType): 1 | 2 {
+  return planType === "monthly" ? 1 : 2;
+}
+
+export function buildPaymentUrl(input: string | PaymentContext): string {
   const params = new URLSearchParams();
 
-  params.set("type", context.type);
-
-  if (context.type === "marketplace-plan") {
-    params.set("planId", String(context.planId));
+  if (typeof input === "string") {
+    params.set("checkout_id", input);
+    return `/payment?${params.toString()}`;
   }
 
-  if (context.type === "consultation") {
-    params.set("nutritionistId", String(context.nutritionistId));
-    params.set("appointmentDate", context.appointmentDate);
-    params.set("startTime", context.startTime);
-    params.set("endTime", context.endTime);
-    params.set("consultationType", context.consultationType);
-    if (context.amount) params.set("amount", String(context.amount));
-    if (context.userPlanId) params.set("userPlanId", String(context.userPlanId));
-    if (context.isFreeFromPlan) params.set("isFreeFromPlan", "true");
+  params.set("type", input.type);
+
+  if (input.type === "marketplace-plan") {
+    params.set("planId", String(input.planId));
   }
 
-  if (context.type === "subscription") {
-    params.set("planType", context.planType);
+  if (input.type === "consultation") {
+    params.set("nutritionistId", String(input.nutritionistId));
+    params.set("appointmentDate", input.appointmentDate);
+    params.set("startTime", input.startTime);
+    params.set("endTime", input.endTime);
+    params.set("consultationType", input.consultationType);
+    if (input.amount) params.set("amount", String(input.amount));
+    if (input.userPlanId) params.set("userPlanId", String(input.userPlanId));
+    if (input.isFreeFromPlan) params.set("isFreeFromPlan", "true");
+  }
+
+  if (input.type === "subscription") {
+    params.set("planType", input.planType);
   }
 
   return `/payment?${params.toString()}`;
@@ -108,6 +145,11 @@ type SearchParamReader = {
   get(name: string): string | null;
 };
 
+export function parseCheckoutId(searchParams: SearchParamReader): string | null {
+  const checkoutId = searchParams.get("checkout_id");
+  return checkoutId && checkoutId.trim() ? checkoutId : null;
+}
+
 export function parsePaymentContext(searchParams: SearchParamReader): PaymentContext | null {
   const type = searchParams.get("type");
 
@@ -127,7 +169,7 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
     const startTime = searchParams.get("startTime");
     const endTime = searchParams.get("endTime");
     const consultationType = searchParams.get("consultationType");
-    const amount = parsePositiveInteger(searchParams.get("amount"));
+    const amount = searchParams.get("amount");
     const userPlanId = parsePositiveInteger(searchParams.get("userPlanId"));
     const isFreeFromPlan = searchParams.get("isFreeFromPlan") === "true";
 
@@ -148,7 +190,7 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
       startTime,
       endTime,
       consultationType,
-      ...(amount ? { amount } : {}),
+      ...(amount && !Number.isNaN(Number(amount)) ? { amount: Number(amount) } : {}),
       ...(userPlanId ? { userPlanId } : {}),
       isFreeFromPlan,
     };

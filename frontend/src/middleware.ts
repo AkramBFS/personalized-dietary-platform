@@ -49,5 +49,8 @@ export const config = {
     '/client/:path*',
     '/nutritionist/:path*',
     '/subscription/:path*',
+    '/consultations/nutritionists/:path*',
+    '/marketplace/:path*',
+    '/payment/:path*',
   ],
 };
