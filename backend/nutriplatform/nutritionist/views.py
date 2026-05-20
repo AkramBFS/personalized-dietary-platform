@@ -429,24 +429,53 @@ class NutritionistPlanListView(APIView):
         initial_status = 'pending' if data['plan_type'] == 'public-predefined' else 'approved'
 
         plan = Plan.objects.create(
-            creator                     = nutritionist,
-            title                       = data['title'],
-            description                 = data['description'],
-            plan_type                   = data['plan_type'],
-            target_client               = target_client,
-            price                       = data['price'],
-            duration_days               = data['duration_days'],
-            free_consultations_per_week = data.get('free_consultations_per_week', 0),
-            content_json                = content_json,
-            cover_image_url             = cover_image_url,
-            status                      = initial_status,
+        creator                     = nutritionist,
+        title                       = data['title'],
+        description                 = data['description'],
+        plan_type                   = data['plan_type'],
+        target_client               = target_client,
+        price                       = data['price'],
+        duration_days               = data['duration_days'],
+        free_consultations_per_week = data.get('free_consultations_per_week', 0),
+        content_json                = data['content_json'],
+        cover_image_url             = cover_image_url,
+        status                      = initial_status,
         )
+
+        # ── Auto-assign private custom plans to target client ─────────────────────────
+        # No purchase required — client already paid via consultation booking
+        if data['plan_type'] == 'private-custom' and target_client:
+            from marketplace.models import UserPlan
+            from notifications.utils import notify
+
+            # Create UserPlan only if not already exists
+            user_plan, created = UserPlan.objects.get_or_create(
+                client = target_client,
+                plan   = plan,
+                defaults = {
+                    'current_day_index':       0,
+                    'status':                  'active',
+                    'free_consultations_used': 0,
+                }
+            )
+
+            if created:
+                # Notify the client their plan is ready
+                notify(
+                    recipient   = target_client.user,
+                    sender      = nutritionist.user,
+                    title       = 'Your Custom Plan is Ready!',
+                    message     = f'Your nutritionist has created a personalized plan for you: "{plan.title}". You can now start following it.',
+                    target_type = 'plan',
+                    target_id   = plan.id,
+                )
 
         return Response({
             "status": "success",
             "data":   NutritionistPlanSerializer(plan).data,
-            "message": "Plan submitted for admin approval." if initial_status == 'pending'
-                    else "Private plan created and active."
+            "message": "Private plan created and assigned to client automatically."
+                    if data['plan_type'] == 'private-custom' and target_client
+                    else "Plan submitted for admin approval."
         }, status=201)
 
 class NutritionistPlanDetailView(APIView):
