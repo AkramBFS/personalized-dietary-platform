@@ -332,15 +332,8 @@ export default function AdminPlansPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleArchivePlan(plan.id)}
-                          >
-                            <Archive className="w-4 h-4 mr-2" />
-                            Archive
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
                             className="text-destructive hover:text-destructive"
+                            onClick={() => handleArchivePlan(plan.id)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete

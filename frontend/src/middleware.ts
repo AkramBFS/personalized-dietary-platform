@@ -39,6 +39,13 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 5.5 Prevent nutritionists from accessing payment pages
+  if (pathname.startsWith('/payment')) {
+    if (role === 'nutritionist') {
+      return NextResponse.redirect(new URL('/nutritionist', request.url));
+    }
+  }
+
   // 6. Allow request
   return NextResponse.next();
 }
