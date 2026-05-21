@@ -74,7 +74,8 @@ const mainNav = [
 export const HeroHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [profileIdentity, setProfileIdentity] = useState<CurrentProfileIdentity | null>(null);
+  const [profileIdentity, setProfileIdentity] =
+    useState<CurrentProfileIdentity | null>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -100,27 +101,75 @@ export const HeroHeader = () => {
     };
   }, []);
 
-  useGSAP(() => {
-    // Ensure the AI section exists before creating the trigger
-    const aiSection = document.querySelector("#ai-scan-section");
-    if (!aiSection) return;
+  useGSAP(
+    () => {
+      // Fallback selectors to target your unified section component perfectly
+      const unifiedSection =
+        document.querySelector("#hero-unified-section") ||
+        document.querySelector("#ai-scan-section") ||
+        document.querySelector("section[id*='hero']");
 
-    ScrollTrigger.create({
-      trigger: "#ai-scan-section",
-      start: "top top",
-      // Calculate the end point to match the 3000px scrub distance + 100vh for the initial zoom phase.
-      end: () => `+=${3000 + window.innerHeight}`,
-      onEnter: () => gsap.to(headerRef.current, { yPercent: -100, autoAlpha: 0, duration: 0.4, ease: "power2.out" }),
-      onLeave: () => gsap.to(headerRef.current, { yPercent: 0, autoAlpha: 1, duration: 0.4, ease: "power2.out" }),
-      onEnterBack: () => gsap.to(headerRef.current, { yPercent: -100, autoAlpha: 0, duration: 0.4, ease: "power2.out" }),
-      onLeaveBack: () => gsap.to(headerRef.current, { yPercent: 0, autoAlpha: 1, duration: 0.4, ease: "power2.out" }),
-      // Invalidate on refresh to ensure window.innerHeight is recalculated if the user resizes
-      invalidateOnRefresh: true,
-    });
-  }, { scope: headerRef });
+      if (!unifiedSection) return;
+
+      // 1. Smoothly hide the navbar at the start as the user scrolls down, matching the hero text exit
+      gsap.to(headerRef.current, {
+        yPercent: -100,
+        autoAlpha: 0,
+        scrollTrigger: {
+          trigger: unifiedSection,
+          start: "top top",
+          end: "top -200", // Completes the disappearance within the first 200px of scrolling
+          scrub: 0.5,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      // 2. Control the crisp re-appearance ONLY when crossing the section's outer boundaries
+      ScrollTrigger.create({
+        trigger: unifiedSection,
+        start: "top top",
+        end: "+=3000", // Matches the exact scroll duration/pin length of your AIDetection component
+        invalidateOnRefresh: true,
+
+        onLeave: () => {
+          // Triggers EXACTLY when the user scrolls off the bottom of the section
+          gsap.to(headerRef.current, {
+            yPercent: 0,
+            autoAlpha: 1,
+            duration: 0.4,
+            ease: "power2.out",
+          });
+        },
+
+        onEnterBack: () => {
+          // Triggers EXACTLY when the user scrolls back up into the section
+          gsap.to(headerRef.current, {
+            yPercent: -100,
+            autoAlpha: 0,
+            duration: 0.3,
+            ease: "power2.in",
+          });
+        },
+
+        onLeaveBack: () => {
+          // Safety net: ensures the navbar is fully visible if they scroll all the way back to the absolute top
+          gsap.to(headerRef.current, {
+            yPercent: 0,
+            autoAlpha: 1,
+            duration: 0.4,
+            ease: "power2.out",
+          });
+        },
+      });
+    },
+    { scope: headerRef },
+  );
 
   return (
-    <header ref={headerRef} className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none">
+    <header
+      ref={headerRef}
+      className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
+    >
       {/* OUTER NAV (CENTERING CONTAINER) */}
       <nav className="w-full flex justify-center pointer-events-none">
         {/* ANIMATED NAVBAR SHELL */}
@@ -274,7 +323,11 @@ export const HeroHeader = () => {
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" />
         <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-background/95 backdrop-blur-md px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-border/10 shadow-2xl">
           <div className="flex items-center justify-between">
-            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="-m-1.5 p-1.5">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="-m-1.5 p-1.5"
+            >
               <Logo />
             </Link>
             <div className="flex items-center gap-4">
@@ -293,7 +346,6 @@ export const HeroHeader = () => {
           <div className="mt-8 flow-root">
             <div className="-my-6 divide-y divide-border/20">
               <div className="space-y-2 py-6">
-                {/* Services with Disclosure for Mobile */}
                 <Disclosure as="div" className="-mx-3">
                   {({ open }) => (
                     <>
@@ -302,7 +354,7 @@ export const HeroHeader = () => {
                         <ChevronDownIcon
                           className={cn(
                             "size-5 flex-none transition-transform duration-200",
-                            open ? "rotate-180" : ""
+                            open ? "rotate-180" : "",
                           )}
                           aria-hidden="true"
                         />
@@ -347,16 +399,22 @@ export const HeroHeader = () => {
                     </p>
                     <div className="flex items-center gap-4 px-1 pb-4">
                       <div className="size-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                         <span className="text-emerald-500 font-bold text-lg">
-                           {(profileIdentity.username || "U").charAt(0).toUpperCase()}
-                         </span>
+                        <span className="text-emerald-500 font-bold text-lg">
+                          {(profileIdentity.username || "U")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-foreground leading-tight">{profileIdentity.username}</span>
-                        <span className="text-xs text-muted-foreground">{profileIdentity.email}</span>
+                        <span className="font-semibold text-foreground leading-tight">
+                          {profileIdentity.username}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {profileIdentity.email}
+                        </span>
                       </div>
                     </div>
-                    
+
                     <div className="grid gap-2">
                       <Link
                         href={`/${profileIdentity.role}`}
