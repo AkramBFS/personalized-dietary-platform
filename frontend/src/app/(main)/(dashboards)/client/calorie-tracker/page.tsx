@@ -564,10 +564,7 @@ export default function CalorieTrackerPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div
-            className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl"
-            data-lenis-prevent
-          >
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
             <div className="flex shrink-0 items-center justify-between border-b border-border p-6">
               <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
                 <Target className="h-5 w-5 text-primary" />
@@ -583,7 +580,10 @@ export default function CalorieTrackerPage() {
               </button>
             </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto bg-background p-6">
+            <div
+              className="flex-1 space-y-5 overflow-y-auto bg-background p-6"
+              data-lenis-prevent
+            >
               {segmentedImageUrl && (
                 <div className="overflow-hidden rounded-lg border border-border bg-card">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
