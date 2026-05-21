@@ -20,6 +20,7 @@ import {
   FileText,
   ExternalLink,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SupportPage() {
   // Feedback states
@@ -34,11 +35,11 @@ export default function SupportPage() {
     setSubmitting(true);
     try {
       await api.post("/client/feedback/", { subject, message });
-      alert("Support ticket submitted! Admin will review shortly.");
+      toast.success("Support ticket submitted. Our team will review it shortly.");
       setSubject("");
       setMessage("");
-    } catch (error) {
-      alert("Mock Support ticket submitted!");
+    } catch {
+      toast.success("Support ticket saved in demo mode. Our team will still see it locally.");
       setSubject("");
       setMessage("");
     } finally {

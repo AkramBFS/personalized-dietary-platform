@@ -9,7 +9,6 @@ import {
   useRef,
 } from "react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { submitNutritionistRegistration } from "@/app/actions/submitNutritionistRegistration";
 import { nutritionistRegistrationSchema } from "@/lib/constants";
 import { Logo } from "../layout/logo";
@@ -22,6 +21,8 @@ import {
 } from "@/lib/lookups";
 import { ThemeToggle } from "../ui/theme-toggle";
 import GenericDropdown from "../ui/GenericDropdown";
+import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 type FormState = {
   username: string;
@@ -52,6 +53,12 @@ const initialState: FormState = {
   language_ids: [],
   profile_photo: null,
 };
+
+function FieldError({ message }: { message?: string }) {
+  return message ? (
+    <p className="mt-1 text-sm text-destructive">{message}</p>
+  ) : null;
+}
 
 /* ─── Multi-select dropdown for languages ─────────────────────────────── */
 interface MultiSelectDropdownProps {
@@ -211,10 +218,8 @@ export default function NutritionistRegistrationForm() {
   const [countries, setCountries] = useState<LookupItem[]>([]);
   const [specializations, setSpecializations] = useState<LookupItem[]>([]);
   const [languages, setLanguages] = useState<LookupItem[]>([]);
-  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const { setTheme, resolvedTheme } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
 
   // Bootstrap lookup data on component mount
   useEffect(() => {
@@ -226,24 +231,27 @@ export default function NutritionistRegistrationForm() {
         setLanguages(getLanguages());
       } catch (err) {
         console.error("Failed to load lookup data:", err);
-      } finally {
-        setIsLoadingLookups(false);
       }
     };
 
     loadLookups();
   }, []);
 
-  // Update profile photo preview URL
+  const previewUrl = useMemo(
+    () =>
+      formData.profile_photo
+        ? URL.createObjectURL(formData.profile_photo)
+        : null,
+    [formData.profile_photo],
+  );
+
   useEffect(() => {
-    if (!formData.profile_photo) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(formData.profile_photo);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [formData.profile_photo]);
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const validate = () => {
     const result = nutritionistRegistrationSchema.safeParse({
@@ -301,11 +309,6 @@ export default function NutritionistRegistrationForm() {
       }
     });
   };
-
-  const FieldError = ({ name }: { name: string }) =>
-    errors[name] ? (
-      <p className="mt-1 text-sm text-destructive">{errors[name]}</p>
-    ) : null;
 
   const inputClasses =
     "mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand size-14";
@@ -371,7 +374,7 @@ export default function NutritionistRegistrationForm() {
               <p className="text-[10px] mt-2 text-muted-foreground font-semibold uppercase tracking-wider">
                 Profile Picture
               </p>
-              <FieldError name="profile_photo" />
+              <FieldError message={errors.profile_photo} />
             </div>
             <label className="block">
               <span className="text-sm font-medium text-foreground">
@@ -385,7 +388,7 @@ export default function NutritionistRegistrationForm() {
                 }
                 className={inputClasses}
               />
-              <FieldError name="username" />
+              <FieldError message={errors.username} />
             </label>
 
             <label className="block">
@@ -398,22 +401,32 @@ export default function NutritionistRegistrationForm() {
                 }
                 className={inputClasses}
               />
-              <FieldError name="email" />
+              <FieldError message={errors.email} />
             </label>
 
             <label className="block">
               <span className="text-sm font-medium text-foreground">
                 Password
               </span>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, password: e.target.value }))
-                }
-                className={inputClasses}
-              />
-              <FieldError name="password" />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, password: e.target.value }))
+                  }
+                  className={`${inputClasses} pr-12`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              <FieldError message={errors.password} />
             </label>
 
             {/* Country dropdown — matches input sizing */}
@@ -468,7 +481,7 @@ export default function NutritionistRegistrationForm() {
                 }
                 className={inputClasses}
               />
-              <FieldError name="years_experience" />
+              <FieldError message={errors.years_experience} />
             </label>
 
             <label className="block">
@@ -488,7 +501,7 @@ export default function NutritionistRegistrationForm() {
                 }
                 className={inputClasses}
               />
-              <FieldError name="consultation_price" />
+              <FieldError message={errors.consultation_price} />
             </label>
 
             <label className="block">
@@ -506,7 +519,7 @@ export default function NutritionistRegistrationForm() {
                 }
                 className={inputClasses}
               />
-              <FieldError name="certification_ref" />
+              <FieldError message={errors.certification_ref} />
             </label>
 
             {/* Languages multi-select dropdown */}
@@ -536,7 +549,7 @@ export default function NutritionistRegistrationForm() {
                   setOpenDropdown((p) => (p === "languages" ? null : p))
                 }
               />
-              <FieldError name="language_ids" />
+              <FieldError message={errors.language_ids} />
             </div>
 
             <label className="block md:col-span-2">
@@ -549,7 +562,7 @@ export default function NutritionistRegistrationForm() {
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null;
                   if (file && file.size > 5 * 1024 * 1024) {
-                    alert("Certification document must be under 5MB.");
+                    toast.error("Certification document must be under 5MB. Please upload a smaller file.");
                     e.target.value = "";
                     setFormData((prev) => ({ ...prev, cert_image: null }));
                     return;
@@ -561,7 +574,7 @@ export default function NutritionistRegistrationForm() {
                 }}
                 className="mt-1 w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-brand/50 focus:border-brand file:mr-4 file:rounded-md file:border-0 file:bg-button-primary file:px-3 file:py-1 file:text-sm file:text-button-primary-foreground size-14"
               />
-              <FieldError name="cert_image" />
+              <FieldError message={errors.cert_image} />
             </label>
 
             <label className="block md:col-span-2">

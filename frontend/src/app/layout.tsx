@@ -3,6 +3,7 @@ import { Syne, Space_Grotesk } from "next/font/google";
 import { bootstrapLookups } from "@/lib/lookups";
 import { FloatingChatbot } from "@/components/dashboard/shared/FloatingChatbot";
 import { ChatbotProvider } from "@/context/ChatbotContext";
+import { Toaster } from "sonner";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({
               <main className="flex-grow">{children}</main>
             </SmoothScrolling>
             <FloatingChatbot />
+            <Toaster richColors position="top-right" />
           </ChatbotProvider>
         </ThemeProvider>
       </body>

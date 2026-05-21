@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import api from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +15,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   getMealPlanDayContent,
   advanceMealPlanDay,
@@ -78,13 +78,9 @@ export default function MealPlanDetailPage() {
   );
 
   useEffect(() => {
-    let isMounted = true;
     if (id) {
       fetchContent();
     }
-    return () => {
-      isMounted = false;
-    };
   }, [id, fetchContent]);
 
   const handleAdvance = async () => {
@@ -97,7 +93,7 @@ export default function MealPlanDetailPage() {
       await fetchContent(res.day_index);
     } catch (error) {
       console.error("Failed to advance", error);
-      alert("Failed to advance day. Please try again.");
+      toast.error("We couldn't advance to the next day. Please try again.");
     } finally {
       setAdvancing(false);
     }

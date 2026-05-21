@@ -11,9 +11,14 @@ import { Loader2, Send, Trash2, Heart, MessageCircle, ImageIcon, X, ExternalLink
 import { deleteCommunityPost, getClientOwnPosts, postCreateCommunityPost, type CommunityPost } from "@/lib/client/service";
 import { resolveApiUrl } from "@/lib/api";
 import Link from "next/link";
+import { toast } from "sonner";
+
+type CommunityPostWithLikes = CommunityPost & {
+  likes_count?: number;
+};
 
 export default function CommunityDashboardPage() {
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [posts, setPosts] = useState<CommunityPostWithLikes[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -65,7 +70,7 @@ export default function CommunityDashboardPage() {
     setSubmitting(true);
     try {
       await postCreateCommunityPost({ content: newPost, image: imageFile });
-      alert("Post submitted and is pending moderation!");
+      toast.success("Post submitted and is pending moderation.");
       setNewPost("");
       removeImage();
       
@@ -74,7 +79,7 @@ export default function CommunityDashboardPage() {
       setPosts(updatedPosts);
     } catch (err) {
       console.error("Error creating post:", err);
-      alert("Failed to submit post. Please try again.");
+      toast.error("We couldn't submit your post. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +154,7 @@ export default function CommunityDashboardPage() {
           </div>
         ) : posts.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            You haven't shared anything yet.
+            You haven&apos;t shared anything yet.
           </p>
         ) : (
           Array.isArray(posts) &&
@@ -200,7 +205,7 @@ export default function CommunityDashboardPage() {
               </CardContent>
               <CardFooter className="px-5 py-3 border-t border-border flex gap-4 bg-muted/30">
                 <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Heart className="w-4 h-4" /> {(post as any).likes_count || 0} Likes
+                  <Heart className="w-4 h-4" /> {post.likes_count || 0} Likes
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   <MessageCircle className="w-4 h-4" /> {post.comments?.length || 0} Comments

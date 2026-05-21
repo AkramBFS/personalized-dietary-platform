@@ -28,6 +28,23 @@ function formatDate(date?: string): string {
   });
 }
 
+function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boolean {
+  const subscription = status?.subscription;
+  if (!subscription) return status?.is_premium ?? false;
+
+  const expiryTime = subscription.end_date
+    ? new Date(subscription.end_date).getTime()
+    : null;
+  const hasExpired =
+    expiryTime !== null && !Number.isNaN(expiryTime) && expiryTime <= Date.now();
+
+  if (subscription.end_date) {
+    return Boolean(status?.is_premium && subscription.status === "active" && !hasExpired);
+  }
+
+  return Boolean(status?.is_premium && subscription.status === "active");
+}
+
 export default function SubscriptionPage() {
   const router = useRouter();
   const [subscriptionStatus, setSubscriptionStatus] = useState<ClientSubscriptionStatus | null>(null);
@@ -88,12 +105,20 @@ export default function SubscriptionPage() {
     }
   };
 
-  const isPremium = subscriptionStatus?.is_premium ?? false;
   const subscription = subscriptionStatus?.subscription ?? null;
+  const isSubscriptionActive = useMemo(
+    () => getIsSubscriptionActive(subscriptionStatus),
+    [subscriptionStatus],
+  );
+  const subscriptionBadge = subscription
+    ? isSubscriptionActive
+      ? subscription.status
+      : "expired"
+    : "free";
   const planName = useMemo(() => {
-    if (!isPremium) return "Free";
+    if (!isSubscriptionActive) return "Free";
     return subscription?.plan_type ? `${subscription.plan_type[0].toUpperCase()}${subscription.plan_type.slice(1)}` : "Premium";
-  }, [isPremium, subscription?.plan_type]);
+  }, [isSubscriptionActive, subscription?.plan_type]);
 
   if (loading) {
     return (
@@ -117,28 +142,28 @@ export default function SubscriptionPage() {
           <CardHeader className="border-b border-border pb-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`rounded-xl p-3 ${isPremium ? "bg-amber-500/15 text-amber-500" : "bg-secondary text-muted-foreground"}`}>
+                <div className={`rounded-xl p-3 ${isSubscriptionActive ? "bg-amber-500/15 text-amber-500" : "bg-secondary text-muted-foreground"}`}>
                   <Crown className="h-6 w-6" />
                 </div>
                 <div>
                   <CardTitle className="text-card-foreground">{planName} Plan</CardTitle>
-                  <CardDescription>{isPremium ? "Premium features unlocked" : "Basic features only"}</CardDescription>
+                  <CardDescription>{isSubscriptionActive ? "Premium features unlocked" : "Basic features only"}</CardDescription>
                 </div>
               </div>
               <span
                 className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${
-                  isPremium ? "bg-accent text-primary" : "bg-secondary text-muted-foreground"
+                  isSubscriptionActive ? "bg-accent text-primary" : "bg-secondary text-muted-foreground"
                 }`}
               >
-                {subscription?.status ?? "free"}
+                {subscriptionBadge}
               </span>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">Your Features</h3>
-            <ul className="space-y-3">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">Your Features</h3>
+              <ul className="space-y-3">
               {PREMIUM_FEATURES.map((feature) => {
-                const included = isPremium || !["AI Vision Tracker", "Priority Consultations", "Advanced Analytics"].includes(feature);
+                const included = isSubscriptionActive || !["AI Vision Tracker", "Priority Consultations", "Advanced Analytics"].includes(feature);
                 return (
                   <li key={feature} className="flex items-center gap-3">
                     {included ? (
@@ -157,7 +182,7 @@ export default function SubscriptionPage() {
               })}
             </ul>
 
-            {isPremium && (
+            {isSubscriptionActive && (
               <div className="mt-6 space-y-2 border-t border-border pt-4 text-sm text-muted-foreground">
                 <p>
                   Started: <span className="font-semibold text-foreground">{formatDate(subscription?.start_date)}</span>
@@ -193,7 +218,7 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {!isPremium && (
+      {!isSubscriptionActive && (
         <div className="pt-8 space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold">Upgrade Your Experience</h2>
