@@ -526,12 +526,10 @@ export default function ProfilePage() {
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    disabled={saving}
+                    isLoading={saving}
                     className="w-full sm:w-auto"
                   >
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : selectedPhoto ? (
+                    {selectedPhoto ? (
                       <Camera className="mr-2 h-4 w-4" />
                     ) : (
                       <Save className="mr-2 h-4 w-4" />

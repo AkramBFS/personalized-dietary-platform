@@ -19,6 +19,7 @@ import {
   getDiets,
   LookupItem,
 } from "@/lib/lookups";
+import { toast } from "sonner";
 
 type RegistrationFormData = {
   country: string;
@@ -277,7 +278,7 @@ export default function RegistrationFlow() {
           },
         });
 
-        alert("Registration Successful! Please log in.");
+        toast.success("Registration complete. Please sign in.");
         router.push("/login");
       } catch (err: unknown) {
         console.error("Registration failed", err);
@@ -290,7 +291,7 @@ export default function RegistrationFlow() {
           responseMessage ||
           (err instanceof Error ? err.message : undefined) ||
           "Error submitting form";
-        alert(errorMsg);
+        toast.error(errorMsg);
       } finally {
         setIsAnimating(false);
       }

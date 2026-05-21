@@ -14,15 +14,17 @@ import {
   setSessionUser,
   setUserRoleCookie,
 } from "@/lib/auth";
-import { Home } from "lucide-react";
+import { Eye, EyeOff, Home } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [errors, setErrors] = useState<{
     email?: string;
@@ -31,7 +33,6 @@ export default function LoginPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Wait until mounted to avoid hydration errors
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -40,7 +41,6 @@ export default function LoginPage() {
 
   const animationSpeed = 0.8;
 
-  // ✅ single source of truth (Zod)
   const isFormValid = loginSchema.safeParse({
     email,
     password,
@@ -73,10 +73,8 @@ export default function LoginPage() {
       });
 
       const { data } = response.data;
-
       const { tokens, user } = data;
 
-      // Store tokens
       setAccessToken(tokens.access);
       setRefreshToken(tokens.refresh);
       setSessionUser({
@@ -87,7 +85,6 @@ export default function LoginPage() {
       });
       setUserRoleCookie(user.role);
 
-      // Redirect based on role
       if (user.role === "client") {
         router.push("/client");
       } else if (user.role === "nutritionist") {
@@ -95,34 +92,49 @@ export default function LoginPage() {
       } else if (user.role === "high_admin") {
         router.push("/admin");
       } else {
-        alert("Unknown user role");
+        toast.error(
+          "We couldn't determine your dashboard. Please contact support.",
+        );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login failed", error);
+      const response =
+        error && typeof error === "object" && "response" in error
+          ? (error as {
+              response?: {
+                status?: number;
+                data?: {
+                  code?: string;
+                  error_code?: string;
+                  message?: string;
+                };
+              };
+            }).response
+          : undefined;
       const errorCode =
-        error.response?.data?.code ||
-        error.response?.data?.error_code ||
-        error.response?.data?.message;
+        response?.data?.code ||
+        response?.data?.error_code ||
+        response?.data?.message;
 
       if (
-        error.response?.status === 403 &&
+        response?.status === 403 &&
         (errorCode === "ACCOUNT_PENDING_APPROVAL" ||
           errorCode === "Your account is pending approval.")
       ) {
         router.push("/register/pending");
       } else if (
-        error.response?.status === 403 &&
+        response?.status === 403 &&
         errorCode === "ACCOUNT_REJECTED"
       ) {
-        alert(
+        toast.error(
           "Your account application was rejected. Please contact support for details.",
         );
-      } else if (error.response?.status === 401) {
+      } else if (response?.status === 401) {
         setErrors({ email: "Invalid credentials" });
-      } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
+      } else if (response?.data?.message) {
+        toast.error(String(response.data.message));
       } else {
-        alert("Login failed. Please try again.");
+        toast.error("Login failed. Please check your details and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -178,7 +190,7 @@ export default function LoginPage() {
     <main className="relative min-h-screen overflow-hidden">
       <AnimatePresence>
         <motion.div
-          key={bgImage} // Change the key so Framer Motion animates the transition between images
+          key={bgImage}
           className="absolute inset-0 -z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -197,12 +209,12 @@ export default function LoginPage() {
       <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
         <Link
           href="/"
-          className="p-2 rounded-full bg-card/50 backdrop-blur-md border border-border hover:bg-accent transition-colors"
+          className="rounded-full border border-border bg-card/50 p-2 backdrop-blur-md transition-colors hover:bg-accent"
           title="Back to Home"
         >
           <Home className="w-5 h-5 text-foreground" />
         </Link>
-        <div className="p-1 rounded-full bg-card/50 backdrop-blur-md border border-border">
+        <div className="rounded-full border border-border bg-card/50 p-1 backdrop-blur-md">
           <ThemeToggle />
         </div>
       </div>
@@ -214,23 +226,20 @@ export default function LoginPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Left panel */}
           <div
             className="hidden md:flex relative w-2/5 p-8 flex-col justify-center bg-cover bg-center transition-all duration-500"
             style={{
               backgroundImage: `url('${divImage}')`,
               backgroundBlendMode: "overlay",
             }}
-          ></div>
+          />
 
-          {/* Right panel */}
           <motion.div
             className="w-full md:w-3/5 p-10 flex flex-col justify-center"
             variants={containerVariants}
           >
             <div className="flex items-start mb-6">
               <motion.div
-                className=""
                 animate={{
                   rotate: [0, 5, -5, 0],
                   scale: [1, 1.05, 0.95, 1],
@@ -256,7 +265,6 @@ export default function LoginPage() {
             </motion.div>
 
             <form onSubmit={handleLogin} className="space-y-6">
-              {/* Email */}
               <motion.div variants={itemVariants}>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Email
@@ -280,23 +288,36 @@ export default function LoginPage() {
                 )}
               </motion.div>
 
-              {/* Password */}
               <motion.div variants={itemVariants}>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Password
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-3 rounded-lg border bg-muted/30 text-foreground focus:outline-none focus:ring-2 transition
-                    ${
-                      errors.password
-                        ? "border-destructive focus:ring-destructive"
-                        : "border-border focus:ring-brand"
-                    }`}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="........"
+                    className={`w-full rounded-lg border bg-muted/30 px-4 py-3 pr-12 text-foreground focus:outline-none focus:ring-2 transition
+                      ${
+                        errors.password
+                          ? "border-destructive focus:ring-destructive"
+                          : "border-border focus:ring-brand"
+                      }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.password}
@@ -304,7 +325,6 @@ export default function LoginPage() {
                 )}
               </motion.div>
 
-              {/* Submit */}
               <motion.button
                 type="submit"
                 disabled={!isFormValid || isLoading}

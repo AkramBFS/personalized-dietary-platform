@@ -38,6 +38,7 @@ import {
   CalorieLog,
   ClientProfile,
   ClientProgress,
+  ClientSubscriptionStatus,
   MEAL_TYPES,
   MealType,
   formatDateParam,
@@ -51,6 +52,7 @@ import {
   postManualCalorieLog,
   confirmAICalorieLog,
 } from "@/lib/client";
+import { toast } from "sonner";
 
 interface EditablePrediction {
   id: string;
@@ -142,9 +144,83 @@ function getTodayTotals(logs: CalorieLog[], progress: ClientProgress | null) {
   );
 }
 
+function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boolean {
+  const subscription = status?.subscription;
+  if (!subscription) return status?.is_premium ?? false;
+
+  const expiryTime = subscription.end_date
+    ? new Date(subscription.end_date).getTime()
+    : null;
+  const hasExpired =
+    expiryTime !== null && !Number.isNaN(expiryTime) && expiryTime <= Date.now();
+
+  if (subscription.end_date) {
+    return Boolean(status?.is_premium && subscription.status === "active" && !hasExpired);
+  }
+
+  return Boolean(status?.is_premium && subscription.status === "active");
+}
+
+function PremiumAiPaywall() {
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          AI Vision Tracker
+        </h1>
+        <p className="text-muted-foreground">
+          Premium access is required to analyze meals from photos.
+        </p>
+      </div>
+
+      <Card className="shadow-sm">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-card-foreground">
+              <Crown className="h-5 w-5 text-amber-500" />
+              Premium AI access
+            </CardTitle>
+            <CardDescription>
+              This feature requires an active premium subscription.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
+            <div className="relative">
+              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-amber-500/10">
+                <Sparkles className="h-10 w-10 text-amber-500" />
+              </div>
+              <div className="absolute -right-1 -top-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                Premium
+              </div>
+            </div>
+            <div className="max-w-sm space-y-2">
+              <h3 className="text-xl font-bold text-foreground">
+                Unlock AI-powered tracking
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Snap a photo of your meal, review detected ingredients, and save the corrected log.
+              </p>
+            </div>
+            <Button
+              asChild
+              className="rounded-xl px-8 py-6 text-base shadow-sm"
+            >
+              <Link href="/client/subscription">
+                <ArrowUpRight className="mr-2 h-5 w-5" />
+                Upgrade to Premium
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function CalorieTrackerPage() {
   const [activeTab, setActiveTab] = useState<"ai" | "manual">("manual");
-  const [isPremium, setIsPremium] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<ClientSubscriptionStatus | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [todayLogs, setTodayLogs] = useState<CalorieLog[]>([]);
   const [profile, setProfile] = useState<ClientProfile | null>(null);
@@ -153,8 +229,7 @@ export default function CalorieTrackerPage() {
   );
   const [logsLoading, setLogsLoading] = useState(true);
   const [dailyTarget, setDailyTarget] = useState<number | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [aiPreview, setAiPreview] = useState<string | null>(null);
@@ -200,7 +275,7 @@ export default function CalorieTrackerPage() {
       );
     } catch (loadError) {
       console.error("Failed to load calorie logs", loadError);
-      setError("Could not load today's calorie log.");
+      setPageError("Could not load today's calorie log.");
     } finally {
       setLogsLoading(false);
     }
@@ -212,10 +287,10 @@ export default function CalorieTrackerPage() {
     const loadSubscription = async () => {
       try {
         const status = await getClientSubscriptionStatus();
-        if (isMounted) setIsPremium(status.is_premium);
+        if (isMounted) setSubscriptionStatus(status);
       } catch (subscriptionError) {
         console.error("Failed to fetch subscription status", subscriptionError);
-        if (isMounted) setIsPremium(false);
+        if (isMounted) setSubscriptionStatus(null);
       } finally {
         if (isMounted) setSubscriptionLoading(false);
       }
@@ -256,13 +331,17 @@ export default function CalorieTrackerPage() {
     }),
     [profile, todayProgress],
   );
+  const isSubscriptionActive = useMemo(
+    () => getIsSubscriptionActive(subscriptionStatus),
+    [subscriptionStatus],
+  );
 
   const handleAiUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
     if (selectedFile.size > 10 * 1024 * 1024) {
-      setError("Image must be under 10MB.");
+      toast.error("Image must be under 10MB. Please choose a smaller file.");
       event.target.value = "";
       return;
     }
@@ -277,8 +356,6 @@ export default function CalorieTrackerPage() {
       setAiFile(compressedFile);
       setAiPreview(URL.createObjectURL(compressedFile));
       setSegmentedImageUrl(null);
-      setError(null);
-      setMessage(null);
     } catch (compressionError) {
       console.error("Image compression error", compressionError);
       setAiFile(selectedFile);
@@ -327,7 +404,7 @@ export default function CalorieTrackerPage() {
     );
 
     setEditableItems(
-      Object.entries(grouped).map(([_, data], index) => ({
+      Object.entries(grouped).map(([, data], index) => ({
         id: `${log.log_id}-${index}`,
         label: data.originalLabel,
         mass_grams: String(data.mass_grams.toFixed(1)),
@@ -358,8 +435,6 @@ export default function CalorieTrackerPage() {
 
     setAiLoading(true);
     setAiStatusText("AI is analyzing your meal...");
-    setError(null);
-    setMessage(null);
 
     try {
       let log = await postAICalorieLog({ meal_type: mealType, image: aiFile });
@@ -377,27 +452,37 @@ export default function CalorieTrackerPage() {
       if (log.status === "pending_user_review") {
         openReviewModal(log);
       } else if (log.status === "failed") {
-        setError(
+        toast.error(
           "AI analysis failed. Please try another image or use manual entry.",
         );
       } else if (log.status === "processing") {
-        setError(
+        toast.error(
           "AI analysis is taking longer than expected. Please try again shortly.",
         );
       } else {
-        setError("AI returned an unexpected status. Please try again.");
+        toast.error("AI returned an unexpected result. Please try again.");
       }
     } catch (submitError) {
       console.error("AI analysis failed", submitError);
       if (isAxiosError(submitError) && submitError.response?.status === 403) {
-        setIsPremium(false);
-        setError(
+        setSubscriptionStatus((prev) =>
+          prev
+            ? {
+                ...prev,
+                is_premium: false,
+                subscription: prev.subscription
+                  ? { ...prev.subscription, status: "expired" }
+                  : null,
+              }
+            : { is_premium: false, subscription: null },
+        );
+        toast.error(
           errorCode(submitError) === "NOT_PREMIUM"
             ? "This feature requires a premium subscription."
             : "This feature is only available to premium clients.",
         );
       } else {
-        setError(
+        toast.error(
           errorMessage(
             submitError,
             "Failed to analyze image. Please try again.",
@@ -481,12 +566,11 @@ export default function CalorieTrackerPage() {
       );
 
     if (userFinalLog.length === 0) {
-      setError("Please keep at least one valid ingredient before saving.");
+      toast.error("Please keep at least one valid ingredient before saving.");
       return;
     }
 
     setConfirmingAi(true);
-    setError(null);
     try {
       await confirmAICalorieLog(aiLogId, {
         meal_type: mealType,
@@ -498,11 +582,11 @@ export default function CalorieTrackerPage() {
       setAiPreview(null);
       setSegmentedImageUrl(null);
       setEditableItems([]);
-      setMessage("Meal saved to your tracker.");
+      toast.success("Meal saved to your tracker.");
       await loadToday();
     } catch (confirmError) {
       console.error("Failed to confirm AI meal", confirmError);
-      setError(
+      toast.error(
         errorMessage(
           confirmError,
           "Could not save the AI meal. Please review the ingredients and try again.",
@@ -516,7 +600,7 @@ export default function CalorieTrackerPage() {
   const addManualIngredient = () => {
     const mass = Number(ingredientMass);
     if (!ingredientName.trim() || !Number.isFinite(mass) || mass <= 0) {
-      setError("Enter an ingredient name and a mass greater than 0g.");
+      toast.error("Enter an ingredient name and a mass greater than 0g.");
       return;
     }
 
@@ -526,7 +610,6 @@ export default function CalorieTrackerPage() {
     ]);
     setIngredientName("");
     setIngredientMass("");
-    setError(null);
   };
 
   const removeManualIngredient = (indexToRemove: number) => {
@@ -538,21 +621,19 @@ export default function CalorieTrackerPage() {
   const submitManualLog = async (event: React.FormEvent) => {
     event.preventDefault();
     if (ingredients.length === 0) {
-      setError("Please add at least one ingredient.");
+      toast.error("Please add at least one ingredient.");
       return;
     }
 
     setManualSubmitting(true);
-    setError(null);
-    setMessage(null);
     try {
       await postManualCalorieLog({ meal_type: mealType, ingredients });
       setIngredients([]);
-      setMessage("Meal logged successfully.");
+      toast.success("Meal logged successfully.");
       await loadToday();
     } catch (submitError) {
       console.error("Failed to log manual meal", submitError);
-      setError(
+      toast.error(
         errorMessage(submitError, "Could not log this meal. Please try again."),
       );
     } finally {
@@ -788,15 +869,11 @@ export default function CalorieTrackerPage() {
         </p>
       </div>
 
-      {(message || error) && (
+      {pageError && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
-            error
-              ? "border-destructive/40 bg-destructive/10 text-destructive"
-              : "border-primary/30 bg-primary/10 text-primary"
-          }`}
+          className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
-          {error ?? message}
+          {pageError}
         </div>
       )}
 
@@ -958,48 +1035,8 @@ export default function CalorieTrackerPage() {
                 <CardContent className="flex justify-center py-16">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </CardContent>
-              ) : !isPremium ? (
-                <>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-card-foreground">
-                      <Crown className="h-5 w-5 text-amber-500" /> AI Vision
-                      Tracker
-                    </CardTitle>
-                    <CardDescription>
-                      This feature requires a premium subscription.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
-                      <div className="relative">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-amber-500/10">
-                          <Sparkles className="h-10 w-10 text-amber-500" />
-                        </div>
-                        <div className="absolute -right-1 -top-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                          Premium
-                        </div>
-                      </div>
-                      <div className="max-w-sm space-y-2">
-                        <h3 className="text-xl font-bold text-foreground">
-                          Unlock AI-Powered Tracking
-                        </h3>
-                        <p className="text-sm leading-relaxed text-muted-foreground">
-                          Snap a photo of your meal, review the detected
-                          ingredients, and save the corrected log.
-                        </p>
-                      </div>
-                      <Button
-                        asChild
-                        className="rounded-xl px-8 py-6 text-base shadow-sm"
-                      >
-                        <Link href="/client/subscription">
-                          <ArrowUpRight className="mr-2 h-5 w-5" /> Upgrade to
-                          Premium
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </>
+              ) : !isSubscriptionActive ? (
+                <PremiumAiPaywall />
               ) : (
                 <>
                   <CardHeader>
@@ -1010,10 +1047,9 @@ export default function CalorieTrackerPage() {
                       Upload a photo and review AI results before saving to your
                       tracker.
                     </CardDescription>
-                    <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[12px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/10">
+                    <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[12px] font-medium text-amber-700 border border-amber-500/10 dark:text-amber-400">
                       <AlertTriangle className="h-3.5 w-3.5" />
-                      AI estimates are approximations. Always review the
-                      results.
+                      AI estimates are approximations. Always review the results.
                     </div>
                   </CardHeader>
                   <CardContent>

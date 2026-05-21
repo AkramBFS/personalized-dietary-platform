@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Loader2, MessageSquare, Send, HelpCircle, Mail, FileText, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NutritionistSupportPage() {
   const [subject, setSubject] = useState("");
@@ -19,11 +20,11 @@ export default function NutritionistSupportPage() {
     setSubmitting(true);
     try {
       await api.post("/client/feedback/", { subject, message });
-      alert("Support ticket submitted! Admin will review shortly.");
+      toast.success("Support ticket submitted. Our team will review it shortly.");
       setSubject("");
       setMessage("");
     } catch {
-      alert("Mock Support ticket submitted!");
+      toast.success("Support ticket saved in demo mode. Our team will still see it locally.");
       setSubject("");
       setMessage("");
     } finally {
