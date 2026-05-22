@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { Store } from "lucide-react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
+
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { UserProfileDropdown } from "@/components/dashboard/shared/UserProfileDropdown";
@@ -58,10 +60,10 @@ const services = [
     icon: SparklesIcon,
   },
   {
-    name: "Seasonal Programs",
-    description: "Specialized guides for Ramadan and Summer.",
-    href: "/services#seasonal-programs",
-    icon: CalendarIcon,
+    name: "Plan marketplace",
+    description: "Specialized guides by certified nutritionists.",
+    href: "/services#plan-marketplace",
+    icon: Store,
   },
 ];
 
@@ -74,6 +76,7 @@ const mainNav = [
 export const HeroHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
   const [profileIdentity, setProfileIdentity] =
     useState<CurrentProfileIdentity | null>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -88,14 +91,11 @@ export const HeroHeader = () => {
 
   useEffect(() => {
     let isMounted = true;
-
     const loadIdentity = async () => {
       const identity = await getProfileIdentity();
       if (isMounted) setProfileIdentity(identity);
     };
-
     void loadIdentity();
-
     return () => {
       isMounted = false;
     };
@@ -103,64 +103,47 @@ export const HeroHeader = () => {
 
   useGSAP(
     () => {
-      // Fallback selectors to target your unified section component perfectly
+      // Set to hidden by default so it doesn't flash over the hero video
+      gsap.set(headerRef.current, { yPercent: -100, autoAlpha: 0 });
+
       const unifiedSection =
         document.querySelector("#hero-unified-section") ||
         document.querySelector("#ai-scan-section") ||
         document.querySelector("section[id*='hero']");
 
-      if (!unifiedSection) return;
-
-      // 1. Smoothly hide the navbar at the start as the user scrolls down, matching the hero text exit
-      gsap.to(headerRef.current, {
-        yPercent: -100,
-        autoAlpha: 0,
-        scrollTrigger: {
+      if (unifiedSection) {
+        ScrollTrigger.create({
           trigger: unifiedSection,
           start: "top top",
-          end: "top -200", // Completes the disappearance within the first 200px of scrolling
-          scrub: 0.5,
+          end: "+=4000",
           invalidateOnRefresh: true,
-        },
-      });
-
-      // 2. Control the crisp re-appearance ONLY when crossing the section's outer boundaries
-      ScrollTrigger.create({
-        trigger: unifiedSection,
-        start: "top top",
-        end: "+=3000", // Matches the exact scroll duration/pin length of your AIDetection component
-        invalidateOnRefresh: true,
-
-        onLeave: () => {
-          // Triggers EXACTLY when the user scrolls off the bottom of the section
-          gsap.to(headerRef.current, {
-            yPercent: 0,
-            autoAlpha: 1,
-            duration: 0.4,
-            ease: "power2.out",
-          });
-        },
-
-        onEnterBack: () => {
-          // Triggers EXACTLY when the user scrolls back up into the section
-          gsap.to(headerRef.current, {
-            yPercent: -100,
-            autoAlpha: 0,
-            duration: 0.3,
-            ease: "power2.in",
-          });
-        },
-
-        onLeaveBack: () => {
-          // Safety net: ensures the navbar is fully visible if they scroll all the way back to the absolute top
-          gsap.to(headerRef.current, {
-            yPercent: 0,
-            autoAlpha: 1,
-            duration: 0.4,
-            ease: "power2.out",
-          });
-        },
-      });
+          // Only show when the hero section ends
+          onLeave: () => {
+            gsap.to(headerRef.current, {
+              yPercent: 0,
+              autoAlpha: 1,
+              duration: 0.4,
+              ease: "power2.out",
+            });
+          },
+          // Hide again if the user scrolls back up into the hero section
+          onEnterBack: () => {
+            gsap.to(headerRef.current, {
+              yPercent: -100,
+              autoAlpha: 0,
+              duration: 0.3,
+              ease: "power2.in",
+            });
+          },
+        });
+      } else {
+        // Fallback: If this component is rendered on a page WITHOUT a hero section, show it immediately.
+        gsap.to(headerRef.current, {
+          yPercent: 0,
+          autoAlpha: 1,
+          duration: 0.4,
+        });
+      }
     },
     { scope: headerRef },
   );
@@ -170,20 +153,15 @@ export const HeroHeader = () => {
       ref={headerRef}
       className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
     >
-      {/* OUTER NAV (CENTERING CONTAINER) */}
       <nav className="w-full flex justify-center pointer-events-none">
-        {/* ANIMATED NAVBAR SHELL */}
         <div
           className={cn(
-            "pointer-events-auto transition-all duration-500 ease-in-out",
-            "backdrop-blur-md",
-            "flex items-center",
+            "pointer-events-auto transition-all duration-500 ease-in-out backdrop-blur-md flex items-center",
             isScrolled
               ? "w-full lg:w-[75vw] rounded-none lg:rounded-full px-6 py-2 shadow-xl bg-white/80 dark:bg-white/10 border border-border/30 dark:border-transparent"
               : "w-full rounded-none px-6 py-3 border border-transparent bg-transparent",
           )}
         >
-          {/* CONTENT WRAPPER */}
           <div className="mx-auto w-full max-w-7xl">
             <div className="flex items-center justify-between">
               {/* LOGO */}
@@ -198,11 +176,7 @@ export const HeroHeader = () => {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className=" -m-2.5 inline-flex items-center justify-center
-    rounded-md p-2.5
-    text-foreground dark:text-white
-    hover:text-emerald-500 dark:hover:text-emerald-300
-    focus:outline-none"
+                  className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300 focus:outline-none"
                 >
                   <Bars3Icon className="size-7" />
                 </button>
@@ -211,15 +185,7 @@ export const HeroHeader = () => {
               {/* DESKTOP NAV */}
               <PopoverGroup className="hidden lg:flex lg:gap-x-8 lg:items-center">
                 <Popover className="relative">
-                  <PopoverButton
-                    className="
-    flex items-center gap-x-1
-    text-sm font-medium uppercase tracking-[0.025em]
-    text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
-    transition-colors
-    outline-none focus:outline-none focus:ring-0
-  "
-                  >
+                  <PopoverButton className="flex items-center gap-x-1 text-sm font-medium uppercase tracking-[0.025em] text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors outline-none focus:outline-none focus:ring-0">
                     Services
                     <ChevronDownIcon className="size-4 transition-transform group-data-[open]:rotate-180" />
                   </PopoverButton>
@@ -264,8 +230,10 @@ export const HeroHeader = () => {
 
               {/* RIGHT SIDE ACTIONS */}
               <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
-                {/* THEME TOGGLE */}
-                <ThemeToggle />
+                {/* THEME TOGGLE: Restored to normal operation */}
+                <div className="transition-all duration-300">
+                  <ThemeToggle />
+                </div>
 
                 {profileIdentity ? (
                   <UserProfileDropdown
@@ -331,7 +299,11 @@ export const HeroHeader = () => {
               <Logo />
             </Link>
             <div className="flex items-center gap-4">
-              <ThemeToggle />
+              {/* THEME TOGGLE: Restored to normal operation for mobile */}
+              <div className="transition-all duration-300">
+                <ThemeToggle />
+              </div>
+
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
