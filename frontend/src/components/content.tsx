@@ -1,105 +1,311 @@
-import { Shredder, Lock, Sparkles, Zap } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import React, { useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import {
+  Brain,
+  Video,
+  ClipboardList,
+  Users,
+  Activity,
+  BadgeCheck,
+  ArrowUpRight,
+} from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+const servicesData = [
+  {
+    id: "ai-tracker",
+    title: "AI Tracker",
+    icon: Brain,
+    description:
+      "Instantly log your meals with our advanced computer vision tool. Snap a photo to estimate portion masses, calculate macros, and track daily progress effortlessly.",
+    image:
+      "https://plus.unsplash.com/premium_photo-1743169049314-0666e8e35ca3?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
+    id: "online-consultations",
+    title: "Online Consultations",
+    icon: Video,
+    description:
+      "Book personalized video sessions with certified professionals. Get tailored advice, discuss your health goals, and receive customized dietary guidance.",
+    image: "/branding/Expert-call.jpg",
+  },
+  {
+    id: "personalized-plans",
+    title: "Personalized Meal Plans",
+    icon: ClipboardList,
+    description:
+      "Browse predefined plans or request a custom schedule tailored to your exact needs. Easily track your daily meals and nutritional goals.",
+    image:
+      "https://images.unsplash.com/photo-1543362906-acfc16c67564?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    id: "community-feed",
+    title: "Community Feed",
+    icon: Users,
+    description:
+      "Join an active ecosystem of health enthusiasts. Share your journey, read curated posts, and stay motivated with our moderated community platform.",
+    image:
+      "https://images.unsplash.com/photo-1528629297340-d1d466945dc5?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    id: "daily-tracking",
+    title: "Daily Progress Tracking",
+    icon: Activity,
+    description:
+      "Monitor your adherence to health goals with detailed day-by-day logs of calories, fats, carbohydrates, and protein intake.",
+    image:
+      "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
+    id: "expert-coaches",
+    title: "Verified Expert Coaches",
+    icon: BadgeCheck,
+    description:
+      "Connect with highly rated, certified nutritionists. View detailed profiles, verified credentials, and real patient reviews to find your perfect match.",
+    image:
+      "https://plus.unsplash.com/premium_photo-1661690177761-8d521bd794f9?q=80&w=869&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+];
+
+const expertsData = [
+  {
+    name: "Dr. Luke Atme",
+    role: "Fitness and nutrition expert",
+    image: "/professionals/pf2.jpg",
+  },
+  {
+    name: "David Chen",
+    role: "Sports nutritionist",
+    image: "/professionals/mj.jpg",
+  },
+  {
+    name: "James Wilson",
+    role: "Nutrition educator",
+    image:
+      "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    name: "Michael Brooks",
+    role: "Pediatric nutrition expert",
+    image:
+      "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&q=80&w=800",
+  },
+];
 
 export default function ContentSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const panel1Ref = useRef<HTMLDivElement>(null);
+  const panel2Ref = useRef<HTMLDivElement>(null);
+  const panel3Ref = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useGSAP(
+    () => {
+      gsap.set(panel2Ref.current, { xPercent: 100 });
+      gsap.set(panel3Ref.current, { xPercent: 100 });
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "+=3000",
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+        },
+      });
+
+      tl.to(
+        panel1Ref.current,
+        { xPercent: -50, opacity: 0, ease: "power1.inOut", duration: 1 },
+        0,
+      );
+      tl.to(
+        panel2Ref.current,
+        { xPercent: 0, ease: "power1.inOut", duration: 1 },
+        0,
+      );
+
+      tl.to({}, { duration: 0.3 });
+
+      tl.to(
+        panel2Ref.current,
+        {
+          filter: "blur(16px)",
+          opacity: 0.4,
+          ease: "none",
+          duration: 1,
+        },
+        "+=0",
+      );
+      tl.to(
+        panel3Ref.current,
+        {
+          xPercent: 0,
+          ease: "none",
+          duration: 1,
+        },
+        "<",
+      );
+    },
+    { scope: containerRef },
+  );
+
   return (
-    <section className="bg-background py-16 md:py-24">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-16 px-6 md:flex-row md:items-stretch">
-        {/* Left: AI calorie estimation visual */}
-        <div className="order-2 flex w-full justify-center md:order-1 md:w-1/2">
-          <div className="relative inline-flex items-center justify-center">
-            <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-emerald-100/60" />
-            <div className="absolute -right-8 bottom-0 h-24 w-24 rounded-full bg-emerald-200/70" />
+    <section
+      ref={containerRef}
+      className="relative z-20 -mt-[100vh] h-screen w-full bg-background overflow-hidden text-foreground font-syne"
+    >
+      {/* =========================================
+          SCREEN 1: SERVICES
+      ========================================= */}
+      <div
+        ref={panel1Ref}
+        className="absolute inset-0 w-full h-full flex flex-col md:flex-row items-center p-8 md:p-16 gap-8 md:gap-12"
+      >
+        {/* Left Col: Headers & CTA */}
+        <div className="flex-1 max-w-sm space-y-6">
+          <div className="text-primary mb-2">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+              <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+            </svg>
+          </div>
+          <h2 className="text-5xl md:text-6xl font-bold leading-tight">
+            Our <br /> <span className="text-primary">Service</span>
+          </h2>
+          <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+            We offer expert nutrition services designed to support balanced
+            health and well-being.
+          </p>
 
-            <div className="relative flex h-72 w-72 items-center justify-center rounded-full bg-[#052B34] shadow-[0_24px_80px_rgba(15,41,54,0.4)]">
+          <Button className="bg-button-primary hover:opacity-90 text-button-primary-foreground font-semibold rounded-full px-8 py-6">
+            <Link href="/services">Explore our services</Link>
+          </Button>
+        </div>
+
+        {/* Mid Col: Services List */}
+        <div className="flex-1 flex flex-col w-full max-w-md space-y-2">
+          {servicesData.map((item, idx) => {
+            const isActive = idx === activeIndex;
+            return (
+              <div
+                key={item.id}
+                onClick={() => setActiveIndex(idx)}
+                className={`flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-all duration-300 ${
+                  isActive
+                    ? "bg-accent border border-border opacity-100"
+                    : "hover:bg-muted opacity-60 hover:opacity-100 border border-transparent"
+                }`}
+              >
+                <div className="bg-secondary p-3 rounded-xl text-secondary-foreground">
+                  <item.icon className="w-6 h-6" />
+                </div>
+                <span
+                  className={`font-semibold text-lg transition-all ${
+                    isActive
+                      ? "text-accent-foreground underline decoration-primary/50 underline-offset-4"
+                      : "text-foreground font-medium no-underline"
+                  }`}
+                >
+                  {item.title}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right Col: Image & Description */}
+        <div className="flex-1 flex flex-col h-full justify-center space-y-6 overflow-hidden">
+          <div
+            key={activeIndex}
+            className="animate-in fade-in slide-in-from-right-4 duration-500 fill-mode-both"
+          >
+            <div className="relative w-full aspect-video md:aspect-[4/3] bg-muted rounded-3xl overflow-hidden group mb-6">
+              {/* Dynamic Image from servicesData */}
               <img
-                className="h-52 w-52 rounded-full border-4 border-emerald-400 object-cover"
-                src="branding/expert-call.jpg"
-                alt="AI-calculated meal"
-                loading="lazy"
+                src={servicesData[activeIndex].image}
+                alt={servicesData[activeIndex].title}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
+              <div className="absolute inset-0 bg-secondary/10" />
 
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white dark:bg-emerald-950 px-4 py-1 text-xs font-semibold text-[#052B34] dark:text-emerald-100 shadow-md border dark:border-emerald-800">
-                AI Calorie Estimation
+              <div className="absolute bottom-4 right-4 bg-background/50 backdrop-blur-md p-3 rounded-xl border border-border group-hover:bg-primary transition-colors cursor-pointer">
+                <ArrowUpRight className="w-5 h-5 text-foreground group-hover:text-primary-foreground" />
               </div>
+            </div>
 
-              <div className="absolute -left-8 top-16 rounded-full bg-white/95 dark:bg-emerald-900 px-3 py-1 text-[11px] font-medium text-[#052B34] dark:text-emerald-100 shadow-md border dark:border-emerald-800/50">
-                + 420 kcal • Lunch
-              </div>
-
-              <div className="absolute -right-8 bottom-12 rounded-full bg-[#052B34] dark:bg-emerald-950 px-3 py-1 text-[11px] font-medium text-emerald-50 shadow-md ring-1 ring-emerald-400/50">
-                Fiber • Protein • Balance
-              </div>
+            <div>
+              <h3 className="text-2xl font-bold mb-2 text-foreground">
+                {servicesData[activeIndex].title}
+              </h3>
+              <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+                {servicesData[activeIndex].description}
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right: copy & feature list */}
-        <div className="order-1 w-full md:order-2 md:w-1/2">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700 dark:text-emerald-500">
-            AI Calorie Estimation
-          </p>
-          <h2 className="font-display mt-4 text-3xl font-semibold text-[#052B34] dark:text-white lg:text-4xl">
-            Snap, upload, and let AI decode your plate.
-          </h2>
-          <p className="mt-4 text-sm text-slate-700 dark:text-slate-300 md:text-base">
-            Upload a photo of your meal and instantly receive estimated calories
-            and macros. Our system combines visual recognition with
-            nutrition-science heuristics to support everyday decision-making.
-          </p>
+      {/* =========================================
+          SCREEN 2: TITLE
+      ========================================= */}
+      <div
+        ref={panel2Ref}
+        className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-background z-10"
+      >
+        <div className="text-primary mb-6">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10">
+            <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+          </svg>
+        </div>
+        <h2 className="text-5xl md:text-7xl font-bold text-center tracking-tight text-foreground">
+          The certified nutritionist staff <br />
+          <span className="text-primary">Members</span>
+        </h2>
+      </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  Fast & responsive
-                </h3>
+      {/* =========================================
+          SCREEN 3: CARDS
+      ========================================= */}
+      <div
+        ref={panel3Ref}
+        className="absolute inset-0 w-full h-full flex items-center justify-center bg-transparent z-20 pointer-events-none"
+      >
+        <div className="w-full px-8 md:px-16 flex gap-6 overflow-x-auto snap-x pointer-events-auto items-center justify-center">
+          {expertsData.map((expert, i) => {
+            return (
+              <div
+                key={expert.name}
+                className="snap-center min-w-[280px] w-[280px] h-[400px] bg-card/80 backdrop-blur-xl border border-border rounded-[2rem] overflow-hidden relative group cursor-pointer"
+              >
+                {/* Expert Profile Image */}
+                <img
+                  src={expert.image}
+                  alt={expert.name}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10 transition-opacity duration-300 group-hover:opacity-80" />
+
+                <div className="absolute bottom-6 left-6 z-20">
+                  <h4 className="text-2xl font-bold text-white mb-1">
+                    {expert.name}
+                  </h4>
+                  <p className="text-white/80 text-sm font-medium">
+                    {expert.role}
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Get near-instant estimates so you can adjust portions in real
-                time before you eat.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Shredder className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  Confidential
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Your photos and health data are encrypted and stored with strict
-                privacy controls.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  Secure by design
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Role-based access and modern security practices keep
-                practitioner and patient data protected.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  AI-guided insights
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Intelligent nudges and summaries help bridge the gap between
-                clinical plans and real choices.
-              </p>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
     </section>

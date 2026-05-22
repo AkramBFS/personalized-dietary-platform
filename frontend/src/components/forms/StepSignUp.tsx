@@ -3,6 +3,7 @@
 import React from "react";
 import { Input } from "@/components/ui/Input";
 import { MAX_PROFILE_PHOTO_BYTES } from "@/lib/constants";
+import { Eye, EyeOff } from "lucide-react";
 
 type RegistrationFormData = {
   country: string;
@@ -43,6 +44,7 @@ export default function StepSignUp({
 }: Props) {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [touched, setTouched] = React.useState<Record<string, boolean>>({});
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name } = e.target;
@@ -187,16 +189,26 @@ export default function StepSignUp({
         {/* Password */}
         <div className="space-y-2">
           <label className={labelStyles}>Password</label>
-          <Input
-            name="password"
-            className={inputStyles}
-            type="password"
-            placeholder="Password"
-            value={formData.password || ""}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            aria-invalid={Boolean(touched.password && errors.password)}
-          />
+          <div className="relative">
+            <Input
+              name="password"
+              className={`${inputStyles} pr-12`}
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={formData.password || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              aria-invalid={Boolean(touched.password && errors.password)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
           {touched.password && errors.password ? (
             <p className={errorStyles}>{errors.password}</p>
           ) : null}

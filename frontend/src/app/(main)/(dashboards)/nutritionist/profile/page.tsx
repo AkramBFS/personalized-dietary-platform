@@ -269,8 +269,8 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter className="justify-end pt-6">
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save Changes"}
+                <Button type="submit" isLoading={isSaving}>
+                  Save Changes
                 </Button>
               </CardFooter>
             </form>
