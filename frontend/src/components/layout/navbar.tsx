@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { Store } from "lucide-react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
+
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { UserProfileDropdown } from "@/components/dashboard/shared/UserProfileDropdown";
@@ -58,10 +60,10 @@ const services = [
     icon: SparklesIcon,
   },
   {
-    name: "Seasonal Programs",
-    description: "Specialized guides for Ramadan and Summer.",
-    href: "/services#seasonal-programs",
-    icon: CalendarIcon,
+    name: "Plan marketplace",
+    description: "Specialized guides by certified nutritionists.",
+    href: "/services#plan-marketplace",
+    icon: Store,
   },
 ];
 
@@ -74,7 +76,6 @@ const mainNav = [
 export const HeroHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isForceDark, setIsForceDark] = useState(false);
 
   const [profileIdentity, setProfileIdentity] =
     useState<CurrentProfileIdentity | null>(null);
@@ -90,14 +91,11 @@ export const HeroHeader = () => {
 
   useEffect(() => {
     let isMounted = true;
-
     const loadIdentity = async () => {
       const identity = await getProfileIdentity();
       if (isMounted) setProfileIdentity(identity);
     };
-
     void loadIdentity();
-
     return () => {
       isMounted = false;
     };
@@ -105,30 +103,21 @@ export const HeroHeader = () => {
 
   useGSAP(
     () => {
+      // Set to hidden by default so it doesn't flash over the hero video
+      gsap.set(headerRef.current, { yPercent: -100, autoAlpha: 0 });
+
       const unifiedSection =
         document.querySelector("#hero-unified-section") ||
         document.querySelector("#ai-scan-section") ||
         document.querySelector("section[id*='hero']");
 
       if (unifiedSection) {
-        gsap.to(headerRef.current, {
-          yPercent: -100,
-          autoAlpha: 0,
-          scrollTrigger: {
-            trigger: unifiedSection,
-            start: "top top",
-            end: "top -200",
-            scrub: 0.5,
-            invalidateOnRefresh: true,
-          },
-        });
-
         ScrollTrigger.create({
           trigger: unifiedSection,
           start: "top top",
           end: "+=4000",
           invalidateOnRefresh: true,
-
+          // Only show when the hero section ends
           onLeave: () => {
             gsap.to(headerRef.current, {
               yPercent: 0,
@@ -137,7 +126,7 @@ export const HeroHeader = () => {
               ease: "power2.out",
             });
           },
-
+          // Hide again if the user scrolls back up into the hero section
           onEnterBack: () => {
             gsap.to(headerRef.current, {
               yPercent: -100,
@@ -146,28 +135,13 @@ export const HeroHeader = () => {
               ease: "power2.in",
             });
           },
-
-          onLeaveBack: () => {
-            gsap.to(headerRef.current, {
-              yPercent: 0,
-              autoAlpha: 1,
-              duration: 0.4,
-              ease: "power2.out",
-            });
-          },
         });
-      }
-
-      const aiSection = document.querySelector("#hero-ai-section");
-      if (aiSection) {
-        ScrollTrigger.create({
-          trigger: aiSection,
-          start: () => `top ${headerRef.current?.offsetHeight || 80}px`,
-          end: () => `bottom ${headerRef.current?.offsetHeight || 80}px`,
-          onEnter: () => setIsForceDark(true),
-          onLeave: () => setIsForceDark(false),
-          onEnterBack: () => setIsForceDark(true),
-          onLeaveBack: () => setIsForceDark(false),
+      } else {
+        // Fallback: If this component is rendered on a page WITHOUT a hero section, show it immediately.
+        gsap.to(headerRef.current, {
+          yPercent: 0,
+          autoAlpha: 1,
+          duration: 0.4,
         });
       }
     },
@@ -177,17 +151,12 @@ export const HeroHeader = () => {
   return (
     <header
       ref={headerRef}
-      className={cn(
-        "fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none",
-        isForceDark && "dark",
-      )}
+      className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
     >
       <nav className="w-full flex justify-center pointer-events-none">
         <div
           className={cn(
-            "pointer-events-auto transition-all duration-500 ease-in-out",
-            "backdrop-blur-md",
-            "flex items-center",
+            "pointer-events-auto transition-all duration-500 ease-in-out backdrop-blur-md flex items-center",
             isScrolled
               ? "w-full lg:w-[75vw] rounded-none lg:rounded-full px-6 py-2 shadow-xl bg-white/80 dark:bg-white/10 border border-border/30 dark:border-transparent"
               : "w-full rounded-none px-6 py-3 border border-transparent bg-transparent",
@@ -207,7 +176,7 @@ export const HeroHeader = () => {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className=" -m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300 focus:outline-none"
+                  className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300 focus:outline-none"
                 >
                   <Bars3Icon className="size-7" />
                 </button>
@@ -261,13 +230,8 @@ export const HeroHeader = () => {
 
               {/* RIGHT SIDE ACTIONS */}
               <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
-                {/* MODIFIED: Wrapped ThemeToggle in a disabled state container */}
-                <div
-                  className={cn(
-                    "transition-all duration-300",
-                    isForceDark && "pointer-events-none opacity-40",
-                  )}
-                >
+                {/* THEME TOGGLE: Restored to normal operation */}
+                <div className="transition-all duration-300">
                   <ThemeToggle />
                 </div>
 
@@ -335,13 +299,8 @@ export const HeroHeader = () => {
               <Logo />
             </Link>
             <div className="flex items-center gap-4">
-              {/* MODIFIED: Wrapped ThemeToggle in a disabled state container for mobile as well */}
-              <div
-                className={cn(
-                  "transition-all duration-300",
-                  isForceDark && "pointer-events-none opacity-40",
-                )}
-              >
+              {/* THEME TOGGLE: Restored to normal operation for mobile */}
+              <div className="transition-all duration-300">
                 <ThemeToggle />
               </div>
 

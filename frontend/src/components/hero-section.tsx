@@ -45,8 +45,8 @@ export default function HeroSection() {
 
               <Button
                 size="lg"
-                variant="outline"
-                className="border-border text-foreground hover:bg-accent"
+                variant="ghost"
+                className="border-border text-white hover:bg-accent"
                 onClick={openChatbot}
               >
                 <MessageCircle className="w-5 h-5 mr-2" />

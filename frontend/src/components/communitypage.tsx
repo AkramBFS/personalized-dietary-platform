@@ -247,7 +247,7 @@ export default function CommunityComponent() {
       setAllPosts(refreshed);
     } catch (err) {
       console.error("Failed to create post", err);
-      alert("Failed to submit post. Please try again.");
+      toast.error("Failed to submit post. Please try again.");
     } finally {
       setSubmittingPost(false);
     }
@@ -260,7 +260,7 @@ export default function CommunityComponent() {
       setAllPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Failed to delete post", err);
-      alert("Could not delete post.");
+      toast.error("Could not delete post. Please try again later.");
     }
   };
 
@@ -286,7 +286,7 @@ export default function CommunityComponent() {
       setCommentTexts((prev) => ({ ...prev, [postId]: "" }));
     } catch (err) {
       console.error("Failed to post comment", err);
-      alert("Failed to post comment.");
+      toast.error("Failed to post comment. Check your connection and try again.");
     } finally {
       setCommentingPostId(null);
     }
