@@ -349,7 +349,7 @@ export default function UnifiedHeroSection() {
 
               <Button
                 size="lg"
-                variant="outline"
+                variant="ghost"
                 className="border-white/20 text-white hover:bg-white/10"
                 onClick={openChatbot}
               >

@@ -73,12 +73,12 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 260,
       damping: 20,
     },
   },
-};
+} as const;
 
 export default function FAQsThree() {
   return (
