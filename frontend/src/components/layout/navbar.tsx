@@ -128,7 +128,7 @@ export const HeroHeader = () => {
       ScrollTrigger.create({
         trigger: unifiedSection,
         start: "top top",
-        end: "+=3000", // Matches the exact scroll duration/pin length of your AIDetection component
+        end: "+=4000", // Matches the exact scroll duration/pin length of your AIDetection component
         invalidateOnRefresh: true,
 
         onLeave: () => {
