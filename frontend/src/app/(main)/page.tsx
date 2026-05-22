@@ -15,8 +15,6 @@ export default function HomePage() {
 
       <UnifiedHeroSection />
 
-      <Features />
-
       <ContentSection />
 
       <FAQs />
