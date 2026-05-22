@@ -129,7 +129,8 @@ export default function ContentSection() {
   return (
     <section
       ref={containerRef}
-      className="relative h-screen w-full bg-[#113129] overflow-hidden text-white font-syne"
+      // Added z-20 and -mt-[100vh] below
+      className="relative z-20 -mt-[100vh] h-screen w-full bg-[#113129] overflow-hidden text-white font-syne"
     >
       {/* =========================================
           SCREEN 1: SERVICES
