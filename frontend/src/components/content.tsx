@@ -1,102 +1,291 @@
-import { Shredder, Lock, Sparkles, Zap } from "lucide-react";
+"use client";
 
+import React, { useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import {
+  Brain,
+  Video,
+  ClipboardList,
+  Users,
+  Activity,
+  BadgeCheck,
+  ArrowUpRight,
+} from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+const servicesData = [
+  {
+    id: "ai-tracker",
+    title: "AI Tracker",
+    icon: Brain,
+    description:
+      "Instantly log your meals with our advanced computer vision tool. Snap a photo to estimate portion masses, calculate macros, and track daily progress effortlessly.",
+  },
+  {
+    id: "online-consultations",
+    title: "Online Consultations",
+    icon: Video,
+    description:
+      "Book personalized video sessions with certified professionals. Get tailored advice, discuss your health goals, and receive customized dietary guidance.",
+  },
+  {
+    id: "personalized-plans",
+    title: "Personalized Meal Plans",
+    icon: ClipboardList,
+    description:
+      "Browse predefined plans or request a custom schedule tailored to your exact needs. Easily track your daily meals and nutritional goals.",
+  },
+  {
+    id: "community-feed",
+    title: "Community Feed",
+    icon: Users,
+    description:
+      "Join an active ecosystem of health enthusiasts. Share your journey, read curated posts, and stay motivated with our moderated community platform.",
+  },
+  {
+    id: "daily-tracking",
+    title: "Daily Progress Tracking",
+    icon: Activity,
+    description:
+      "Monitor your adherence to health goals with detailed day-by-day logs of calories, fats, carbohydrates, and protein intake.",
+  },
+  {
+    id: "expert-coaches",
+    title: "Verified Expert Coaches",
+    icon: BadgeCheck,
+    description:
+      "Connect with highly rated, certified nutritionists. View detailed profiles, verified credentials, and real patient reviews to find your perfect match.",
+  },
+];
 export default function ContentSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const panel1Ref = useRef<HTMLDivElement>(null);
+  const panel2Ref = useRef<HTMLDivElement>(null);
+  const panel3Ref = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useGSAP(
+    () => {
+      // Initialize panels out of view to the right
+      gsap.set(panel2Ref.current, { xPercent: 100 });
+      gsap.set(panel3Ref.current, { xPercent: 100 });
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "+=3000", // Controls the duration of the entire pinned scroll interaction
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+        },
+      });
+
+      // 1. Move Screen 1 out left, Move Screen 2 in from right
+      tl.to(
+        panel1Ref.current,
+        { xPercent: -50, opacity: 0, ease: "power1.inOut", duration: 1 },
+        0,
+      );
+      tl.to(
+        panel2Ref.current,
+        { xPercent: 0, ease: "power1.inOut", duration: 1 },
+        0,
+      );
+
+      // 2. Pause slightly so the user can read the big title on Screen 2
+      tl.to({}, { duration: 0.3 });
+
+      // 3. Blur Screen 2 while sliding Screen 3 (Cards) in from the right over it
+      tl.to(
+        panel2Ref.current,
+        {
+          filter: "blur(16px)", // Blur effect
+          opacity: 0.4,
+          ease: "none",
+          duration: 1,
+        },
+        "+=0",
+      );
+      tl.to(
+        panel3Ref.current,
+        {
+          xPercent: 0,
+          ease: "none",
+          duration: 1,
+        },
+        "<", // The "<" symbol ensures this runs at the exact same time as the blur animation
+      );
+    },
+    { scope: containerRef },
+  );
+
   return (
-    <section className="bg-background py-16 md:py-24">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-16 px-6 md:flex-row md:items-stretch">
-        {/* Left: AI calorie estimation visual */}
-        <div className="order-2 flex w-full justify-center md:order-1 md:w-1/2">
-          <div className="relative inline-flex items-center justify-center">
-            <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-emerald-100/60" />
-            <div className="absolute -right-8 bottom-0 h-24 w-24 rounded-full bg-emerald-200/70" />
+    <section
+      ref={containerRef}
+      className="relative h-screen w-full bg-[#113129] overflow-hidden text-white font-syne"
+    >
+      {/* =========================================
+          SCREEN 1: SERVICES
+      ========================================= */}
+      <div
+        ref={panel1Ref}
+        className="absolute inset-0 w-full h-full flex flex-col md:flex-row items-center p-8 md:p-16 gap-8 md:gap-12"
+      >
+        {/* Left Col: Headers & CTA */}
+        <div className="flex-1 max-w-sm space-y-6">
+          <div className="text-orange-500 mb-2">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+              <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+            </svg>
+          </div>
+          <h2 className="text-5xl md:text-6xl font-bold leading-tight">
+            Our <br /> <span className="text-orange-500">Service</span>
+          </h2>
+          <p className="text-white/80 text-sm md:text-base leading-relaxed">
+            We offer expert nutrition services designed to support balanced
+            health and well-being.
+          </p>
+          <Button className="bg-orange-500 hover:bg-orange-600 text-black font-semibold rounded-full px-8 py-6">
+            More service
+          </Button>
+        </div>
 
-            <div className="relative flex h-72 w-72 items-center justify-center rounded-full bg-[#052B34] shadow-[0_24px_80px_rgba(15,41,54,0.4)]">
-              <img
-                className="h-52 w-52 rounded-full border-4 border-emerald-400 object-cover"
-                src="branding/expert-call.jpg"
-                alt="AI-calculated meal"
-                loading="lazy"
-              />
-
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white dark:bg-emerald-950 px-4 py-1 text-xs font-semibold text-[#052B34] dark:text-emerald-100 shadow-md border dark:border-emerald-800">
-                AI Calorie Estimation
+        {/* Mid Col: Services List */}
+        <div className="flex-1 flex flex-col w-full max-w-md space-y-2">
+          {servicesData.map((item, idx) => {
+            const isActive = idx === activeIndex;
+            return (
+              <div
+                key={item.id}
+                onClick={() => setActiveIndex(idx)}
+                className={`flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-all duration-300 ${
+                  isActive
+                    ? "bg-white/10 border border-white/5 opacity-100"
+                    : "hover:bg-white/5 opacity-60 hover:opacity-100 border border-transparent"
+                }`}
+              >
+                <div className="bg-white/5 p-3 rounded-xl text-white">
+                  <item.icon className="w-6 h-6" />
+                </div>
+                <span
+                  className={`font-semibold text-lg transition-all ${
+                    isActive
+                      ? "underline decoration-white/30 underline-offset-4"
+                      : "font-medium no-underline"
+                  }`}
+                >
+                  {item.title}
+                </span>
               </div>
+            );
+          })}
+        </div>
 
-              <div className="absolute -left-8 top-16 rounded-full bg-white/95 dark:bg-emerald-900 px-3 py-1 text-[11px] font-medium text-[#052B34] dark:text-emerald-100 shadow-md border dark:border-emerald-800/50">
-                + 420 kcal • Lunch
+        {/* Right Col: Image & Description */}
+        <div className="flex-1 flex flex-col h-full justify-center space-y-6 overflow-hidden">
+          {/* The key prop forces a re-mount on index change, triggering the Tailwind animation */}
+          <div
+            key={activeIndex}
+            className="animate-in fade-in slide-in-from-right-4 duration-500 fill-mode-both"
+          >
+            <div className="relative w-full aspect-video md:aspect-[4/3] bg-white/10 rounded-3xl overflow-hidden group mb-6">
+              {/* Image Placeholder */}
+              <div className="absolute inset-0 bg-emerald-950 flex items-center justify-center">
+                <span className="text-white/30 text-sm font-medium">
+                  {servicesData[activeIndex].title} Image
+                </span>
               </div>
+              {/* Arrow Button */}
+              <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md p-3 rounded-xl border border-white/10 group-hover:bg-orange-500 transition-colors cursor-pointer">
+                <ArrowUpRight className="w-5 h-5 text-white" />
+              </div>
+            </div>
 
-              <div className="absolute -right-8 bottom-12 rounded-full bg-[#052B34] dark:bg-emerald-950 px-3 py-1 text-[11px] font-medium text-emerald-50 shadow-md ring-1 ring-emerald-400/50">
-                Fiber • Protein • Balance
-              </div>
+            <div>
+              <h3 className="text-2xl font-bold mb-2">
+                {servicesData[activeIndex].title}
+              </h3>
+              <p className="text-white/60 text-sm leading-relaxed max-w-md">
+                {servicesData[activeIndex].description}
+              </p>
             </div>
           </div>
         </div>
+      </div>
+      {/* =========================================
+          SCREEN 2: TITLE (will blur out)
+      ========================================= */}
+      <div
+        ref={panel2Ref}
+        className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[#113129] z-10"
+      >
+        <div className="text-orange-500 mb-6">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10">
+            <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+          </svg>
+        </div>
+        <h2 className="text-5xl md:text-7xl font-bold text-center tracking-tight">
+          The certified coaching staff <br />
+          <span className="text-orange-500">Members</span>
+        </h2>
+      </div>
 
-        {/* Right: copy & feature list */}
-        <div className="order-1 w-full md:order-2 md:w-1/2">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700 dark:text-emerald-500">
-            AI Calorie Estimation
-          </p>
-          <h2 className="font-display mt-4 text-3xl font-semibold text-[#052B34] dark:text-white lg:text-4xl">
-            Snap, upload, and let AI decode your plate.
-          </h2>
-          <p className="mt-4 text-sm text-slate-700 dark:text-slate-300 md:text-base">
-            Upload a photo of your meal and instantly receive estimated calories
-            and macros. Our system combines visual recognition with
-            nutrition-science heuristics to support everyday decision-making.
-          </p>
-
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  Fast & responsive
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Get near-instant estimates so you can adjust portions in real
-                time before you eat.
+      {/* =========================================
+          SCREEN 3: CARDS (Transparent bg, slides over screen 2)
+      ========================================= */}
+      <div
+        ref={panel3Ref}
+        className="absolute inset-0 w-full h-full flex items-center justify-center bg-transparent z-20 pointer-events-none"
+      >
+        {/* Enable pointer events on the inner wrapper so user can click cards if needed */}
+        <div className="w-full px-8 md:px-16 flex gap-6 overflow-x-auto snap-x pointer-events-auto items-center justify-center">
+          {/* Card 1 */}
+          <div className="snap-center min-w-[280px] w-[280px] h-[400px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+            <div className="absolute bottom-6 left-6 z-20">
+              <h4 className="text-2xl font-bold text-white mb-1">Emily rose</h4>
+              <p className="text-white/70 text-sm font-medium">
+                Pediatric nutritionist
               </p>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Shredder className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  Confidential
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Your photos and health data are encrypted and stored with strict
-                privacy controls.
+          {/* Card 2 */}
+          <div className="snap-center min-w-[280px] w-[280px] h-[400px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+            <div className="absolute bottom-6 left-6 z-20">
+              <h4 className="text-2xl font-bold text-white mb-1">Andy king</h4>
+              <p className="text-white/70 text-sm font-medium">
+                Sports nutritionist
               </p>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  Secure by design
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Role-based access and modern security practices keep
-                practitioner and patient data protected.
+          {/* Card 3 */}
+          <div className="snap-center min-w-[280px] w-[280px] h-[400px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+            <div className="absolute bottom-6 left-6 z-20">
+              <h4 className="text-2xl font-bold text-white mb-1">Lisa white</h4>
+              <p className="text-white/70 text-sm font-medium">
+                Nutrition educator
               </p>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[#052B34] dark:text-white">
-                  AI-guided insights
-                </h3>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-400">
-                Intelligent nudges and summaries help bridge the gap between
-                clinical plans and real choices.
+          {/* Card 4 */}
+          <div className="snap-center min-w-[280px] w-[280px] h-[400px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+            <div className="absolute bottom-6 left-6 z-20">
+              <h4 className="text-2xl font-bold text-white mb-1">Tom brown</h4>
+              <p className="text-white/70 text-sm font-medium">
+                Fitness and nutrition expert
               </p>
             </div>
           </div>
