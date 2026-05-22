@@ -74,6 +74,8 @@ const mainNav = [
 export const HeroHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isForceDark, setIsForceDark] = useState(false);
+
   const [profileIdentity, setProfileIdentity] =
     useState<CurrentProfileIdentity | null>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -103,64 +105,71 @@ export const HeroHeader = () => {
 
   useGSAP(
     () => {
-      // Fallback selectors to target your unified section component perfectly
       const unifiedSection =
         document.querySelector("#hero-unified-section") ||
         document.querySelector("#ai-scan-section") ||
         document.querySelector("section[id*='hero']");
 
-      if (!unifiedSection) return;
+      if (unifiedSection) {
+        gsap.to(headerRef.current, {
+          yPercent: -100,
+          autoAlpha: 0,
+          scrollTrigger: {
+            trigger: unifiedSection,
+            start: "top top",
+            end: "top -200",
+            scrub: 0.5,
+            invalidateOnRefresh: true,
+          },
+        });
 
-      // 1. Smoothly hide the navbar at the start as the user scrolls down, matching the hero text exit
-      gsap.to(headerRef.current, {
-        yPercent: -100,
-        autoAlpha: 0,
-        scrollTrigger: {
+        ScrollTrigger.create({
           trigger: unifiedSection,
           start: "top top",
-          end: "top -200", // Completes the disappearance within the first 200px of scrolling
-          scrub: 0.5,
+          end: "+=4000",
           invalidateOnRefresh: true,
-        },
-      });
 
-      // 2. Control the crisp re-appearance ONLY when crossing the section's outer boundaries
-      ScrollTrigger.create({
-        trigger: unifiedSection,
-        start: "top top",
-        end: "+=4000", // Matches the exact scroll duration/pin length of your AIDetection component
-        invalidateOnRefresh: true,
+          onLeave: () => {
+            gsap.to(headerRef.current, {
+              yPercent: 0,
+              autoAlpha: 1,
+              duration: 0.4,
+              ease: "power2.out",
+            });
+          },
 
-        onLeave: () => {
-          // Triggers EXACTLY when the user scrolls off the bottom of the section
-          gsap.to(headerRef.current, {
-            yPercent: 0,
-            autoAlpha: 1,
-            duration: 0.4,
-            ease: "power2.out",
-          });
-        },
+          onEnterBack: () => {
+            gsap.to(headerRef.current, {
+              yPercent: -100,
+              autoAlpha: 0,
+              duration: 0.3,
+              ease: "power2.in",
+            });
+          },
 
-        onEnterBack: () => {
-          // Triggers EXACTLY when the user scrolls back up into the section
-          gsap.to(headerRef.current, {
-            yPercent: -100,
-            autoAlpha: 0,
-            duration: 0.3,
-            ease: "power2.in",
-          });
-        },
+          onLeaveBack: () => {
+            gsap.to(headerRef.current, {
+              yPercent: 0,
+              autoAlpha: 1,
+              duration: 0.4,
+              ease: "power2.out",
+            });
+          },
+        });
+      }
 
-        onLeaveBack: () => {
-          // Safety net: ensures the navbar is fully visible if they scroll all the way back to the absolute top
-          gsap.to(headerRef.current, {
-            yPercent: 0,
-            autoAlpha: 1,
-            duration: 0.4,
-            ease: "power2.out",
-          });
-        },
-      });
+      const aiSection = document.querySelector("#hero-ai-section");
+      if (aiSection) {
+        ScrollTrigger.create({
+          trigger: aiSection,
+          start: () => `top ${headerRef.current?.offsetHeight || 80}px`,
+          end: () => `bottom ${headerRef.current?.offsetHeight || 80}px`,
+          onEnter: () => setIsForceDark(true),
+          onLeave: () => setIsForceDark(false),
+          onEnterBack: () => setIsForceDark(true),
+          onLeaveBack: () => setIsForceDark(false),
+        });
+      }
     },
     { scope: headerRef },
   );
@@ -168,11 +177,12 @@ export const HeroHeader = () => {
   return (
     <header
       ref={headerRef}
-      className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
+      className={cn(
+        "fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none",
+        isForceDark && "dark",
+      )}
     >
-      {/* OUTER NAV (CENTERING CONTAINER) */}
       <nav className="w-full flex justify-center pointer-events-none">
-        {/* ANIMATED NAVBAR SHELL */}
         <div
           className={cn(
             "pointer-events-auto transition-all duration-500 ease-in-out",
@@ -183,7 +193,6 @@ export const HeroHeader = () => {
               : "w-full rounded-none px-6 py-3 border border-transparent bg-transparent",
           )}
         >
-          {/* CONTENT WRAPPER */}
           <div className="mx-auto w-full max-w-7xl">
             <div className="flex items-center justify-between">
               {/* LOGO */}
@@ -198,11 +207,7 @@ export const HeroHeader = () => {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className=" -m-2.5 inline-flex items-center justify-center
-    rounded-md p-2.5
-    text-foreground dark:text-white
-    hover:text-emerald-500 dark:hover:text-emerald-300
-    focus:outline-none"
+                  className=" -m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300 focus:outline-none"
                 >
                   <Bars3Icon className="size-7" />
                 </button>
@@ -211,15 +216,7 @@ export const HeroHeader = () => {
               {/* DESKTOP NAV */}
               <PopoverGroup className="hidden lg:flex lg:gap-x-8 lg:items-center">
                 <Popover className="relative">
-                  <PopoverButton
-                    className="
-    flex items-center gap-x-1
-    text-sm font-medium uppercase tracking-[0.025em]
-    text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300
-    transition-colors
-    outline-none focus:outline-none focus:ring-0
-  "
-                  >
+                  <PopoverButton className="flex items-center gap-x-1 text-sm font-medium uppercase tracking-[0.025em] text-foreground dark:text-white hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors outline-none focus:outline-none focus:ring-0">
                     Services
                     <ChevronDownIcon className="size-4 transition-transform group-data-[open]:rotate-180" />
                   </PopoverButton>
@@ -264,8 +261,15 @@ export const HeroHeader = () => {
 
               {/* RIGHT SIDE ACTIONS */}
               <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
-                {/* THEME TOGGLE */}
-                <ThemeToggle />
+                {/* MODIFIED: Wrapped ThemeToggle in a disabled state container */}
+                <div
+                  className={cn(
+                    "transition-all duration-300",
+                    isForceDark && "pointer-events-none opacity-40",
+                  )}
+                >
+                  <ThemeToggle />
+                </div>
 
                 {profileIdentity ? (
                   <UserProfileDropdown
@@ -331,7 +335,16 @@ export const HeroHeader = () => {
               <Logo />
             </Link>
             <div className="flex items-center gap-4">
-              <ThemeToggle />
+              {/* MODIFIED: Wrapped ThemeToggle in a disabled state container for mobile as well */}
+              <div
+                className={cn(
+                  "transition-all duration-300",
+                  isForceDark && "pointer-events-none opacity-40",
+                )}
+              >
+                <ThemeToggle />
+              </div>
+
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
