@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -13,7 +14,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Calendar as CalendarIcon,
@@ -69,6 +69,7 @@ const getDayDate = (dayOffset: number) => {
 };
 
 export default function SchedulePage() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("calendar");
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
@@ -79,6 +80,13 @@ export default function SchedulePage() {
   const [isAddingHoliday, setIsAddingHoliday] = useState(false);
 
   // ── Data Fetching ──────────────────────────────────────────────────
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (requestedTab === "availability" || requestedTab === "calendar") {
+      setActiveTab(requestedTab);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const loadScheduleData = async () => {
       try {
@@ -722,7 +730,7 @@ export default function SchedulePage() {
                     </Label>
                     <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
                       Updating the meeting link will transition the status to
-                      'notified' and automatically email the client.
+                      &apos;notified&apos; and automatically email the client.
                     </p>
                     <div className="relative">
                       <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
