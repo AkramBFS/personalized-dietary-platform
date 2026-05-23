@@ -30,6 +30,7 @@ const servicesData = [
       "Instantly log your meals with our advanced computer vision tool. Snap a photo to estimate portion masses, calculate macros, and track daily progress effortlessly.",
     image:
       "https://plus.unsplash.com/premium_photo-1743169049314-0666e8e35ca3?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    link: "/services#ai-calorie-estimation",
   },
   {
     id: "online-consultations",
@@ -38,6 +39,7 @@ const servicesData = [
     description:
       "Book personalized video sessions with certified professionals. Get tailored advice, discuss your health goals, and receive customized dietary guidance.",
     image: "/branding/Expert-call.jpg",
+    link: "/consultations",
   },
   {
     id: "personalized-plans",
@@ -47,6 +49,7 @@ const servicesData = [
       "Browse predefined plans or request a custom schedule tailored to your exact needs. Easily track your daily meals and nutritional goals.",
     image:
       "https://images.unsplash.com/photo-1543362906-acfc16c67564?auto=format&fit=crop&q=80&w=1000",
+    link: "/services#personalized-plans",
   },
   {
     id: "Plan-marketplace",
@@ -54,8 +57,8 @@ const servicesData = [
     icon: Store,
     description:
       "Explore a variety of pre-designed meal plans or create your own custom schedule. Track your progress and stay on course with your nutritional goals.",
-    image:
-      "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    image: "/branding/marketplace.PNG",
+    link: "/services#plan-marketplace",
   },
   {
     id: "community-feed",
@@ -65,8 +68,8 @@ const servicesData = [
       "Join an active ecosystem of health enthusiasts. Share your journey, read curated posts, and stay motivated with our moderated community platform.",
     image:
       "https://images.unsplash.com/photo-1528629297340-d1d466945dc5?auto=format&fit=crop&q=80&w=1000",
+    link: "/community",
   },
-
   {
     id: "expert-coaches",
     title: "Verified Expert Coaches",
@@ -75,6 +78,7 @@ const servicesData = [
       "Connect with highly rated, certified nutritionists. View detailed profiles, verified credentials, and real patient reviews to find your perfect match.",
     image:
       "https://plus.unsplash.com/premium_photo-1661690177761-8d521bd794f9?q=80&w=869&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    link: "/services#online-consultation",
   },
 ];
 
@@ -231,7 +235,10 @@ export default function ContentSection() {
             key={activeIndex}
             className="animate-in fade-in slide-in-from-right-4 duration-500 fill-mode-both"
           >
-            <div className="relative w-full aspect-video md:aspect-[4/3] bg-muted rounded-3xl overflow-hidden group mb-6">
+            <Link
+              href={servicesData[activeIndex].link}
+              className="relative block w-full aspect-video md:aspect-[4/3] bg-muted rounded-3xl overflow-hidden group mb-6 cursor-pointer"
+            >
               {/* Dynamic Image from servicesData */}
               <img
                 src={servicesData[activeIndex].image}
@@ -240,10 +247,10 @@ export default function ContentSection() {
               />
               <div className="absolute inset-0 bg-secondary/10" />
 
-              <div className="absolute bottom-4 right-4 bg-background/50 backdrop-blur-md p-3 rounded-xl border border-border group-hover:bg-primary transition-colors cursor-pointer">
+              <div className="absolute bottom-4 right-4 bg-background/50 backdrop-blur-md p-3 rounded-xl border border-border group-hover:bg-primary transition-colors">
                 <ArrowUpRight className="w-5 h-5 text-foreground group-hover:text-primary-foreground" />
               </div>
-            </div>
+            </Link>
 
             <div>
               <h3 className="text-2xl font-bold mb-2 text-foreground">

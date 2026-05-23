@@ -16,20 +16,25 @@ import {
   Clock,
   Video,
   User,
-  DollarSign,
   CheckCircle2,
   MessageSquare,
 } from "lucide-react";
 import ReviewModal from "@/components/ReviewModal";
 import Link from "next/link";
-import { getClientConsultations, ClientConsultation } from "@/lib/client/service";
+import {
+  getClientConsultations,
+  ClientConsultation,
+} from "@/lib/client/service";
 import { getNutritionists } from "@/lib/api";
 
 export default function ConsultationsPage() {
   const [consultations, setConsultations] = useState<ClientConsultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [nutritionists, setNutritionists] = useState<any[]>([]);
-  const [reviewTarget, setReviewTarget] = useState<{ id: number; title: string } | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,166 +110,178 @@ export default function ConsultationsPage() {
             Manage your upcoming sessions and professional guidance.
           </p>
         </div>
-        <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20">
-          <Link href="/consultations">
-            Book New Consultation
-          </Link>
+        <Button
+          asChild
+          className="rounded-full px-6 shadow-lg shadow-primary/20"
+        >
+          <Link href="/consultations">Book New Consultation</Link>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Left Column: List Past/Upcoming */}
-        <div className="flex flex-col gap-6">
-          <h2 className="text-xl font-semibold text-foreground flex items-center gap-3">
-            <Video className="w-5 h-5 text-primary" />
-            My Schedule
-          </h2>
+      {/* Main Content Area - Grid wrapper removed completely to allow natural flow */}
+      <div className="flex flex-col gap-6">
+        <h2 className="text-xl font-semibold text-foreground flex items-center gap-3">
+          <Video className="w-5 h-5 text-primary" />
+          My Schedule
+        </h2>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : consultations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-card/50">
+            <div className="p-4 bg-primary/10 rounded-full mb-4">
+              <Video className="w-8 h-8 text-primary/60" />
             </div>
-          ) : consultations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-card/50">
-              <div className="p-4 bg-primary/10 rounded-full mb-4">
-                <Video className="w-8 h-8 text-primary/60" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">No consultations found</h3>
-              <p className="text-muted-foreground max-w-xs mb-6">
-                You haven't scheduled any consultations yet. Ready to start your journey?
-              </p>
-              <Button asChild variant="outline" className="rounded-full">
-                <Link href="/consultations">
-                  Browse Nutritionists
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {consultations.map((c) => (
-                <Card
-                  key={c.id}
-                  className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <CardHeader className="pb-3 pt-5 px-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/15 rounded-lg">
-                          <CalendarIcon className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg font-bold text-card-foreground">
-                            {new Date(c.appointment_date).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "long",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-1.5 font-medium">
-                            <Clock className="w-3.5 h-3.5" />
-                            {c.start_time} - {c.end_time}
-                          </CardDescription>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                            <User className="w-3 h-3" />
-                            <span className="font-semibold">{c.nutritionist_name || c.nutritionist_username || "Nutritionist"}</span>
-                          </div>
-                        </div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">
+              No consultations found
+            </h3>
+            <p className="text-muted-foreground max-w-xs mb-6">
+              You haven't scheduled any consultations yet. Ready to start your
+              journey?
+            </p>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link href="/consultations">Browse Nutritionists</Link>
+            </Button>
+          </div>
+        ) : (
+          /* FIX APPLIED HERE: Used CSS Grid to lock cards into specific columns. max-w-4xl stops them from becoming massively wide on ultrawide monitors. */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+            {consultations.map((c) => (
+              <Card
+                key={c.id}
+                /* flex-1 and min-w-[300px] removed. Grid inherently handles the sizing now. */
+                className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <CardHeader className="pb-3 pt-5 px-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/15 rounded-lg">
+                        <CalendarIcon className="w-5 h-5 text-primary" />
                       </div>
-                      <span
-                        className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${
-                          c.status === "scheduled"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="px-5 pb-5 pt-2 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-border">
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                          Type
-                        </p>
-                        <p className="text-sm font-semibold text-foreground flex items-center gap-1">
-                          {c.consultation_type === "plan_included"
-                            ? "Plan Session"
-                            : "Advice Only"}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                          Payment
-                        </p>
-                        <p className="text-sm font-semibold text-foreground flex items-center gap-1">
-                          {c.is_free_from_plan ? (
-                            <span className="text-primary flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Covered
-                              by Plan
-                            </span>
-                          ) : (
-                            `$${(c.price_paid ?? 0).toFixed(2)}`
+                      <div>
+                        <CardTitle className="text-lg font-bold text-card-foreground">
+                          {new Date(c.appointment_date).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            },
                           )}
-                        </p>
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1.5 font-medium">
+                          <Clock className="w-3.5 h-3.5" />
+                          {c.start_time} - {c.end_time}
+                        </CardDescription>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                          <User className="w-3 h-3" />
+                          <span className="font-semibold">
+                            {c.nutritionist_name ||
+                              c.nutritionist_username ||
+                              "Nutritionist"}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                    <span
+                      className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${
+                        c.status === "scheduled"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {c.status}
+                    </span>
+                  </div>
+                </CardHeader>
 
-                    {c.status === "scheduled" && (
-                      <div className="pt-2">
-                        {c.zoom_link ? (
-                          <Button
-                            asChild
-                            className="bg-blue-600 hover:bg-blue-700 text-white w-full rounded-lg shadow-sm"
-                          >
-                            <a
-                              href={c.zoom_link}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <Video className="w-4 h-4 mr-2" />
-                              Join Meeting
-                            </a>
-                          </Button>
+                <CardContent className="px-5 pb-5 pt-2 space-y-4">
+                  <div className="grid grid-cols-2 gap-4 py-3 border-y border-border">
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                        Type
+                      </p>
+                      <p className="text-sm font-semibold text-foreground flex items-center gap-1">
+                        {c.consultation_type === "plan_included"
+                          ? "Plan Session"
+                          : "Advice Only"}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                        Payment
+                      </p>
+                      <p className="text-sm font-semibold text-foreground flex items-center gap-1">
+                        {c.is_free_from_plan ? (
+                          <span className="text-primary flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Covered by
+                            Plan
+                          </span>
                         ) : (
-                          <div className="text-[13px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl flex items-start gap-3 border border-amber-100 dark:border-amber-900/20">
-                            <Clock className="w-5 h-5 mt-0.5 shrink-0 text-amber-500" />
-                            <div className="space-y-1">
-                              <p className="font-semibold">Meeting link pending</p>
-                              <p className="text-xs opacity-80">
-                                The nutritionist will provide the Zoom link approximately 5–10 minutes before the scheduled start time.
-                              </p>
-                            </div>
-                          </div>
+                          `$${(c.price_paid ?? 0).toFixed(2)}`
                         )}
-                      </div>
-                    )}
+                      </p>
+                    </div>
+                  </div>
 
-                    {c.status === "finished" && (
-                      <div className="pt-2">
+                  {c.status === "scheduled" && (
+                    <div className="pt-2">
+                      {c.zoom_link ? (
                         <Button
-                          variant="outline"
-                          className="w-full rounded-lg border-primary text-primary hover:bg-primary/5"
-                          onClick={() => setReviewTarget({ 
-                            id: c.id, 
-                            title: `Consultation with ${c.nutritionist_name || c.nutritionist_username || "Nutritionist"}` 
-                          })}
+                          asChild
+                          className="bg-blue-600 hover:bg-blue-700 text-white w-full rounded-lg shadow-sm"
                         >
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Post Review
+                          <a
+                            href={c.zoom_link}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Video className="w-4 h-4 mr-2" />
+                            Join Meeting
+                          </a>
                         </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+                      ) : (
+                        <div className="text-[13px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl flex items-start gap-3 border border-amber-100 dark:border-amber-900/20">
+                          <Clock className="w-5 h-5 mt-0.5 shrink-0 text-amber-500" />
+                          <div className="space-y-1">
+                            <p className="font-semibold">
+                              Meeting link pending
+                            </p>
+                            <p className="text-xs opacity-80">
+                              The nutritionist will provide the Zoom link
+                              approximately 5–10 minutes before the scheduled
+                              start time.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {c.status === "finished" && (
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-lg border-primary text-primary hover:bg-primary/5"
+                        onClick={() =>
+                          setReviewTarget({
+                            id: c.id,
+                            title: `Consultation with ${c.nutritionist_name || c.nutritionist_username || "Nutritionist"}`,
+                          })
+                        }
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Post Review
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <ReviewModal

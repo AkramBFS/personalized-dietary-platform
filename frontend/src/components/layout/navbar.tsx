@@ -68,6 +68,7 @@ const services = [
 ];
 
 const mainNav = [
+  { name: "Subscriptions", href: "/subscription", icon: InformationCircleIcon },
   { name: "Blog", href: "/blog", icon: BookOpenIcon },
   { name: "Community", href: "/community", icon: UsersIcon },
   { name: "About", href: "/about", icon: InformationCircleIcon },
