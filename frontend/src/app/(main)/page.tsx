@@ -22,6 +22,7 @@ export default function HomePage() {
 
       <SubscriptionCards />
       <FAQs />
+      <CallToAction />
       <NewsletterSection />
       <FooterSection />
     </div>

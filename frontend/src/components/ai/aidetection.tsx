@@ -515,7 +515,7 @@ export default function UnifiedHeroSection() {
 
               {/* Data Widget */}
               <div
-                className="absolute w-72 bg-background/60 backdrop-blur-md border border-[#97E7CC]/30 p-4 shadow-[0_0_30px_rgba(151,231,204,0.1)] transition-all duration-300"
+                className="absolute w-72 bg-[#12161b]/60 backdrop-blur-md border border-[#97E7CC]/30 p-4 shadow-[0_0_30px_rgba(151,231,204,0.1)] transition-all duration-300"
                 style={{
                   left: `${currentCardPos.x}%`,
                   top: `${currentCardPos.y}%`,

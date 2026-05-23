@@ -82,7 +82,10 @@ const itemVariants = {
 
 export default function FAQsThree() {
   return (
-    <section className="relative overflow-hidden bg-background py-24">
+    <section
+      id="faq-section"
+      className="relative z-10 overflow-hidden bg-background py-24"
+    >
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-0 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary/5 blur-[120px]" />
 
