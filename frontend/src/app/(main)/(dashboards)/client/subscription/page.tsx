@@ -2,12 +2,34 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Crown, Loader2, Shield, Sparkles, XCircle, Zap, CreditCard } from "lucide-react";
+import {
+  CheckCircle2,
+  Crown,
+  Loader2,
+  Shield,
+  Sparkles,
+  XCircle,
+  Zap,
+  CreditCard,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ClientSubscriptionStatus, getClientSubscriptionStatus } from "@/lib/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import {
+  ClientSubscriptionStatus,
+  getClientSubscriptionStatus,
+} from "@/lib/client";
 import { createCheckoutSession } from "@/lib/api";
-import { buildPaymentUrl, getSubscriptionAmount, getSubscriptionCheckoutItemId } from "@/lib/payment";
+import {
+  buildPaymentUrl,
+  getSubscriptionAmount,
+  getSubscriptionCheckoutItemId,
+} from "@/lib/payment";
 import { toast } from "sonner";
 
 const PREMIUM_FEATURES = [
@@ -28,7 +50,9 @@ function formatDate(date?: string): string {
   });
 }
 
-function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boolean {
+function getIsSubscriptionActive(
+  status: ClientSubscriptionStatus | null,
+): boolean {
   const subscription = status?.subscription;
   if (!subscription) return status?.is_premium ?? false;
 
@@ -36,10 +60,14 @@ function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boole
     ? new Date(subscription.end_date).getTime()
     : null;
   const hasExpired =
-    expiryTime !== null && !Number.isNaN(expiryTime) && expiryTime <= Date.now();
+    expiryTime !== null &&
+    !Number.isNaN(expiryTime) &&
+    expiryTime <= Date.now();
 
   if (subscription.end_date) {
-    return Boolean(status?.is_premium && subscription.status === "active" && !hasExpired);
+    return Boolean(
+      status?.is_premium && subscription.status === "active" && !hasExpired,
+    );
   }
 
   return Boolean(status?.is_premium && subscription.status === "active");
@@ -47,12 +75,23 @@ function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boole
 
 export default function SubscriptionPage() {
   const router = useRouter();
-  const [subscriptionStatus, setSubscriptionStatus] = useState<ClientSubscriptionStatus | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<ClientSubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">(
+    "monthly",
+  );
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const prices = useMemo(
+    () => ({
+      monthly: getSubscriptionAmount("monthly"),
+      yearly: getSubscriptionAmount("yearly"),
+    }),
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -92,7 +131,9 @@ export default function SubscriptionPage() {
       router.push(buildPaymentUrl(session.checkout_id));
     } catch (err) {
       console.error("Checkout creation failed", err);
-      toast.error("Checkout session was unavailable, so we switched to the standard payment flow.");
+      toast.error(
+        "Checkout session was unavailable, so we switched to the standard payment flow.",
+      );
       setShowPaymentModal(false);
       router.push(
         buildPaymentUrl({
@@ -117,7 +158,9 @@ export default function SubscriptionPage() {
     : "free";
   const planName = useMemo(() => {
     if (!isSubscriptionActive) return "Free";
-    return subscription?.plan_type ? `${subscription.plan_type[0].toUpperCase()}${subscription.plan_type.slice(1)}` : "Premium";
+    return subscription?.plan_type
+      ? `${subscription.plan_type[0].toUpperCase()}${subscription.plan_type.slice(1)}`
+      : "Premium";
   }, [isSubscriptionActive, subscription?.plan_type]);
 
   if (loading) {
@@ -131,28 +174,46 @@ export default function SubscriptionPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">My Subscription</h1>
-        <p className="text-muted-foreground">View your current plan and premium feature access.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          My Subscription
+        </h1>
+        <p className="text-muted-foreground">
+          View your current plan and premium feature access.
+        </p>
       </div>
 
-      {error && <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="shadow-sm md:col-span-2">
           <CardHeader className="border-b border-border pb-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`rounded-xl p-3 ${isSubscriptionActive ? "bg-amber-500/15 text-amber-500" : "bg-secondary text-muted-foreground"}`}>
+                <div
+                  className={`rounded-xl p-3 ${isSubscriptionActive ? "bg-amber-500/15 text-amber-500" : "bg-secondary text-muted-foreground"}`}
+                >
                   <Crown className="h-6 w-6" />
                 </div>
                 <div>
-                  <CardTitle className="text-card-foreground">{planName} Plan</CardTitle>
-                  <CardDescription>{isSubscriptionActive ? "Premium features unlocked" : "Basic features only"}</CardDescription>
+                  <CardTitle className="text-card-foreground">
+                    {planName} Plan
+                  </CardTitle>
+                  <CardDescription>
+                    {isSubscriptionActive
+                      ? "Premium features unlocked"
+                      : "Basic features only"}
+                  </CardDescription>
                 </div>
               </div>
               <span
                 className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${
-                  isSubscriptionActive ? "bg-accent text-primary" : "bg-secondary text-muted-foreground"
+                  isSubscriptionActive
+                    ? "bg-accent text-primary"
+                    : "bg-secondary text-muted-foreground"
                 }`}
               >
                 {subscriptionBadge}
@@ -160,10 +221,18 @@ export default function SubscriptionPage() {
             </div>
           </CardHeader>
           <CardContent className="pt-6">
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">Your Features</h3>
-              <ul className="space-y-3">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">
+              Your Features
+            </h3>
+            <ul className="space-y-3">
               {PREMIUM_FEATURES.map((feature) => {
-                const included = isSubscriptionActive || !["AI Vision Tracker", "Priority Consultations", "Advanced Analytics"].includes(feature);
+                const included =
+                  isSubscriptionActive ||
+                  ![
+                    "AI Vision Tracker",
+                    "Priority Consultations",
+                    "Advanced Analytics",
+                  ].includes(feature);
                 return (
                   <li key={feature} className="flex items-center gap-3">
                     {included ? (
@@ -171,7 +240,11 @@ export default function SubscriptionPage() {
                     ) : (
                       <XCircle className="h-5 w-5 shrink-0 text-muted-foreground/50" />
                     )}
-                    <span className={`text-sm ${included ? "font-medium text-foreground" : "text-muted-foreground"}`}>{feature}</span>
+                    <span
+                      className={`text-sm ${included ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                    >
+                      {feature}
+                    </span>
                     {!included && (
                       <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
                         Premium
@@ -185,10 +258,16 @@ export default function SubscriptionPage() {
             {isSubscriptionActive && (
               <div className="mt-6 space-y-2 border-t border-border pt-4 text-sm text-muted-foreground">
                 <p>
-                  Started: <span className="font-semibold text-foreground">{formatDate(subscription?.start_date)}</span>
+                  Started:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatDate(subscription?.start_date)}
+                  </span>
                 </p>
                 <p>
-                  Ends: <span className="font-semibold text-foreground">{formatDate(subscription?.end_date)}</span>
+                  Ends:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatDate(subscription?.end_date)}
+                  </span>
                 </p>
               </div>
             )}
@@ -198,19 +277,27 @@ export default function SubscriptionPage() {
         <div className="space-y-4">
           <Card className="shadow-sm">
             <CardContent className="space-y-4 p-6">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Premium Perks</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                Premium Perks
+              </h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                  <p className="text-sm text-muted-foreground">AI-powered meal analysis from photos</p>
+                  <p className="text-sm text-muted-foreground">
+                    AI-powered meal analysis from photos
+                  </p>
                 </div>
                 <div className="flex items-start gap-3">
                   <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                  <p className="text-sm text-muted-foreground">Premium feature access from your client dashboard</p>
+                  <p className="text-sm text-muted-foreground">
+                    Premium feature access from your client dashboard
+                  </p>
                 </div>
                 <div className="flex items-start gap-3">
                   <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                  <p className="text-sm text-muted-foreground">Daily macro and calorie progress visibility</p>
+                  <p className="text-sm text-muted-foreground">
+                    Daily macro and calorie progress visibility
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -222,21 +309,27 @@ export default function SubscriptionPage() {
         <div className="pt-8 space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold">Upgrade Your Experience</h2>
-            <p className="text-muted-foreground mt-2">Choose a plan that fits your nutritional goals.</p>
+            <p className="text-muted-foreground mt-2">
+              Choose a plan that fits your nutritional goals.
+            </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="border-2 border-border hover:border-primary/50 transition-all group overflow-hidden relative">
               <CardHeader className="bg-muted/30 pb-8">
                 <CardTitle className="text-xl">Monthly Access</CardTitle>
-                <CardDescription>Flexible month-to-month tracking</CardDescription>
+                <CardDescription>
+                  Flexible month-to-month tracking
+                </CardDescription>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-black">$29.99</span>
+                  <span className="text-4xl font-black">
+                    ${prices.monthly.toFixed(2)}
+                  </span>
                   <span className="text-muted-foreground">/mo</span>
                 </div>
               </CardHeader>
               <CardContent className="pt-8">
-                <Button 
+                <Button
                   className="w-full py-6 rounded-xl font-bold shadow-lg"
                   onClick={() => handlePurchaseClick("monthly")}
                 >
@@ -253,12 +346,14 @@ export default function SubscriptionPage() {
                 <CardTitle className="text-xl">Yearly Commitment</CardTitle>
                 <CardDescription>Save 20% with annual billing</CardDescription>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-black">$299.99</span>
+                  <span className="text-4xl font-black">
+                    ${prices.yearly.toFixed(2)}
+                  </span>
                   <span className="text-muted-foreground">/yr</span>
                 </div>
               </CardHeader>
               <CardContent className="pt-8">
-                <Button 
+                <Button
                   className="w-full py-6 rounded-xl font-bold shadow-lg bg-primary hover:bg-primary/90"
                   onClick={() => handlePurchaseClick("yearly")}
                 >
@@ -280,16 +375,23 @@ export default function SubscriptionPage() {
                   <CreditCard className="w-6 h-6 text-primary" />
                 </div>
                 {!isProcessing && (
-                  <button onClick={() => setShowPaymentModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     <XCircle className="w-6 h-6" />
                   </button>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="text-xl font-bold">Secure Payment</h3>
                 <p className="text-sm text-muted-foreground">
-                  Confirm your upgrade to the <span className="font-bold text-foreground capitalize">{selectedPlan}</span> plan.
+                  Confirm your upgrade to the{" "}
+                  <span className="font-bold text-foreground capitalize">
+                    {selectedPlan}
+                  </span>{" "}
+                  plan.
                 </p>
               </div>
 
@@ -301,7 +403,7 @@ export default function SubscriptionPage() {
                 <div className="flex justify-between text-lg pt-2 border-t border-border">
                   <span className="font-medium text-foreground">Total Due</span>
                   <span className="font-black text-primary">
-                    ${getSubscriptionAmount(selectedPlan).toFixed(2)}
+                    ${prices[selectedPlan].toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -310,7 +412,7 @@ export default function SubscriptionPage() {
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground justify-center uppercase tracking-widest mb-2">
                   <Shield className="w-3 h-3" /> Encrypted Transaction
                 </div>
-                <Button 
+                <Button
                   className="w-full py-7 rounded-xl text-lg font-bold shadow-xl"
                   disabled={isProcessing}
                   onClick={confirmPurchase}
@@ -325,7 +427,11 @@ export default function SubscriptionPage() {
                   )}
                 </Button>
                 {!isProcessing && (
-                  <Button variant="ghost" className="w-full" onClick={() => setShowPaymentModal(false)}>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowPaymentModal(false)}
+                  >
                     Cancel
                   </Button>
                 )}

@@ -187,7 +187,7 @@ export interface MealPlanDayMeal {
   name: string;
   notes: string;
   calories: number;
-  ingredients: string[];
+  ingredients: Array<{ name: string; unit: string; amount: string }>;
 }
 
 export interface MealPlanDayContent {

@@ -11,6 +11,7 @@ import {
   Activity,
   BadgeCheck,
   ArrowUpRight,
+  Store,
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -48,6 +49,15 @@ const servicesData = [
       "https://images.unsplash.com/photo-1543362906-acfc16c67564?auto=format&fit=crop&q=80&w=1000",
   },
   {
+    id: "Plan-marketplace",
+    title: "Plan Marketplace",
+    icon: Store,
+    description:
+      "Explore a variety of pre-designed meal plans or create your own custom schedule. Track your progress and stay on course with your nutritional goals.",
+    image:
+      "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
     id: "community-feed",
     title: "Community Feed",
     icon: Users,
@@ -56,15 +66,7 @@ const servicesData = [
     image:
       "https://images.unsplash.com/photo-1528629297340-d1d466945dc5?auto=format&fit=crop&q=80&w=1000",
   },
-  {
-    id: "daily-tracking",
-    title: "Daily Progress Tracking",
-    icon: Activity,
-    description:
-      "Monitor your adherence to health goals with detailed day-by-day logs of calories, fats, carbohydrates, and protein intake.",
-    image:
-      "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
+
   {
     id: "expert-coaches",
     title: "Verified Expert Coaches",
@@ -293,7 +295,7 @@ export default function ContentSection() {
                   alt={expert.name}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10 transition-opacity duration-300 group-hover:opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-background/20 to-transparent z-10 transition-opacity duration-300 group-hover:opacity-80" />
 
                 <div className="absolute bottom-6 left-6 z-20">
                   <h4 className="text-2xl font-bold text-white mb-1">
