@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 import {
   CheckCircle,
   Zap,
@@ -9,13 +10,16 @@ import {
   MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
+import { getSubscriptionAmount } from "@/lib/payment";
 
 export default function SubscriptionCards() {
-  // Hardcoded for UI presentation purposes
-  const prices = {
-    monthly: "12.99",
-    yearly: "99.99",
-  };
+  const prices = useMemo(
+    () => ({
+      monthly: getSubscriptionAmount("monthly").toFixed(2),
+      yearly: getSubscriptionAmount("yearly").toFixed(2),
+    }),
+    [],
+  );
 
   return (
     <section className="relative overflow-hidden bg-background py-24">

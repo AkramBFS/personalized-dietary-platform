@@ -88,8 +88,7 @@ export default function StepSignUp({
     focus:!bg-accent focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none
   `;
 
-  const labelStyles =
-    "text-sm font-bold text-foreground ml-1";
+  const labelStyles = "text-sm font-bold text-foreground ml-1";
   const errorStyles = "text-sm font-semibold text-red-500 dark:text-red-400";
   const preferenceItems = [
     { label: "Country", value: formData.country },
@@ -206,7 +205,11 @@ export default function StepSignUp({
               className="absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
             </button>
           </div>
           {touched.password && errors.password ? (
@@ -220,12 +223,14 @@ export default function StepSignUp({
             <Input
               ref={fileInputRef}
               name="profilePhoto"
-              className={`${inputStyles}"h-11 cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground`}
+              className={`${inputStyles}"h-11 cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:text-sm file:font-medium file:text-primary-foreground`}
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
               onBlur={handleBlur}
-              aria-invalid={Boolean(touched.profilePhoto && errors.profilePhoto)}
+              aria-invalid={Boolean(
+                touched.profilePhoto && errors.profilePhoto,
+              )}
             />
 
             {formData.profilePhoto ? (

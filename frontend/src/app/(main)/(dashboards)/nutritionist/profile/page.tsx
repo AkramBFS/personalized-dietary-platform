@@ -1,13 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
 import { Activity, Plus, Stethoscope, User, X } from "lucide-react";
 import { toast } from "sonner";
-import { NutritionistProfile, getNutritionistProfile, patchNutritionistProfile } from "@/lib/nutritionist";
+import {
+  NutritionistProfile,
+  getNutritionistProfile,
+  patchNutritionistProfile,
+} from "@/lib/nutritionist";
 import { bootstrapLookups, getLanguages, LookupItem } from "@/lib/lookups";
 import { resolveApiUrl } from "@/lib/api";
 import GenericDropdown from "@/components/ui/GenericDropdown";
@@ -21,7 +32,9 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
-  const [profileMeta, setProfileMeta] = useState<NutritionistProfile | null>(null);
+  const [profileMeta, setProfileMeta] = useState<NutritionistProfile | null>(
+    null,
+  );
   const [languages, setLanguages] = useState<LookupItem[]>([]);
   const [pendingLanguageId, setPendingLanguageId] = useState("");
   const [form, setForm] = useState({
@@ -58,21 +71,27 @@ export default function ProfilePage() {
   }, []);
 
   const selectedLanguages = useMemo(
-    () => languages.filter((language) => form.language_ids.includes(language.id)),
+    () =>
+      languages.filter((language) => form.language_ids.includes(language.id)),
     [form.language_ids, languages],
   );
 
   const handleAddLanguage = () => {
     const languageId = Number(pendingLanguageId);
     if (!languageId || form.language_ids.includes(languageId)) return;
-    setForm((prev) => ({ ...prev, language_ids: [...prev.language_ids, languageId] }));
+    setForm((prev) => ({
+      ...prev,
+      language_ids: [...prev.language_ids, languageId],
+    }));
     setPendingLanguageId("");
   };
 
   const handleRemoveLanguage = (languageId: number) => {
     setForm((prev) => ({
       ...prev,
-      language_ids: prev.language_ids.filter((selectedId) => selectedId !== languageId),
+      language_ids: prev.language_ids.filter(
+        (selectedId) => selectedId !== languageId,
+      ),
     }));
   };
 
@@ -97,7 +116,11 @@ export default function ProfilePage() {
       });
       setSelectedPhoto(null);
       if (freshProfile.profile_photo_url || updated.profile_photo_url) {
-        setProfilePhotoUrl(resolveApiUrl(freshProfile.profile_photo_url ?? updated.profile_photo_url) ?? "");
+        setProfilePhotoUrl(
+          resolveApiUrl(
+            freshProfile.profile_photo_url ?? updated.profile_photo_url,
+          ) ?? "",
+        );
       }
       toast.success("Profile updated successfully.");
     } catch {
@@ -108,14 +131,22 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center p-12 text-sm text-muted-foreground">Loading profile...</div>;
+    return (
+      <div className="flex justify-center p-12 text-sm text-muted-foreground">
+        Loading profile...
+      </div>
+    );
   }
 
   return (
     <div className="max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Nutritionist Profile</h1>
-        <p className="text-muted-foreground">Manage your public details and consultation preferences.</p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Nutritionist Profile
+        </h1>
+        <p className="text-muted-foreground">
+          Manage your public details and consultation preferences.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -134,23 +165,49 @@ export default function ProfilePage() {
                   <User className="h-12 w-12" />
                 )}
               </div>
-              <CardTitle className="text-center">{profileMeta?.user?.username || "Nutritionist"}</CardTitle>
-              <CardDescription className="text-center">{profileMeta?.user?.email || "No email available"}</CardDescription>
+              <CardTitle className="text-center">
+                {profileMeta?.user?.username || "Nutritionist"}
+              </CardTitle>
+              <CardDescription className="text-center">
+                {profileMeta?.user?.email || "No email available"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/10 p-4">
-                <div className="mb-1 flex items-center gap-2 font-medium text-primary">
+              <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/10 p-5">
+                <div className="mb-2 flex items-center gap-2 font-medium text-primary">
                   <Activity className="h-4 w-4" /> Professional Snapshot
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-primary/80">Specialization</span>
-                  <span className="font-bold text-foreground">
+                <div className="flex flex-col gap-1 text-sm border-b border-primary/10 pb-3">
+                  <span className="text-primary/80 font-medium">Specialization</span>
+                  <span className="font-bold text-foreground text-lg leading-tight">
                     {profileMeta?.specialization_name || "Not set"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-primary/80">Experience</span>
-                  <span className="font-bold text-foreground">{form.years_experience} yrs</span>
+                <div className="flex flex-col gap-1 text-sm border-b border-primary/10 pb-3">
+                  <span className="text-primary/80 font-medium">Experience</span>
+                  <span className="font-bold text-foreground text-base">
+                    {form.years_experience} yrs
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 text-sm">
+                  <span className="text-primary/80 font-medium">Languages</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.language_ids.length > 0
+                      ? form.language_ids.map((id) => {
+                          const lang = languages.find((l) => l.id === id);
+                          return lang ? (
+                            <span
+                              key={id}
+                              className="bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-semibold"
+                            >
+                              {lookupName(lang)}
+                            </span>
+                          ) : null;
+                        })
+                      : (
+                        <span className="text-muted-foreground">Not set</span>
+                      )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -165,36 +222,50 @@ export default function ProfilePage() {
                   <Stethoscope className="h-5 w-5 text-primary" />
                   Edit Information
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">Update your professional details and public consultation settings.</CardDescription>
+                <CardDescription className="text-muted-foreground">
+                  Update your professional details and public consultation
+                  settings.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
-                  <Label htmlFor="bio" className="font-bold ml-1">Bio</Label>
+                  <Label htmlFor="bio" className="font-bold ml-1">
+                    Bio
+                  </Label>
                   <textarea
                     id="bio"
                     value={form.bio}
-                    onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))}
-                    className="flex min-h-[120px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-4 px-6 text-sm transition-all duration-300 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, bio: event.target.value }))
+                    }
+                    className="flex min-h-[240px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-5 px-6 text-base transition-all duration-300 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)] resize-y leading-relaxed"
                     placeholder="Share your expertise and focus areas."
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="space-y-3">
-                    <Label htmlFor="years" className="font-bold ml-1">Years of Experience</Label>
+                    <Label htmlFor="years" className="font-bold ml-1">
+                      Years of Experience
+                    </Label>
                     <Input
                       id="years"
                       type="number"
                       min={0}
                       value={form.years_experience}
                       onChange={(event) =>
-                        setForm((prev) => ({ ...prev, years_experience: Number(event.target.value) || 0 }))
+                        setForm((prev) => ({
+                          ...prev,
+                          years_experience: Number(event.target.value) || 0,
+                        }))
                       }
                       className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="price" className="font-bold ml-1">Consultation Price (USD)</Label>
+                    <Label htmlFor="price" className="font-bold ml-1">
+                      Consultation Price (USD)
+                    </Label>
                     <Input
                       id="price"
                       type="number"
@@ -202,7 +273,10 @@ export default function ProfilePage() {
                       step="0.01"
                       value={form.consultation_price}
                       onChange={(event) =>
-                        setForm((prev) => ({ ...prev, consultation_price: Number(event.target.value) || 0 }))
+                        setForm((prev) => ({
+                          ...prev,
+                          consultation_price: Number(event.target.value) || 0,
+                        }))
                       }
                       className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     />
@@ -218,7 +292,10 @@ export default function ProfilePage() {
                         value={pendingLanguageId}
                         onChange={(val) => setPendingLanguageId(val)}
                         options={languages
-                          .filter((language) => !form.language_ids.includes(language.id))
+                          .filter(
+                            (language) =>
+                              !form.language_ids.includes(language.id),
+                          )
                           .map((language) => ({
                             label: lookupName(language),
                             value: String(language.id),
@@ -251,21 +328,31 @@ export default function ProfilePage() {
                         </button>
                       ))
                     ) : (
-                      <span className="px-1 py-1 text-sm text-muted-foreground">No languages selected</span>
+                      <span className="px-1 py-1 text-sm text-muted-foreground">
+                        No languages selected
+                      </span>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="photo" className="font-bold ml-1">Profile Photo</Label>
+                  <Label htmlFor="photo" className="font-bold ml-1">
+                    Profile Photo
+                  </Label>
                   <Input
                     id="photo"
                     type="file"
                     accept="image/*"
-                    onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
-                    className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    onChange={(event) =>
+                      setSelectedPhoto(event.target.files?.[0] ?? null)
+                    }
+                    className="file:px-4 file:cursor-pointer file:rounded-4xl file:bg-button-primary file:text-sm file:font-medium file:text-foreground h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   />
-                  {profilePhotoUrl ? <p className="text-xs text-muted-foreground ml-1">Current photo is already set.</p> : null}
+                  {profilePhotoUrl ? (
+                    <p className="text-xs text-muted-foreground ml-1">
+                      Current photo is already set.
+                    </p>
+                  ) : null}
                 </div>
               </CardContent>
               <CardFooter className="justify-end pt-6">
