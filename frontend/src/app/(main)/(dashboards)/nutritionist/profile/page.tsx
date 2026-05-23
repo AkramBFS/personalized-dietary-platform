@@ -173,21 +173,41 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/10 p-4">
-                <div className="mb-1 flex items-center gap-2 font-medium text-primary">
+              <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/10 p-5">
+                <div className="mb-2 flex items-center gap-2 font-medium text-primary">
                   <Activity className="h-4 w-4" /> Professional Snapshot
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-primary/80">Specialization</span>
-                  <span className="font-bold text-foreground">
+                <div className="flex flex-col gap-1 text-sm border-b border-primary/10 pb-3">
+                  <span className="text-primary/80 font-medium">Specialization</span>
+                  <span className="font-bold text-foreground text-lg leading-tight">
                     {profileMeta?.specialization_name || "Not set"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-primary/80">Experience</span>
-                  <span className="font-bold text-foreground">
+                <div className="flex flex-col gap-1 text-sm border-b border-primary/10 pb-3">
+                  <span className="text-primary/80 font-medium">Experience</span>
+                  <span className="font-bold text-foreground text-base">
                     {form.years_experience} yrs
                   </span>
+                </div>
+                <div className="flex flex-col gap-2 text-sm">
+                  <span className="text-primary/80 font-medium">Languages</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.language_ids.length > 0
+                      ? form.language_ids.map((id) => {
+                          const lang = languages.find((l) => l.id === id);
+                          return lang ? (
+                            <span
+                              key={id}
+                              className="bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-semibold"
+                            >
+                              {lookupName(lang)}
+                            </span>
+                          ) : null;
+                        })
+                      : (
+                        <span className="text-muted-foreground">Not set</span>
+                      )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -218,12 +238,12 @@ export default function ProfilePage() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, bio: event.target.value }))
                     }
-                    className="flex min-h-[120px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-4 px-6 text-sm transition-all duration-300 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    className="flex min-h-[240px] w-full rounded-2xl border border-border bg-card/40 backdrop-blur-md p-5 px-6 text-base transition-all duration-300 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-[0_8px_32px_rgba(0,0,0,0.05)] resize-y leading-relaxed"
                     placeholder="Share your expertise and focus areas."
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="space-y-3">
                     <Label htmlFor="years" className="font-bold ml-1">
                       Years of Experience

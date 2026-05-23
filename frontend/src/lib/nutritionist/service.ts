@@ -10,6 +10,7 @@ export interface NutritionistProfile {
   years_experience: number;
   consultation_price: number;
   language_ids: number[];
+  languages?: Array<{ language__id: number; language__name: string }>;
   profile_photo_url: string | null;
   specialization_name?: string;
   user?: {
@@ -471,12 +472,13 @@ export async function getNutritionistProfile(): Promise<NutritionistProfile> {
   if (useBackendMocks) return mockProfile;
   try {
     const response = await api.get<ApiEnvelope<NutritionistProfile> | NutritionistProfile>("/nutritionist/profile/");
-    const data = unwrapResponse(response.data);
+    const data = unwrapResponse(response.data) as any;
     // Normalize: ensuring username and email are available at top level
     return {
       ...data,
       username: data.username ?? data.user?.username,
       email: data.email ?? data.user?.email,
+      language_ids: data.language_ids ?? (data.languages?.map((l: any) => l.language__id) || []),
     };
   } catch (error) {
     if (hasNetworkError(error)) return mockProfile;
