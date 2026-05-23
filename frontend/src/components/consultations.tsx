@@ -39,9 +39,9 @@ export default function NutritionConsultations() {
             </h1>
 
             <p className="text-lg text-muted-foreground max-w-xl leading-relaxed font-light">
-              Work directly with a certified nutritionist and receive a
-              personalized dietary plan built specifically for your body, health
-              history, and goals.
+              Need a personalized meal plan? Or just the advice and expertise of
+              a certified nutritionist? Either way you are looking to book an
+              online consultation!.
             </p>
 
             <div className="pt-4">

@@ -293,7 +293,13 @@ export default function MealPlanDetailPage() {
                 <p className="font-bold uppercase tracking-tighter mb-1">
                   Ingredients:
                 </p>
-                <p>{content.breakfast.ingredients.join(", ")}</p>
+                <ul className="space-y-1">
+                  {content.breakfast.ingredients.map((ing, idx) => (
+                    <li key={idx}>
+                      {ing.amount} {ing.unit} {ing.name}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {content.breakfast?.notes && (
@@ -338,7 +344,13 @@ export default function MealPlanDetailPage() {
                 <p className="font-bold uppercase tracking-tighter mb-1">
                   Ingredients:
                 </p>
-                <p>{content.lunch.ingredients.join(", ")}</p>
+                <ul className="space-y-1">
+                  {content.lunch.ingredients.map((ing, idx) => (
+                    <li key={idx}>
+                      {ing.amount} {ing.unit} {ing.name}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {content.lunch?.notes && (
@@ -383,7 +395,13 @@ export default function MealPlanDetailPage() {
                 <p className="font-bold uppercase tracking-tighter mb-1">
                   Ingredients:
                 </p>
-                <p>{content.dinner.ingredients.join(", ")}</p>
+                <ul className="space-y-1">
+                  {content.dinner.ingredients.map((ing, idx) => (
+                    <li key={idx}>
+                      {ing.amount} {ing.unit} {ing.name}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {content.dinner?.notes && (
@@ -428,7 +446,13 @@ export default function MealPlanDetailPage() {
                 <p className="font-bold uppercase tracking-tighter mb-1">
                   Ingredients:
                 </p>
-                <p>{content.snacks.ingredients.join(", ")}</p>
+                <ul className="space-y-1">
+                  {content.snacks.ingredients.map((ing, idx) => (
+                    <li key={idx}>
+                      {ing.amount} {ing.unit} {ing.name}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {content.snacks?.notes && (
