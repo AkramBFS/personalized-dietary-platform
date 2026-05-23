@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Users, CalendarCheck, FileText, Wallet, Calendar, Store, DollarSign, Loader2 } from "lucide-react";
+import { Users, CalendarCheck, FileText, Wallet, Calendar, Store, DollarSign, Loader2, AlertCircle, Settings2 } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -23,6 +23,7 @@ import {
   getNutritionistPlans,
   getNutritionistEarnings,
   getNutritionistProfile,
+  getNutritionistSchedule,
   groupTransactionsByDayOfWeek,
   NutritionistEarningsSummary,
 } from "@/lib/nutritionist";
@@ -48,6 +49,7 @@ export default function NutritionistOverviewPage() {
   const [nextConsultationLabel, setNextConsultationLabel] = useState<string | null>(null);
   const [pendingPlans, setPendingPlans] = useState(0);
   const [earnings, setEarnings] = useState<NutritionistEarningsSummary | null>(null);
+  const [showAvailabilityReminder, setShowAvailabilityReminder] = useState(false);
 
   const weeklyEarnings = useMemo(() => {
     if (!earnings?.transactions) return [];
@@ -57,12 +59,13 @@ export default function NutritionistOverviewPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [profile, patients, consultations, plans, earningsData] = await Promise.all([
+        const [profile, patients, consultations, plans, earningsData, schedule] = await Promise.all([
           getNutritionistProfile(),
           getNutritionistPatients(),
           getNutritionistConsultations(),
           getNutritionistPlans(),
           getNutritionistEarnings(),
+          getNutritionistSchedule(),
         ]);
 
         // Display name
@@ -102,6 +105,8 @@ export default function NutritionistOverviewPage() {
 
         // Earnings
         setEarnings(earningsData);
+
+        setShowAvailabilityReminder(!Array.isArray(schedule.availability) || schedule.availability.length === 0);
       } catch {
         toast.error("Failed to load dashboard data.");
       } finally {
@@ -121,6 +126,33 @@ export default function NutritionistOverviewPage() {
 
   return (
     <div className="flex flex-col gap-8 pb-10 max-w-7xl mx-auto animate-in fade-in-50 duration-500">
+      {showAvailabilityReminder && (
+        <Card className="border-accent/50 bg-accent/20 shadow-sm transition-all">
+          <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3 md:items-center">
+              <div className="rounded-full bg-accent-foreground/10 p-2 text-accent-foreground">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold uppercase tracking-widest text-accent-foreground">
+                  Availability Setup Needed
+                </p>
+                <p className="text-sm text-foreground/80">
+                  Set your schedule availability rules so clients can book consultations with you.
+                </p>
+              </div>
+            </div>
+
+            <Button asChild className="w-full font-semibold md:w-auto">
+              <Link href="/nutritionist/schedule?tab=availability">
+                <Settings2 className="mr-2 h-4 w-4" />
+                Set Availability
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header section */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
