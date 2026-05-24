@@ -395,7 +395,7 @@ export default function SecurePayment() {
           buildSummaryFromLegacyContext(legacyContext, {
             title: legacyContext.planType === "yearly" ? "Yearly Pro" : "Monthly Pro",
             provider: "Dieton Premium",
-            amount: getSubscriptionAmount(legacyContext.planType),
+            amount: legacyContext.amount ?? getSubscriptionAmount(legacyContext.planType),
             description:
               legacyContext.planType === "yearly"
                 ? "Annual premium access billed once per year."
