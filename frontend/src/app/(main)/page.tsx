@@ -1,7 +1,7 @@
 import Features from "@/components/features";
 import ContentSection from "@/components/content";
 import FAQs from "@/components/faqs";
-import FooterSection from "@/components/layout/footer";
+import FooterSection2 from "@/components/layout/footer2";
 import SubscriptionCards from "@/components/landing-subscription";
 import Testimonials from "@/components/testimonials";
 import CallToAction from "@/components/calltoaction";
@@ -24,7 +24,7 @@ export default function HomePage() {
       <FAQs />
       <CallToAction />
       <NewsletterSection />
-      <FooterSection />
+      <FooterSection2 />
     </div>
   );
 }

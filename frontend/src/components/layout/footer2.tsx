@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useRef } from "react";
 import { Logo } from "./logo";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 const footerLinks = {
   solutions: [
@@ -24,9 +31,35 @@ const footerLinks = {
   ],
 };
 
-export default function FooterSection() {
+export default function FooterSection2() {
+  const footerRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      // Creates a parallax shift effect as the footer gets uncovered
+      gsap.fromTo(
+        footerRef.current,
+        { yPercent: -35 }, // Starts slightly tucked upwards behind the newsletter section
+        {
+          yPercent: 0, // Slides perfectly into place as the scroll finishes
+          ease: "none",
+          scrollTrigger: {
+            trigger: footerRef.current,
+            start: "top bottom", // Activates when the footer structural box enters the viewport
+            end: "bottom bottom", // Completes when you reach the absolute bottom of the page
+            scrub: true,
+          },
+        },
+      );
+    },
+    { scope: footerRef },
+  );
+
   return (
-    <footer className="bottom-0 -z-10 w-full bg-background pt-20 pb-10 pointer-events-auto">
+    <footer
+      ref={footerRef}
+      className="sticky bottom-0 -z-10 w-full bg-background pt-20 pb-10 will-change-transform pointer-events-auto"
+    >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* --- Main Footer Content --- */}
         <div className="grid grid-cols-1 gap-12 mb-16 md:grid-cols-2 lg:grid-cols-6 lg:gap-8">
