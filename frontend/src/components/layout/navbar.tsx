@@ -116,7 +116,7 @@ export const HeroHeader = () => {
         ScrollTrigger.create({
           trigger: unifiedSection,
           start: "top top",
-          end: "+=4000",
+          end: "+=4600",
           invalidateOnRefresh: true,
           // Only show when the hero section ends
           onLeave: () => {
