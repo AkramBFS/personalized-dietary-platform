@@ -58,6 +58,7 @@ export default function SubscriptionPlans() {
         buildPaymentUrl({
           type: "subscription",
           planType,
+          amount: prices[planType],
         }),
       );
     }

@@ -57,6 +57,7 @@ export type ConsultationPaymentContext = {
 export type SubscriptionPaymentContext = {
   type: "subscription";
   planType: SubscriptionPlanType;
+  amount?: number;
 };
 
 export type PaymentContext =
@@ -122,6 +123,7 @@ export function buildPaymentUrl(input: string | PaymentContext): string {
 
   if (input.type === "subscription") {
     params.set("planType", input.planType);
+    if (input.amount !== undefined) params.set("amount", String(input.amount));
   }
 
   return `/payment?${params.toString()}`;
@@ -200,9 +202,16 @@ export function parsePaymentContext(searchParams: SearchParamReader): PaymentCon
     const planType = searchParams.get("planType");
     if (!isSubscriptionPlanType(planType)) return null;
 
+    const rawAmount = searchParams.get("amount");
+    const amount =
+      rawAmount && !Number.isNaN(Number(rawAmount)) && Number(rawAmount) > 0
+        ? Number(rawAmount)
+        : undefined;
+
     return {
       type,
       planType,
+      ...(amount !== undefined ? { amount } : {}),
     };
   }
 
