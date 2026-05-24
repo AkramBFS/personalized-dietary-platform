@@ -13,6 +13,7 @@ import {
   BookOpen,
   AlertCircle,
   ChevronLeft,
+  PartyPopper,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -20,7 +21,17 @@ import {
   getMealPlanDayContent,
   advanceMealPlanDay,
   MealPlanDayContent,
+  getClientUserPlan,
+  ClientUserPlan,
 } from "@/lib/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface CheckedMeals {
   breakfast: boolean;
@@ -32,11 +43,14 @@ interface CheckedMeals {
 export default function MealPlanDetailPage() {
   const { id } = useParams();
   const [content, setContent] = useState<MealPlanDayContent | null>(null);
+  const [planDetail, setPlanDetail] = useState<ClientUserPlan | null>(null);
   const [currentDayIndex, setCurrentDayIndex] = useState<number>(0);
   const [viewingDayIndex, setViewingDayIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [isFullyCompleted, setIsFullyCompleted] = useState(false);
   const [checkedMeals, setCheckedMeals] = useState<CheckedMeals>({
     breakfast: false,
     lunch: false,
@@ -49,6 +63,16 @@ export default function MealPlanDetailPage() {
       try {
         setLoading(true);
         setError(null);
+
+        if (dayIdx === undefined) {
+          try {
+            const detail = await getClientUserPlan(Number(id));
+            setPlanDetail(detail);
+          } catch (err) {
+            console.error("Failed to load plan detail", err);
+          }
+        }
+
         const data = await getMealPlanDayContent(Number(id), dayIdx);
         setContent(data);
         if (dayIdx === undefined) {
@@ -85,14 +109,48 @@ export default function MealPlanDetailPage() {
 
   const handleAdvance = async () => {
     if (!id) return;
+
+    // Local completion if plan is already 'completed' on backend (we are on the last day)
+    if (planDetail?.status === 'completed') {
+      setIsFullyCompleted(true);
+      setShowCelebration(true);
+      return;
+    }
+
     setAdvancing(true);
     try {
       const res = await advanceMealPlanDay(Number(id));
-      setCurrentDayIndex(res.day_index);
-      setViewingDayIndex(res.day_index);
-      await fetchContent(res.day_index);
-    } catch (error) {
+      
+      // If the API returns error, assume it's already completed and handle locally
+      if (res.status === 'error') {
+        setIsFullyCompleted(true);
+        setShowCelebration(true);
+        setPlanDetail(prev => prev ? { ...prev, status: 'completed' } : null);
+        return;
+      }
+
+      // If res.status is 'completed', the backend has advanced us to the last day!
+      // We do NOT show celebration yet, we let them see the last day first.
+      const newIndex = res.current_day_index ?? res.day_index ?? (currentDayIndex + 1);
+      setCurrentDayIndex(newIndex);
+      setViewingDayIndex(newIndex);
+      setPlanDetail(prev => prev ? {
+        ...prev,
+        current_day_index: newIndex,
+        progress_percent: res.progress_percent ?? prev.progress_percent,
+        status: res.status === 'completed' ? 'completed' : prev.status
+      } : null);
+
+      await fetchContent(newIndex);
+    } catch (error: any) {
       console.error("Failed to advance", error);
+      const resData = error.response?.data;
+      if (resData && (resData.status === 'error' || error.response?.status === 400 || error.response?.status === 404)) {
+        setIsFullyCompleted(true);
+        setShowCelebration(true);
+        setPlanDetail(prev => prev ? { ...prev, status: 'completed' } : null);
+        return;
+      }
       toast.error("We couldn't advance to the next day. Please try again.");
     } finally {
       setAdvancing(false);
@@ -199,7 +257,7 @@ export default function MealPlanDetailPage() {
               variant="outline"
               size="icon"
               onClick={() => handleNavigate("prev")}
-              disabled={viewingDayIndex === 0 || loading}
+              disabled={viewingDayIndex === 0 || loading || isFullyCompleted}
               className="rounded-full"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -211,7 +269,13 @@ export default function MealPlanDetailPage() {
               variant="outline"
               size="icon"
               onClick={() => handleNavigate("next")}
-              disabled={loading}
+              disabled={
+                loading ||
+                isFullyCompleted ||
+                (viewingDayIndex !== null && planDetail?.plan_duration
+                  ? viewingDayIndex >= planDetail.plan_duration - 1
+                  : false)
+              }
               className="rounded-full"
             >
               <ChevronRight className="h-4 w-4" />
@@ -224,7 +288,7 @@ export default function MealPlanDetailPage() {
           </p>
         </div>
 
-        {isViewingCurrentDay && (
+        {isViewingCurrentDay && !isFullyCompleted && (
           <Button
             onClick={handleAdvance}
             disabled={!isAllComplete || advancing}
@@ -463,6 +527,25 @@ export default function MealPlanDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showCelebration} onOpenChange={setShowCelebration}>
+        <DialogContent className="sm:max-w-md text-center" showCloseButton={false}>
+          <DialogHeader>
+            <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+              <PartyPopper className="w-8 h-8 text-primary" />
+            </div>
+            <DialogTitle className="text-2xl font-bold">Congratulations!</DialogTitle>
+            <DialogDescription className="text-base mt-2">
+              You have successfully completed this meal plan. Great job staying committed to your nutritional goals!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center mt-6">
+            <Button onClick={() => setShowCelebration(false)} className="px-8">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
