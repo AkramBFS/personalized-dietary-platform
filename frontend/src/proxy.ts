@@ -8,16 +8,21 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
   const role = request.cookies.get('user_role')?.value;
 
-  // 2. Block unauthenticated access to protected routes
-  if (!token || !role) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // 2. Allow unauthenticated access to register route
+  if (pathname === '/register') {
+    // If user is authenticated, redirect them away from register
+    if (token && role) {
+      const redirectPath =
+        role === 'high_admin' ? '/admin' : role === 'nutritionist' ? '/nutritionist' : '/client';
+      return NextResponse.redirect(new URL(redirectPath, request.url));
+    }
+    // If user is not authenticated, allow them to access register
+    return NextResponse.next();
   }
 
-  // 2.5. Prevent logged-in users from accessing register route
-  if (pathname === '/register') {
-    const redirectPath =
-      role === 'high_admin' ? '/admin' : role === 'nutritionist' ? '/nutritionist' : '/client';
-    return NextResponse.redirect(new URL(redirectPath, request.url));
+  // 3. Block unauthenticated access to protected routes
+  if (!token || !role) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // 3. Admin routes
