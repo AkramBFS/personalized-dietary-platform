@@ -8,9 +8,16 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
   const role = request.cookies.get('user_role')?.value;
 
-  // 2. Block unauthenticated access
+  // 2. Block unauthenticated access to protected routes
   if (!token || !role) {
     return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // 2.5. Prevent logged-in users from accessing register route
+  if (pathname === '/register') {
+    const redirectPath =
+      role === 'high_admin' ? '/admin' : role === 'nutritionist' ? '/nutritionist' : '/client';
+    return NextResponse.redirect(new URL(redirectPath, request.url));
   }
 
   // 3. Admin routes
@@ -52,6 +59,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/register',
     '/admin/:path*',
     '/client/:path*',
     '/nutritionist/:path*',
