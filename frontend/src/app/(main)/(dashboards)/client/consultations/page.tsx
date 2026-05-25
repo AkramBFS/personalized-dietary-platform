@@ -34,6 +34,7 @@ export default function ConsultationsPage() {
   const [reviewTarget, setReviewTarget] = useState<{
     id: number;
     title: string;
+    nutritionistId?: number;
   } | null>(null);
 
   useEffect(() => {
@@ -269,6 +270,7 @@ export default function ConsultationsPage() {
                           setReviewTarget({
                             id: c.id,
                             title: `Consultation with ${c.nutritionist_name || c.nutritionist_username || "Nutritionist"}`,
+                            nutritionistId: c.nutritionist_id,
                           })
                         }
                       >
@@ -290,6 +292,7 @@ export default function ConsultationsPage() {
         type="consultation"
         id={reviewTarget?.id || 0}
         title={reviewTarget?.title || ""}
+        nutritionistId={reviewTarget?.nutritionistId}
       />
     </div>
   );

@@ -664,14 +664,48 @@ class ServiceReviewView(APIView):
             comment   = data.get('comment', ''),
         )
 
+        # ── Update nutritionist rating ─────────────────────────────────────────
+        nutritionist = None
+        if item_type == 'consultation':
+            from marketplace.models import Consultation as C
+
+            try:
+                consultation = C.objects.get(id=item_id)
+                nutritionist = consultation.nutritionist
+            except C.DoesNotExist:
+                pass
+
+            if nutritionist:
+                # Get all finished consultation IDs for this nutritionist
+                nutri_consult_ids = C.objects.filter(
+                    nutritionist = nutritionist,
+                    status       = 'finished',
+                ).values_list('id', flat=True)
+
+                # Get all reviews for those consultations
+                all_reviews = ServiceReview.objects.filter(
+                    item_type   = 'consultation',
+                    item_id__in = list(nutri_consult_ids),
+                )
+
+                if all_reviews.exists():
+                    avg = round(
+                        sum(r.rating for r in all_reviews) / all_reviews.count(), 2
+                    )
+                    nutritionist.rating = avg
+                    nutritionist.save()
+
+                    print(f"DEBUG: Nutritionist {nutritionist.nutritionist_id} rating updated to {avg}")
+
         return Response({
             "status": "success",
             "data": {
-                "id":        review.id,
-                "item_type": review.item_type,
-                "item_id":   review.item_id,
-                "rating":    review.rating,
-                "comment":   review.comment,
+                "id":                   review.id,
+                "item_type":            review.item_type,
+                "item_id":              review.item_id,
+                "rating":               review.rating,
+                "comment":              review.comment,
+                "nutritionist_rating":  nutritionist.rating if nutritionist else None,
             }
         }, status=201)
 

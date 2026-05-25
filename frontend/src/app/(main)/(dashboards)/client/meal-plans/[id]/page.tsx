@@ -67,7 +67,7 @@ export default function MealPlanDetailPage() {
         if (dayIdx === undefined) {
           try {
             const detail = await getClientUserPlan(Number(id));
-            setPlanDetail(detail);
+            setPlanDetail(detail || null);
           } catch (err) {
             console.error("Failed to load plan detail", err);
           }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getNutritionistProfile, resolveApiUrl, unwrapResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { getLocalNutritionistAverage, mergeRating } from "@/lib/localRatings";
 
 interface NutritionistPublicProfile {
   nutritionist_id: number;
@@ -146,12 +147,18 @@ export default function NutritionistProfileModal({
                           <Dialog.Title className="text-3xl font-bold text-foreground">
                             {profile.username}
                           </Dialog.Title>
-                          <div className="flex items-center justify-center sm:justify-start gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full w-fit mx-auto sm:mx-0">
-                            <Star className="h-4 w-4 fill-amber-500" />
-                            <span className="text-sm font-bold">
-                              {profile.rating > 0 ? profile.rating.toFixed(1) : "N/A"}
-                            </span>
-                          </div>
+                          {(() => {
+                            const localAvg = getLocalNutritionistAverage(profile.nutritionist_id ?? Number(id));
+                            const finalRating = mergeRating(profile.rating, localAvg);
+                            return (
+                              <div className="flex items-center justify-center sm:justify-start gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full w-fit mx-auto sm:mx-0">
+                                <Star className="h-4 w-4 fill-amber-500" />
+                                <span className="text-sm font-bold">
+                                  {finalRating > 0 ? finalRating.toFixed(1) : "No reviews yet"}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
                         <p className="text-lg font-medium text-primary">
                           {profile.specialization_name}
