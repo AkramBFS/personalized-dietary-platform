@@ -194,4 +194,4 @@ See [`docs/git-workflow.md`](docs/git-workflow.md) for details.
 
 ## 📜 License
 
-Academic use only.
+GNU Affero General Public License v3.0
