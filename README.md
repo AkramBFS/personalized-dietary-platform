@@ -34,7 +34,6 @@ Users can:
 - Track progress over time
 - Post reviews and star ratings for meal plans and consultations (nutritionists)
 
-
 Nutritionists can:
 
 - Create a personal profile through strict registration subject to administrator approval/rejection
@@ -47,7 +46,6 @@ Nutritionists can:
 - Construct and view/edit public marketplace meal plans (general & seasonal)
 - View earnings through commission, Invoices, and payout history
 - Contact Adminstrators through the support ticket system
-
 
 Administrators can:
 
@@ -67,16 +65,15 @@ Administrators can:
 
 This project follows an **API-first modular monolith architecture** with a dedicated AI service.
 
-Frontend (React)
-↓
-Backend API (Express / Django) → PostgreSQL database
-↓
+Frontend (React)  
+↓  
+Backend API (Express / Django) → PostgreSQL database  
+↓  
 AI Service (FastAPI + YOLOv8)
 
 - Frontend handles UI and user interactions
 - Backend handles authentication, business logic, and data storage
 - AI service performs food recognition and estimation
-
 
 ---
 
@@ -88,19 +85,16 @@ AI Service (FastAPI + YOLOv8)
 - HTML / CSS / JavaScript/Typescript
 
 **Backend**
-
 - Django REST Framework
 - JWT Authentication
 - PostgreSQL
 
 **AI Service**
-
 - Python
 - FastAPI
 - YOLOv8l-seg (pretrained + adjusted)
 
 **DevOps**
-
 - GitHub (monorepo)
 - Docker (later phase)
 
@@ -109,14 +103,80 @@ AI Service (FastAPI + YOLOv8)
 ## 📂 Repository Structure
 
 /
-├── frontend/ # React application
-├── backend/ # Backend API
-├── ai-service/ # AI inference service
-├── docs/ # Architecture & API documentation
-├── .github/ # GitHub automation & templates
-└── README.md
+├── frontend/ # React application  
+├── backend/ # Backend API  
+├── ai-service/ # AI inference service  
+├── docs/ # Architecture & API documentation  
+├── .github/ # GitHub automation & templates  
+└── README.md  
 
 ---
+
+## 🔐 Security & Privacy Considerations
+
+- Role-based access control across Clients, Nutritionists, and Administrators
+- JWT-based stateless authentication for API communication
+- Separation of sensitive health data from public community content
+- Nutritionist access limited strictly to their own patients
+- Administrative moderation layers for community posts, plans, and professional profiles
+- Soft-delete mechanisms to preserve data integrity and auditability
+
+---
+
+## 💳 Payments, Subscriptions & Invoicing
+
+- Tiered access model (Free vs Premium)
+- Premium features gated at the backend and UI level
+- Transaction simulation with unique invoice generation
+- Centralized invoice history with PDF export
+- Commission-based revenue model for nutritionists
+- Administrative control over subscription pricing and platform offerings
+
+---
+
+## 🤖 AI & Data Processing Pipeline
+
+- Image-based food recognition using segmentation models
+- Portion estimation with user-adjustable correction layer
+- Automatic macro and calorie calculation
+- Incremental updates to daily nutrition metrics
+- Decoupled AI service to allow independent scaling and iteration
+- Designed to support future model upgrades or alternative inference engines
+
+---
+
+## 🌍 Platform Usability & Experience
+
+- Role-specific dashboards with tailored navigation and data visibility
+- Progressive onboarding for users with health and goal profiling
+- Visual progress indicators and charts for long-term tracking
+- Community features designed with moderation-first workflows
+- Marketplace-style browsing for meal plans and consultations
+- Notification system for cross-role communication and updates
+
+---
+
+## 📊 Monitoring, Reliability & Maintainability
+
+- Clear separation of concerns between frontend, backend, and AI services
+- API contracts documented and version-aware
+- Database schema designed around traceability (users, plans, consultations, invoices)
+- Structured logging and error handling at the API layer
+- Architecture designed to support future horizontal scaling
+
+---
+
+## 🚀 Extensibility & Future Evolution
+
+The platform is designed to support future enhancements such as:
+
+- Advanced analytics and personalized insights
+- Additional AI-assisted dietary features
+- Internationalization and localization
+- Expanded professional roles
+- Integration with wearable or external health data sources
+- Real payment gateway integration
+- Enhanced recommendation systems
 
 ---
 
