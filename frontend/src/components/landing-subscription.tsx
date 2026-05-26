@@ -105,8 +105,6 @@ export default function SubscriptionCards() {
             whileHover={{ y: -8 }}
             className="bg-card rounded-[2rem] p-7 relative overflow-hidden shadow-brand lg:scale-105 z-20 border border-brand/30 flex flex-col justify-between"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-brand/10 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
             <div className="relative z-10">
               <div className="mb-8">
                 <span className="px-4 py-1.5 rounded-full bg-brand/20 text-brand text-xs font-bold uppercase tracking-wider mb-4 inline-block">
