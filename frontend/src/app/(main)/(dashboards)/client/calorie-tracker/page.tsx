@@ -144,7 +144,9 @@ function getTodayTotals(logs: CalorieLog[], progress: ClientProgress | null) {
   );
 }
 
-function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boolean {
+function getIsSubscriptionActive(
+  status: ClientSubscriptionStatus | null,
+): boolean {
   const subscription = status?.subscription;
   if (!subscription) return status?.is_premium ?? false;
 
@@ -152,10 +154,14 @@ function getIsSubscriptionActive(status: ClientSubscriptionStatus | null): boole
     ? new Date(subscription.end_date).getTime()
     : null;
   const hasExpired =
-    expiryTime !== null && !Number.isNaN(expiryTime) && expiryTime <= Date.now();
+    expiryTime !== null &&
+    !Number.isNaN(expiryTime) &&
+    expiryTime <= Date.now();
 
   if (subscription.end_date) {
-    return Boolean(status?.is_premium && subscription.status === "active" && !hasExpired);
+    return Boolean(
+      status?.is_premium && subscription.status === "active" && !hasExpired,
+    );
   }
 
   return Boolean(status?.is_premium && subscription.status === "active");
@@ -175,13 +181,13 @@ function PremiumAiPaywall() {
 
       <Card className="shadow-sm">
         <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Crown className="h-5 w-5 text-amber-500" />
-              Premium AI access
-            </CardTitle>
-            <CardDescription>
-              This feature requires an active premium subscription.
-            </CardDescription>
+          <CardTitle className="flex items-center gap-2 text-card-foreground">
+            <Crown className="h-5 w-5 text-amber-500" />
+            Premium AI access
+          </CardTitle>
+          <CardDescription>
+            This feature requires an active premium subscription.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
@@ -198,7 +204,8 @@ function PremiumAiPaywall() {
                 Unlock AI-powered tracking
               </h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Snap a photo of your meal, review detected ingredients, and save the corrected log.
+                Snap a photo of your meal, review detected ingredients, and save
+                the corrected log.
               </p>
             </div>
             <Button
@@ -870,9 +877,7 @@ export default function CalorieTrackerPage() {
       </div>
 
       {pageError && (
-        <div
-          className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-        >
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {pageError}
         </div>
       )}
@@ -1049,7 +1054,8 @@ export default function CalorieTrackerPage() {
                     </CardDescription>
                     <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[12px] font-medium text-amber-700 border border-amber-500/10 dark:text-amber-400">
                       <AlertTriangle className="h-3.5 w-3.5" />
-                      AI estimates are approximations. Always review the results.
+                      AI estimates are approximations. Always review the
+                      results.
                     </div>
                   </CardHeader>
                   <CardContent>

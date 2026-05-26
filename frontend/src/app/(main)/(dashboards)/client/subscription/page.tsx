@@ -139,6 +139,7 @@ export default function SubscriptionPage() {
         buildPaymentUrl({
           type: "subscription",
           planType: selectedPlan,
+          amount: prices[selectedPlan],
         }),
       );
     } finally {

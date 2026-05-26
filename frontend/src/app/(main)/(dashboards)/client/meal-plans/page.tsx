@@ -133,13 +133,13 @@ export default function MealPlansPage() {
                       Completion
                     </span>
                     <span className="text-sm font-bold">
-                      {Math.round(userPlan.progress_percent)}%
+                      {userPlan.status === 'completed' ? 100 : Math.round(userPlan.progress_percent)}%
                     </span>
                   </div>
                   <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden border border-inner">
                     <div
                       className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-700 ease-out"
-                      style={{ width: `${userPlan.progress_percent}%` }}
+                      style={{ width: `${userPlan.status === 'completed' ? 100 : userPlan.progress_percent}%` }}
                     />
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export default function MealPlansPage() {
                     <p className="text-[10px] uppercase font-semibold text-muted-foreground">
                       Status
                     </p>
-                    <p className="text-sm font-medium italic">Active Plan</p>
+                    <p className="text-sm font-medium italic capitalize">{userPlan.status} Plan</p>
                   </div>
                   <div className="space-y-1 border-l pl-4">
                     <p className="text-[10px] uppercase font-semibold text-muted-foreground">
