@@ -27,7 +27,7 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-background py-24">
+    <section className="relative overflow-hidden bg-card py-24">
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
@@ -37,11 +37,8 @@ export default function NewsletterSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.7, type: "spring", bounce: 0.2 }}
-          className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card p-8 sm:p-12 md:p-16 shadow-xl"
+          className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-background p-8 sm:p-12 md:p-16 shadow-xl"
         >
-          {/* Card inner decorative blur */}
-          <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-primary/10 blur-[50px] pointer-events-none" />
-
           <div className="relative z-10 mx-auto max-w-2xl text-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}

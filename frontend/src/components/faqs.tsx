@@ -86,9 +86,6 @@ export default function FAQsThree() {
       id="faq-section"
       className="relative z-10 overflow-hidden bg-background py-24"
     >
-      {/* Background ambient glow */}
-      <div className="absolute left-1/2 top-0 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary/5 blur-[120px]" />
-
       <div className="mx-auto max-w-6xl px-6 lg:px-8">
         <div className="flex flex-col gap-16 lg:flex-row lg:gap-20">
           {/* Left Column: Context & Sticky header */}

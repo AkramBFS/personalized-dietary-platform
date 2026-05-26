@@ -13,9 +13,12 @@ interface ReviewModalProps {
   type: "meal-plan" | "consultation";
   id: number;
   title: string;
+  nutritionistId?: number;
 }
 
-export default function ReviewModal({ isOpen, onClose, type, id, title }: ReviewModalProps) {
+import { saveLocalPlanRating, saveLocalConsultationRating } from "@/lib/localRatings";
+
+export default function ReviewModal({ isOpen, onClose, type, id, title, nutritionistId }: ReviewModalProps) {
   const [rating, setRating] = useState(5);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -39,6 +42,13 @@ export default function ReviewModal({ isOpen, onClose, type, id, title }: Review
         rating,
         comment: comment.trim() || undefined,
       });
+      
+      // Save rating locally to override API until API syncs/re-calculates
+      if (type === "meal-plan") {
+        saveLocalPlanRating(id, rating, nutritionistId);
+      } else if (type === "consultation") {
+        saveLocalConsultationRating(id, rating, nutritionistId);
+      }
       
       setIsSubmitted(true);
       // Automatically close after 3 seconds

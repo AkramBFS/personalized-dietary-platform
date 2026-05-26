@@ -27,6 +27,7 @@ import {
   getSpecializations,
   LookupItem,
 } from "@/lib/lookups";
+import { getLocalPlanAverage, mergeRating } from "@/lib/localRatings";
 import { Input } from "@/components/ui/Input";
 import {
   Select,
@@ -90,6 +91,9 @@ function PlanCard({
   const badgeText = isSeasonalPlan(plan)
     ? "Seasonal"
     : plan.specialization_name || "Clinical Plan";
+
+  const localAvg = getLocalPlanAverage(plan.id);
+  const finalRating = mergeRating(plan.rating_avg, localAvg);
 
   return (
     <Link
@@ -180,7 +184,9 @@ function PlanCard({
             <div className="flex items-center gap-2 shrink-0">
               <Star className="w-4 h-4 fill-primary text-primary" />
               <span className="text-sm font-semibold text-muted-foreground">
-                {plan.rating_avg.toFixed(1)}
+                {finalRating > 0
+                  ? finalRating.toFixed(1)
+                  : "No reviews"}
               </span>
             </div>
           </div>

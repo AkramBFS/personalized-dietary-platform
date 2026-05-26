@@ -28,6 +28,7 @@ import {
   resolveApiUrl,
 } from "@/lib/api";
 import { buildPaymentUrl } from "@/lib/payment";
+import { getLocalPlanAverage, mergeRating } from "@/lib/localRatings";
 
 interface PlanProps {
   slug: string;
@@ -189,7 +190,10 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
       });
       router.push(buildPaymentUrl(session.checkout_id));
     } catch (checkoutIssue) {
-      console.error("Failed to create marketplace checkout session", checkoutIssue);
+      console.error(
+        "Failed to create marketplace checkout session",
+        checkoutIssue,
+      );
       router.push(
         buildPaymentUrl({
           type: "marketplace-plan",
@@ -283,12 +287,20 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
               <p className="text-sm text-destructive">{checkoutError}</p>
             ) : null}
 
-            <div className="flex items-center gap-4 mt-4">
-              {renderStars(plan.rating_avg)}
-              <span className="text-sm font-semibold text-muted-foreground">
-                {plan.rating_avg.toFixed(1)}/5 rating
-              </span>
-            </div>
+            {(() => {
+              const localAvg = getLocalPlanAverage(plan.id);
+              const finalRating = mergeRating(plan.rating_avg, localAvg);
+              return (
+                <div className="flex items-center gap-4 mt-4">
+                  {renderStars(finalRating)}
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    {finalRating > 0
+                      ? `${finalRating.toFixed(1)}/5 rating`
+                      : "No reviews yet"}
+                  </span>
+                </div>
+              );
+            })()}
           </motion.div>
 
           <motion.div
