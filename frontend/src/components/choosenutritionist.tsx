@@ -28,6 +28,7 @@ import {
   LookupItem,
 } from "@/lib/lookups";
 import NutritionistProfileModal from "./NutritionistProfileModal";
+import { getLocalNutritionistAverage, mergeRating } from "@/lib/localRatings";
 
 export default function ChooseNutritionist() {
   // ── Search ──────────────────────────────────────────────────────────────
@@ -311,8 +312,10 @@ export default function ChooseNutritionist() {
             </button>
           </div>
         ) : (
-          /* Nutritionist cards */
           displayedNutritionists.map((nutri) => {
+            const localAvg = getLocalNutritionistAverage(nutri.nutritionist_id);
+            const finalRating = mergeRating(nutri.rating, localAvg);
+
             // Build dynamic tag list from real data
             const tags = [
               nutri.specialization_name,
@@ -384,8 +387,8 @@ export default function ChooseNutritionist() {
                     <div className="flex items-center gap-1 text-amber-500">
                       <Star className="w-4 h-4 fill-amber-500" />
                       <span className="text-xs font-semibold text-foreground">
-                        {nutri.rating > 0
-                          ? nutri.rating.toFixed(1)
+                        {finalRating > 0
+                          ? finalRating.toFixed(1)
                           : "No reviews yet"}
                       </span>
                     </div>

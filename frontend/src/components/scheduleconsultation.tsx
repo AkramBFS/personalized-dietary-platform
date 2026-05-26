@@ -13,6 +13,7 @@ import {
   Clock,
   User,
   Loader2,
+  Star,
 } from "lucide-react";
 import { format, addDays, isSameDay, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/api";
 import { buildPaymentUrl } from "@/lib/payment";
 import NutritionistProfileModal from "./NutritionistProfileModal";
+import { getLocalNutritionistAverage, mergeRating } from "@/lib/localRatings";
 
 interface TimeSlot {
   start_time: string;
@@ -40,6 +42,7 @@ interface NutritionistProfile {
   bio: string;
   consultation_price: number;
   profile_image: string;
+  rating?: number;
 }
 
 interface AvailabilityResponse {
@@ -47,9 +50,12 @@ interface AvailabilityResponse {
   available_slots: TimeSlot[];
 }
 
-type AvailabilityPayload = TimeSlot[] | AvailabilityResponse | {
-  results?: TimeSlot[];
-};
+type AvailabilityPayload =
+  | TimeSlot[]
+  | AvailabilityResponse
+  | {
+      results?: TimeSlot[];
+    };
 
 interface ScheduleProps {
   nutritionistId: string;
@@ -69,7 +75,9 @@ function mapNutritionistProfile(
     ].filter(Boolean) as string[],
     bio: profile.bio ?? "",
     consultation_price: Number(profile.consultation_price ?? 0),
-    profile_image: resolveApiUrl(profile.profile_photo_url) ?? "/placeholder-avatar.png",
+    profile_image:
+      resolveApiUrl(profile.profile_photo_url) ?? "/placeholder-avatar.png",
+    rating: profile.rating,
   };
 }
 
@@ -79,9 +87,13 @@ export default function ScheduleConsultation({
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [consultationType, setConsultationType] = useState<"advice_only" | "plan_included">("advice_only");
+  const [consultationType, setConsultationType] = useState<
+    "advice_only" | "plan_included"
+  >("advice_only");
   const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
-  const [nutritionist, setNutritionist] = useState<NutritionistProfile | null>(null);
+  const [nutritionist, setNutritionist] = useState<NutritionistProfile | null>(
+    null,
+  );
   const [availability, setAvailability] = useState<TimeSlot[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
@@ -128,15 +140,21 @@ export default function ScheduleConsultation({
       setIsHoliday(false);
       try {
         const formattedDate = format(selectedDate, "yyyy-MM-dd");
-        const raw = await getNutritionistAvailability(nutritionistId, formattedDate);
+        const raw = await getNutritionistAvailability(
+          nutritionistId,
+          formattedDate,
+        );
         if (!isMounted) return;
 
         const payload = raw as AvailabilityPayload;
         let rawSlots: TimeSlot[] = [];
-        
+
         if (Array.isArray(payload)) {
           rawSlots = payload;
-        } else if ("available_slots" in payload && Array.isArray(payload.available_slots)) {
+        } else if (
+          "available_slots" in payload &&
+          Array.isArray(payload.available_slots)
+        ) {
           rawSlots = payload.available_slots;
           if ("is_holiday" in payload) {
             setIsHoliday(!!payload.is_holiday);
@@ -144,35 +162,35 @@ export default function ScheduleConsultation({
         } else if ("results" in payload && Array.isArray(payload.results)) {
           rawSlots = payload.results;
         }
-        
+
         // Split ranges into 1-hour slots
         const generatedSlots: TimeSlot[] = [];
-        rawSlots.forEach(range => {
+        rawSlots.forEach((range) => {
           const [startH, startM] = range.start_time.split(":").map(Number);
           const [endH, endM] = range.end_time.split(":").map(Number);
-          
+
           let currentH = startH;
           let currentM = startM;
-          
+
           // Total minutes from start of day
           const totalEndMinutes = endH * 60 + endM;
-          
+
           while (currentH * 60 + currentM + 60 <= totalEndMinutes) {
             const nextTotalMinutes = currentH * 60 + currentM + 60;
             const nextH = Math.floor(nextTotalMinutes / 60);
             const nextM = nextTotalMinutes % 60;
-            
+
             generatedSlots.push({
               start_time: `${String(currentH).padStart(2, "0")}:${String(currentM).padStart(2, "0")}`,
               end_time: `${String(nextH).padStart(2, "0")}:${String(nextM).padStart(2, "0")}`,
-              is_available: range.is_available ?? true
+              is_available: range.is_available ?? true,
             });
-            
+
             currentH = nextH;
             currentM = nextM;
           }
         });
-        
+
         setAvailability(generatedSlots);
       } catch (err) {
         console.error("Failed to load slots", err);
@@ -271,8 +289,13 @@ export default function ScheduleConsultation({
 
         router.push(buildPaymentUrl(session.checkout_id));
       } catch (checkoutIssue) {
-        console.error("Failed to create consultation checkout session", checkoutIssue);
-        const totalPrice = (nutritionist.consultation_price ?? 0) + (consultationType === "plan_included" ? 50 : 0);
+        console.error(
+          "Failed to create consultation checkout session",
+          checkoutIssue,
+        );
+        const totalPrice =
+          (nutritionist.consultation_price ?? 0) +
+          (consultationType === "plan_included" ? 50 : 0);
         router.push(
           buildPaymentUrl({
             type: "consultation",
@@ -317,9 +340,30 @@ export default function ScheduleConsultation({
                   <h2 className="font-serif text-2xl font-bold text-foreground">
                     {currentNutritionist.name}
                   </h2>
-                  <p className="text-accent-foreground font-medium mt-1">
-                    {currentNutritionist.specialization}
-                  </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-accent-foreground font-medium">
+                      {currentNutritionist.specialization}
+                    </p>
+                    {(() => {
+                      const localAvg = getLocalNutritionistAverage(
+                        Number(currentNutritionist.id),
+                      );
+                      const finalRating = mergeRating(
+                        currentNutritionist.rating,
+                        localAvg,
+                      );
+                      return (
+                        <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                          <Star className="w-3.5 h-3.5 fill-amber-500" />
+                          <span className="text-xs font-bold text-foreground">
+                            {finalRating > 0
+                              ? finalRating.toFixed(1)
+                              : "No reviews yet"}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
@@ -406,9 +450,13 @@ export default function ScheduleConsultation({
                 ) : isHoliday ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <CalendarX className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h4 className="text-lg font-bold text-foreground">Practitioner is on Holiday</h4>
+                    <h4 className="text-lg font-bold text-foreground">
+                      Practitioner is on Holiday
+                    </h4>
                     <p className="text-muted-foreground max-w-xs mx-auto">
-                      {currentNutritionist.name} is not available on {format(selectedDate, "MMMM do")}. Please select another date.
+                      {currentNutritionist.name} is not available on{" "}
+                      {format(selectedDate, "MMMM do")}. Please select another
+                      date.
                     </p>
                   </div>
                 ) : (
@@ -542,7 +590,11 @@ export default function ScheduleConsultation({
                   Total Due Today
                 </span>
                 <span className="font-serif text-3xl text-foreground font-bold">
-                  ${(currentNutritionist.consultation_price + (consultationType === "plan_included" ? 50 : 0)).toFixed(2)}
+                  $
+                  {(
+                    currentNutritionist.consultation_price +
+                    (consultationType === "plan_included" ? 50 : 0)
+                  ).toFixed(2)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground text-right mt-1">
