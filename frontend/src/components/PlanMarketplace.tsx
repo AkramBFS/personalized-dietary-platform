@@ -22,7 +22,11 @@ import {
   MarketplacePlanListItem,
   resolveApiUrl,
 } from "@/lib/api";
-import { bootstrapLookups, getSpecializations, LookupItem } from "@/lib/lookups";
+import {
+  bootstrapLookups,
+  getSpecializations,
+  LookupItem,
+} from "@/lib/lookups";
 import { Input } from "@/components/ui/Input";
 import {
   Select,
@@ -64,7 +68,12 @@ function planMatchesSearch(plan: MarketplacePlanListItem, query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
 
-  return [plan.title, plan.description, plan.specialization_name, plan.nutritionist_username]
+  return [
+    plan.title,
+    plan.description,
+    plan.specialization_name,
+    plan.nutritionist_username,
+  ]
     .filter(Boolean)
     .some((value) => value!.toLowerCase().includes(normalized));
 }
@@ -78,7 +87,9 @@ function PlanCard({
 }) {
   const imageSrc = resolveApiUrl(plan.cover_image_url) ?? FALLBACK_CARD_IMAGE;
   const href = buildMarketplacePlanHref(plan);
-  const badgeText = isSeasonalPlan(plan) ? "Seasonal" : plan.specialization_name || "Clinical Plan";
+  const badgeText = isSeasonalPlan(plan)
+    ? "Seasonal"
+    : plan.specialization_name || "Clinical Plan";
 
   return (
     <Link
@@ -92,29 +103,57 @@ function PlanCard({
         viewport={{ once: true }}
         className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl transition-all duration-300 h-full flex flex-col group cursor-pointer"
       >
-        <div className={compact ? "relative h-48 overflow-hidden bg-muted" : "relative h-60 overflow-hidden bg-muted"}>
+        <div
+          className={
+            compact
+              ? "relative h-48 overflow-hidden bg-muted"
+              : "relative h-60 overflow-hidden bg-muted"
+          }
+        >
           <img
             alt={plan.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             src={imageSrc}
           />
           <div className="absolute top-4 left-4 bg-card/95 text-foreground backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center shadow-sm gap-1.5">
-            {isSeasonalPlan(plan) ? <Leaf className="w-4 h-4" /> : <BadgeCheck className="w-4 h-4" />}
+            {isSeasonalPlan(plan) ? (
+              <Leaf className="w-4 h-4" />
+            ) : (
+              <BadgeCheck className="w-4 h-4" />
+            )}
             {badgeText}
           </div>
         </div>
 
         <div className="p-6 flex-grow flex flex-col">
           <div className="flex justify-between items-start mb-3 gap-4">
-            <h3 className={compact ? "text-lg font-bold text-foreground line-clamp-2 leading-tight" : "text-xl font-bold text-foreground line-clamp-2 leading-tight"}>
+            <h3
+              className={
+                compact
+                  ? "text-lg font-bold text-foreground line-clamp-2 leading-tight"
+                  : "text-xl font-bold text-foreground line-clamp-2 leading-tight"
+              }
+            >
               {plan.title}
             </h3>
-            <span className={compact ? "text-base font-bold text-primary shrink-0" : "text-lg font-bold text-primary shrink-0"}>
+            <span
+              className={
+                compact
+                  ? "text-base font-bold text-primary shrink-0"
+                  : "text-lg font-bold text-primary shrink-0"
+              }
+            >
               {formatPrice(plan.price)}
             </span>
           </div>
 
-          <p className={compact ? "text-sm text-muted-foreground mb-5 line-clamp-3 leading-relaxed" : "text-muted-foreground mb-6 line-clamp-3 leading-relaxed"}>
+          <p
+            className={
+              compact
+                ? "text-sm text-muted-foreground mb-5 line-clamp-3 leading-relaxed"
+                : "text-muted-foreground mb-6 line-clamp-3 leading-relaxed"
+            }
+          >
             {plan.description}
           </p>
 
@@ -152,8 +191,12 @@ function PlanCard({
 }
 
 export default function PlanMarketplace() {
-  const [regularPlans, setRegularPlans] = useState<MarketplacePlanListItem[]>([]);
-  const [seasonalPlans, setSeasonalPlans] = useState<MarketplacePlanListItem[]>([]);
+  const [regularPlans, setRegularPlans] = useState<MarketplacePlanListItem[]>(
+    [],
+  );
+  const [seasonalPlans, setSeasonalPlans] = useState<MarketplacePlanListItem[]>(
+    [],
+  );
   const [specializations, setSpecializations] = useState<LookupItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("all");
@@ -172,7 +215,9 @@ export default function PlanMarketplace() {
   const seasonalRequestIdRef = useRef(0);
 
   const parsedSpecializationId =
-    selectedSpecialization !== "all" ? Number(selectedSpecialization) : undefined;
+    selectedSpecialization !== "all"
+      ? Number(selectedSpecialization)
+      : undefined;
   const parsedMinPrice = minPriceInput ? Number(minPriceInput) : undefined;
   const parsedMaxPrice = maxPriceInput ? Number(maxPriceInput) : undefined;
 
@@ -223,7 +268,10 @@ export default function PlanMarketplace() {
             sort: sortOption,
           });
 
-          lastKnownTotalPages = Math.max(1, Math.ceil(payload.count / REGULAR_PAGE_SIZE));
+          lastKnownTotalPages = Math.max(
+            1,
+            Math.ceil(payload.count / REGULAR_PAGE_SIZE),
+          );
 
           const newRegularPlans = payload.results.filter(
             (plan) => !isSeasonalPlan(plan) && !knownIds.has(plan.id),
@@ -250,7 +298,9 @@ export default function PlanMarketplace() {
       } catch (loadError) {
         if (requestId !== regularRequestIdRef.current) return;
         console.error("Failed to load marketplace plans", loadError);
-        setError("We couldn't load marketplace plans right now. Please try again shortly.");
+        setError(
+          "We couldn't load marketplace plans right now. Please try again shortly.",
+        );
         if (reset) {
           setRegularPlans([]);
           setHasMoreRegular(false);
@@ -290,7 +340,10 @@ export default function PlanMarketplace() {
             sort: "newest",
           });
 
-          totalPages = Math.max(1, Math.ceil(payload.count / SEASONAL_PAGE_SIZE));
+          totalPages = Math.max(
+            1,
+            Math.ceil(payload.count / SEASONAL_PAGE_SIZE),
+          );
 
           for (const plan of payload.results) {
             if (!isSeasonalPlan(plan) || knownIds.has(plan.id)) continue;
@@ -406,12 +459,17 @@ export default function PlanMarketplace() {
           <div className="bg-card rounded-3xl border border-border shadow-sm p-6 md:p-8 mb-10">
             <div className="flex items-center gap-3 mb-6">
               <Filter className="w-5 h-5 text-brand" />
-              <h3 className="text-xl font-bold text-foreground">Refine Plans</h3>
+              <h3 className="text-xl font-bold text-foreground">
+                Refine Plans
+              </h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
               <div className="xl:col-span-2">
-                <label className="text-sm font-semibold text-foreground mb-2 block" htmlFor="marketplace-search">
+                <label
+                  className="text-sm font-semibold text-foreground mb-2 block"
+                  htmlFor="marketplace-search"
+                >
                   Search loaded plans
                 </label>
                 <div className="relative">
@@ -427,16 +485,27 @@ export default function PlanMarketplace() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-foreground mb-2 block">Specialization</label>
-                <Select value={selectedSpecialization} onValueChange={setSelectedSpecialization}>
+                <label className="text-sm font-semibold text-foreground mb-2 block">
+                  Specialization
+                </label>
+                <Select
+                  value={selectedSpecialization}
+                  onValueChange={setSelectedSpecialization}
+                >
                   <SelectTrigger className="w-full h-11 bg-background">
                     <SelectValue placeholder="All specializations" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All specializations</SelectItem>
                     {specializations.map((specialization) => (
-                      <SelectItem key={specialization.id} value={String(specialization.id)}>
-                        {specialization.name || specialization.label || specialization.value || `Specialization ${specialization.id}`}
+                      <SelectItem
+                        key={specialization.id}
+                        value={String(specialization.id)}
+                      >
+                        {specialization.name ||
+                          specialization.label ||
+                          specialization.value ||
+                          `Specialization ${specialization.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -444,7 +513,10 @@ export default function PlanMarketplace() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-foreground mb-2 block" htmlFor="marketplace-min-price">
+                <label
+                  className="text-sm font-semibold text-foreground mb-2 block"
+                  htmlFor="marketplace-min-price"
+                >
                   Min Price
                 </label>
                 <Input
@@ -460,7 +532,10 @@ export default function PlanMarketplace() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-foreground mb-2 block" htmlFor="marketplace-max-price">
+                <label
+                  className="text-sm font-semibold text-foreground mb-2 block"
+                  htmlFor="marketplace-max-price"
+                >
                   Max Price
                 </label>
                 <Input
@@ -476,8 +551,13 @@ export default function PlanMarketplace() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-foreground mb-2 block">Sort</label>
-                <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+                <label className="text-sm font-semibold text-foreground mb-2 block">
+                  Sort
+                </label>
+                <Select
+                  value={sortOption}
+                  onValueChange={(value) => setSortOption(value as SortOption)}
+                >
                   <SelectTrigger className="w-full h-11 bg-background">
                     <SelectValue placeholder="Newest" />
                   </SelectTrigger>
@@ -500,12 +580,18 @@ export default function PlanMarketplace() {
           ) : isInitialLoading ? (
             <div className="bg-card rounded-2xl border border-border p-12 flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-10 h-10 text-brand animate-spin" />
-              <p className="text-muted-foreground">Loading marketplace plans...</p>
+              <p className="text-muted-foreground">
+                Loading marketplace plans...
+              </p>
             </div>
           ) : visibleRegularPlans.length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-12 text-center">
-              <p className="text-lg font-semibold text-foreground mb-2">No plans match your current filters.</p>
-              <p className="text-muted-foreground">Try adjusting the price range, specialization, or search terms.</p>
+              <p className="text-lg font-semibold text-foreground mb-2">
+                No plans match your current filters.
+              </p>
+              <p className="text-muted-foreground">
+                Try adjusting the price range, specialization, or search terms.
+              </p>
             </div>
           ) : (
             <>
@@ -542,7 +628,10 @@ export default function PlanMarketplace() {
                     )}
                   </button>
                 ) : (
-                  <p className="text-sm text-muted-foreground">You’ve reached the end of the currently available regular plans.</p>
+                  <p className="text-sm text-muted-foreground">
+                    You’ve reached the end of the currently available regular
+                    plans.
+                  </p>
                 )}
               </motion.div>
             </>
@@ -572,7 +661,9 @@ export default function PlanMarketplace() {
             </div>
           ) : seasonalPlans.length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-10 text-center">
-              <p className="text-muted-foreground">No seasonal plans are available right now.</p>
+              <p className="text-muted-foreground">
+                No seasonal plans are available right now.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -590,9 +681,12 @@ export default function PlanMarketplace() {
                 <Stethoscope className="w-6 h-6 text-brand" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground mb-1">Professional Guidance</h3>
+                <h3 className="font-bold text-foreground mb-1">
+                  Professional Guidance
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Every listed plan comes from an approved nutrition professional.
+                  Every listed plan comes from an approved nutrition
+                  professional.
                 </p>
               </div>
             </div>
@@ -601,9 +695,12 @@ export default function PlanMarketplace() {
                 <UserRound className="w-6 h-6 text-brand" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground mb-1">Visible Expertise</h3>
+                <h3 className="font-bold text-foreground mb-1">
+                  Visible Expertise
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Compare specialties, ratings, pricing, and free consultations before choosing.
+                  Compare specialties, ratings, pricing, and free consultations
+                  before choosing.
                 </p>
               </div>
             </div>
@@ -612,9 +709,12 @@ export default function PlanMarketplace() {
                 <BadgeCheck className="w-6 h-6 text-brand" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground mb-1">Structured Meal Plans</h3>
+                <h3 className="font-bold text-foreground mb-1">
+                  Structured Meal Plans
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Review full plan details, day-by-day meals, and included guidance before payment.
+                  Review full plan details, day-by-day meals, and included
+                  guidance before payment.
                 </p>
               </div>
             </div>

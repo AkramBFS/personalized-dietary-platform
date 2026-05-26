@@ -395,8 +395,21 @@ export async function getMealPlanDayContent(userPlanId: number, dayIndex?: numbe
   return unwrapResponse(response.data);
 }
 
-export async function advanceMealPlanDay(userPlanId: number): Promise<{ day_index: number; status: string }> {
-  const response = await api.patch<ApiEnvelope<{ day_index: number; status: string }>>(
+export async function getClientUserPlan(userPlanId: number): Promise<ClientUserPlan | undefined> {
+  const plans = await getClientUserPlans();
+  return plans.find(p => p.id === userPlanId);
+}
+
+export interface AdvanceMealPlanResult {
+  day_index?: number;
+  current_day_index?: number;
+  progress_percent?: number;
+  status?: string;
+  message?: string;
+}
+
+export async function advanceMealPlanDay(userPlanId: number): Promise<AdvanceMealPlanResult> {
+  const response = await api.patch<ApiEnvelope<AdvanceMealPlanResult> | AdvanceMealPlanResult>(
     `/client/user-plans/${userPlanId}/advance/`,
   );
   return unwrapResponse(response.data);
