@@ -27,7 +27,7 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-card py-24">
+    <section className="relative overflow-hidden bg-card py-24 rounded-b-[3rem]">
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
