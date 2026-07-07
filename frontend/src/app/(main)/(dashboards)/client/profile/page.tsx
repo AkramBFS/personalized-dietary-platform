@@ -148,8 +148,12 @@ export default function ProfilePage() {
         form.target_carbs,
         form.target_fats,
       ];
-      const hasAnyTargetValue = targetFields.some((value) => value.trim() !== "");
-      const hasAllTargetValues = targetFields.every((value) => value.trim() !== "");
+      const hasAnyTargetValue = targetFields.some(
+        (value) => value.trim() !== "",
+      );
+      const hasAllTargetValues = targetFields.every(
+        (value) => value.trim() !== "",
+      );
 
       if (hasAnyTargetValue && !hasAllTargetValues) {
         toast.error("Set calories, protein, carbs, and fat targets together.");
@@ -255,7 +259,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
               </div>
-                <div className="space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
+              <div className="space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Goal</span>
                   <span className="text-right font-medium">
@@ -447,7 +451,10 @@ export default function ProfilePage() {
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <Label htmlFor="target_calories" className="font-bold ml-1">
+                      <Label
+                        htmlFor="target_calories"
+                        className="font-bold ml-1"
+                      >
                         Target Calories (kcal)
                       </Label>
                       <Input
@@ -462,7 +469,10 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="target_protein" className="font-bold ml-1">
+                      <Label
+                        htmlFor="target_protein"
+                        className="font-bold ml-1"
+                      >
                         Target Protein (g)
                       </Label>
                       <Input
@@ -520,7 +530,7 @@ export default function ProfilePage() {
                     onChange={(event) =>
                       setSelectedPhoto(event.target.files?.[0] ?? null)
                     }
-                    className="h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+                    className="file:rounded-md file:border-0 file:bg-primary file:px-4 file:text-sm file:font-medium file:text-primary-foreground h-auto py-4 px-6 rounded-2xl bg-card/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                   />
                 </div>
                 <div className="flex justify-end">
