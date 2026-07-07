@@ -28,6 +28,7 @@ import {
   getClientOwnPosts,
 } from "@/lib/client/service";
 import { getProfileIdentity, CurrentProfileIdentity } from "@/lib/profile";
+import { toast } from "sonner";
 
 // ─── User Profile Modal ───────────────────────────────────────────────────────
 
@@ -77,12 +78,18 @@ function UserProfileModal({
 
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <div className="bg-muted/50 rounded-xl p-3 border border-border">
-              <p className="text-2xl font-bold text-foreground">{user.postCount}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {user.postCount}
+              </p>
               <p className="text-xs text-muted-foreground font-medium">Posts</p>
             </div>
             <div className="bg-muted/50 rounded-xl p-3 border border-border">
-              <p className="text-2xl font-bold text-foreground">{user.commentCount}</p>
-              <p className="text-xs text-muted-foreground font-medium">Comments</p>
+              <p className="text-2xl font-bold text-foreground">
+                {user.commentCount}
+              </p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Comments
+              </p>
             </div>
           </div>
 
@@ -137,13 +144,17 @@ function UserChip({
 export default function CommunityComponent() {
   const [allPosts, setAllPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<CurrentProfileIdentity | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentProfileIdentity | null>(
+    null,
+  );
   const [sortBy, setSortBy] = useState<"recent" | "oldest">("recent");
 
   // New post
   const [newPostText, setNewPostText] = useState("");
   const [newPostImage, setNewPostImage] = useState<File | null>(null);
-  const [newPostImagePreview, setNewPostImagePreview] = useState<string | null>(null);
+  const [newPostImagePreview, setNewPostImagePreview] = useState<string | null>(
+    null,
+  );
   const [submittingPost, setSubmittingPost] = useState(false);
 
   // Comments
@@ -200,12 +211,19 @@ export default function CommunityComponent() {
     (username: string): UserStats => {
       const userPosts = allPosts.filter((p) => p.author_username === username);
       const commentCount = allPosts.reduce((acc, p) => {
-        return acc + (p.comments?.filter((c) => c.author_username === username).length ?? 0);
+        return (
+          acc +
+          (p.comments?.filter((c) => c.author_username === username).length ??
+            0)
+        );
       }, 0);
       const dates: string[] = [
         ...userPosts.map((p) => p.created_at),
         ...allPosts.flatMap(
-          (p) => p.comments?.filter((c) => c.author_username === username).map((c) => c.created_at) ?? []
+          (p) =>
+            p.comments
+              ?.filter((c) => c.author_username === username)
+              .map((c) => c.created_at) ?? [],
         ),
       ];
       dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
@@ -216,7 +234,7 @@ export default function CommunityComponent() {
         lastActive: dates[0] ?? null,
       };
     },
-    [allPosts]
+    [allPosts],
   );
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -239,7 +257,10 @@ export default function CommunityComponent() {
     if (!newPostText && !newPostImage) return;
     setSubmittingPost(true);
     try {
-      await postCreateCommunityPost({ content: newPostText, image: newPostImage });
+      await postCreateCommunityPost({
+        content: newPostText,
+        image: newPostImage,
+      });
       setNewPostText("");
       removeNewPostImage();
       // Reload the feed so the new post appears (pending moderation)
@@ -280,13 +301,15 @@ export default function CommunityComponent() {
         prev.map((p) =>
           p.id === postId
             ? { ...p, comments: [...(p.comments ?? []), newComment] }
-            : p
-        )
+            : p,
+        ),
       );
       setCommentTexts((prev) => ({ ...prev, [postId]: "" }));
     } catch (err) {
       console.error("Failed to post comment", err);
-      toast.error("Failed to post comment. Check your connection and try again.");
+      toast.error(
+        "Failed to post comment. Check your connection and try again.",
+      );
     } finally {
       setCommentingPostId(null);
     }
@@ -295,7 +318,11 @@ export default function CommunityComponent() {
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -303,11 +330,13 @@ export default function CommunityComponent() {
   return (
     <>
       {selectedUser && (
-        <UserProfileModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+        <UserProfileModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
       )}
 
       <div className="w-full max-w-6xl mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
-
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Community</h1>
@@ -318,7 +347,9 @@ export default function CommunityComponent() {
 
         {/* Sort bar */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-1">Sort:</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-1">
+            Sort:
+          </span>
           <button
             onClick={() => setSortBy("recent")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
@@ -343,10 +374,8 @@ export default function CommunityComponent() {
 
         {/* Main layout: Feed + Sidebar */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-
           {/* ── Left: Post Feed ───────────────────────────────────────────── */}
           <div className="flex-1 min-w-0 flex flex-col gap-5">
-
             {/* Create Post */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
               <form onSubmit={handleCreatePost} className="flex flex-col gap-3">
@@ -401,7 +430,9 @@ export default function CommunityComponent() {
                   </label>
                   <button
                     type="submit"
-                    disabled={(!newPostText.trim() && !newPostImage) || submittingPost}
+                    disabled={
+                      (!newPostText.trim() && !newPostImage) || submittingPost
+                    }
                     className="bg-primary text-primary-foreground px-5 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
                   >
                     {submittingPost ? (
@@ -442,9 +473,15 @@ export default function CommunityComponent() {
                         <div className="flex items-center gap-2 min-w-0">
                           <UserChip
                             username={post.author_username}
-                            onClick={() => setSelectedUser(buildUserStats(post.author_username))}
+                            onClick={() =>
+                              setSelectedUser(
+                                buildUserStats(post.author_username),
+                              )
+                            }
                           />
-                          <span className="text-muted-foreground text-xs shrink-0">·</span>
+                          <span className="text-muted-foreground text-xs shrink-0">
+                            ·
+                          </span>
                           <span className="text-xs text-muted-foreground shrink-0">
                             {formatDate(post.created_at)}
                           </span>
@@ -478,11 +515,14 @@ export default function CommunityComponent() {
                     {/* Post footer */}
                     <div className="px-5 py-3 border-t border-border flex items-center gap-4 bg-muted/30">
                       <button
-                        onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
+                        onClick={() =>
+                          setExpandedPostId(isExpanded ? null : post.id)
+                        }
                         className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
                       >
                         <MessageSquare className="w-4 h-4" />
-                        {post.comments?.length ?? 0} Comment{(post.comments?.length ?? 0) !== 1 ? "s" : ""}
+                        {post.comments?.length ?? 0} Comment
+                        {(post.comments?.length ?? 0) !== 1 ? "s" : ""}
                         {isExpanded ? (
                           <ChevronUp className="w-3.5 h-3.5 ml-0.5" />
                         ) : (
@@ -501,7 +541,9 @@ export default function CommunityComponent() {
                               <div key={comment.id} className="flex gap-3">
                                 <button
                                   onClick={() =>
-                                    setSelectedUser(buildUserStats(comment.author_username))
+                                    setSelectedUser(
+                                      buildUserStats(comment.author_username),
+                                    )
                                   }
                                   className="shrink-0 focus:outline-none"
                                 >
@@ -515,7 +557,11 @@ export default function CommunityComponent() {
                                   <div className="flex items-center justify-between mb-1">
                                     <button
                                       onClick={() =>
-                                        setSelectedUser(buildUserStats(comment.author_username))
+                                        setSelectedUser(
+                                          buildUserStats(
+                                            comment.author_username,
+                                          ),
+                                        )
                                       }
                                       className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
                                     >
@@ -556,7 +602,10 @@ export default function CommunityComponent() {
                               <textarea
                                 value={commentText}
                                 onChange={(e) =>
-                                  setCommentTexts((prev) => ({ ...prev, [post.id]: e.target.value }))
+                                  setCommentTexts((prev) => ({
+                                    ...prev,
+                                    [post.id]: e.target.value,
+                                  }))
                                 }
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" && !e.shiftKey) {
@@ -570,7 +619,10 @@ export default function CommunityComponent() {
                               />
                               <button
                                 onClick={() => void handlePostComment(post.id)}
-                                disabled={!commentText.trim() || commentingPostId === post.id}
+                                disabled={
+                                  !commentText.trim() ||
+                                  commentingPostId === post.id
+                                }
                                 className="bg-primary text-primary-foreground p-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0"
                               >
                                 {commentingPostId === post.id ? (
@@ -596,7 +648,6 @@ export default function CommunityComponent() {
 
           {/* ── Right: Sidebar ────────────────────────────────────────────── */}
           <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-5">
-
             {/* About */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
               <h3 className="font-bold text-foreground text-sm mb-3 flex items-center gap-2">
@@ -604,8 +655,9 @@ export default function CommunityComponent() {
                 About This Community
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                A supportive space for discussing general wellness, sharing evidence-based
-                practices, and supporting each other on the journey to better health.
+                A supportive space for discussing general wellness, sharing
+                evidence-based practices, and supporting each other on the
+                journey to better health.
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="w-3.5 h-3.5" />
@@ -615,7 +667,9 @@ export default function CommunityComponent() {
 
             {/* Rules */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="font-bold text-foreground text-sm mb-3">Community Rules</h3>
+              <h3 className="font-bold text-foreground text-sm mb-3">
+                Community Rules
+              </h3>
               <ol className="list-decimal pl-4 text-xs text-muted-foreground space-y-2 leading-relaxed">
                 <li>Be respectful and supportive.</li>
                 <li>No medical advice — consult a professional.</li>
@@ -627,7 +681,9 @@ export default function CommunityComponent() {
             {/* Top Contributors */}
             {topContributors.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-                <h3 className="font-bold text-foreground text-sm mb-3">Top Contributors</h3>
+                <h3 className="font-bold text-foreground text-sm mb-3">
+                  Top Contributors
+                </h3>
                 <ul className="space-y-3">
                   {topContributors.map((u, idx) => (
                     <li key={idx} className="flex items-center gap-3">
@@ -654,7 +710,6 @@ export default function CommunityComponent() {
                 </ul>
               </div>
             )}
-
           </aside>
         </div>
       </div>
