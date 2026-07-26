@@ -1,4 +1,4 @@
-# Personalized Dietary Assessment Platform 🍎🥗
+# Personalized Dietary Assessment Platform 
 
 A web-based platform for **personalized nutrition consultation** and **AI-assisted calorie estimation**, developed as an academic project for L3 Computer Science.
 
@@ -10,12 +10,10 @@ The system combines:
 - Multiple dashboard systems for: Clients, Nutritionists, Admin
 - Nutrition chatbot & platform helper
 
-> ⚠️ Disclaimer:  
-> This platform provides **approximate dietary insights** and **does not replace medical advice**.
 
 ---
 
-## 🧠 Project Overview
+##  Project Overview
 
 Users can:
 
@@ -61,7 +59,7 @@ Administrators can:
 
 ---
 
-## 🏗 Architecture Overview
+## Architecture Overview
 
 This project follows an **API-first modular monolith architecture** with a dedicated AI service.
 
@@ -77,7 +75,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 **Frontend**
 - NextJS
@@ -100,7 +98,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 /
 ├── frontend/ # React application  
@@ -112,7 +110,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 🔐 Security & Privacy Considerations
+## Security & Privacy Considerations
 
 - Role-based access control across Clients, Nutritionists, and Administrators
 - JWT-based stateless authentication for API communication
@@ -123,7 +121,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 💳 Payments, Subscriptions & Invoicing
+## Payments, Subscriptions & Invoicing
 
 - Tiered access model (Free vs Premium)
 - Premium features gated at the backend and UI level
@@ -134,7 +132,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 🤖 AI & Data Processing Pipeline
+## AI & Data Processing Pipeline
 
 - Image-based food recognition using segmentation models
 - Portion estimation with user-adjustable correction layer
@@ -145,7 +143,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 🌍 Platform Usability & Experience
+## Platform Usability & Experience
 
 - Role-specific dashboards with tailored navigation and data visibility
 - Progressive onboarding for users with health and goal profiling
@@ -156,7 +154,7 @@ AI Service (FastAPI + YOLOv8)
 
 ---
 
-## 📊 Monitoring, Reliability & Maintainability
+## Monitoring, Reliability & Maintainability
 
 - Clear separation of concerns between frontend, backend, and AI services
 - API contracts documented and version-aware
@@ -180,7 +178,7 @@ The platform is designed to support future enhancements such as:
 
 ---
 
-## 👥 Team & Workflow
+## Team & Workflow
 
 This project is developed using:
 
