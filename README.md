@@ -12,6 +12,8 @@ The system combines:
 
 
 ---
+##  Preview Video Link
+https://vimeo.com/1222755957?fl=ip&fe=ec
 
 ##  Project Overview
 
