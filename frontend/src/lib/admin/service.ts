@@ -123,8 +123,10 @@ const unwrapEnvelope = <T>(payload: ApiEnvelope<T> | T): T => {
   return payload as T;
 };
 
-export async function getAdminUsers(): Promise<AdminUser[]> {
-  const response = await api.get("/lookup/admin/users/");
+export async function getAdminUsers(page?: number): Promise<AdminUser[]> {
+  const response = await api.get("/lookup/admin/users/", {
+    params: page ? { page } : undefined,
+  });
   const data = unwrapEnvelope<AdminUser[] | { results?: AdminUser[] }>(response.data);
   return Array.isArray(data) ? data : data.results ?? [];
 }

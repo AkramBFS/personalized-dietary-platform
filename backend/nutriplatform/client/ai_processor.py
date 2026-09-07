@@ -12,8 +12,14 @@ def process_ai_image(image_file) -> dict:
     try:
         image_file.seek(0)
 
+        secret = getattr(settings, 'AI_SERVICE_SECRET_KEY', '')
+        headers = {}
+        if secret:
+            headers['X-Internal-Secret'] = secret
+
         response = requests.post(
             f"{AI_SERVICE_URL}/segment?visualize=true",
+            headers=headers,
             files={"file": (image_file.name, image_file, image_file.content_type)},
             timeout=60   # ← increased from 30 to 60 for CUDA warmup
         )

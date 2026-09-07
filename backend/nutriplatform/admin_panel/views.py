@@ -79,10 +79,19 @@ class DietListView(APIView):
 
 
 
+from rest_framework.pagination import PageNumberPagination
+
 # ── User Management ────────────────────────────────────────────────────────────
+
+class AdminUserPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 
 class AdminUserListView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = AdminUserPagination
 
     def get(self, request):
         users = User.objects.all().order_by('-created_at')
@@ -102,8 +111,10 @@ class AdminUserListView(APIView):
                 Q(email__icontains=search)
             )
 
-        serializer = AdminUserSerializer(users, many=True)
-        return Response({"status": "success", "data": serializer.data})
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(users, request)
+        serializer = AdminUserSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class AdminUserDetailView(APIView):
@@ -178,7 +189,7 @@ class AdminUserDeleteView(APIView):
         # Also update client/nutritionist is_banned if exists
         if user.role == 'client':
             from client.models import Client
-            Client.objects.filter(user=user).update(is_banned=False)
+            Client.objects.filter(user=user).update(is_banned=True)
         elif user.role == 'nutritionist':
             from nutritionist.models import Nutritionist
             Nutritionist.objects.filter(user=user).update(is_approved=False)

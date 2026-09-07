@@ -303,3 +303,317 @@ Ran `npx tsc --noEmit` and `npm run build`:
 ```
 **Result: 50/50 static routes generated with 0 TypeScript or compile errors.**
 
+---
+
+# Walkthrough: Phase 3 — AI Service Resilience & Concurrency
+
+We have completed the implementation and validation of **Phase 3: AI Service Resilience & Concurrency** from `MASTER_IMPLEMENTATON_PLAN.md`.
+
+---
+
+## Changes Summary
+
+### 1. Synchronous ONNX Inference Offloaded to Threadpool (AI-011)
+- **Files Modified**:
+  - [`ai-service/food_api/app.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/ai-service/food_api/app.py)
+- **Impact**:
+  - Encapsulated CPU-heavy image preprocessing, ONNX session execution, and mask postprocessing into `execute_onnx_inference(img_bgr, conf_threshold)`.
+  - Used `fastapi.concurrency.run_in_threadpool` inside `/segment`, `/segment/estimate`, and `/segment/image` to offload inference execution to a background worker thread.
+  - The main FastAPI asyncio event loop is no longer blocked by inference operations, allowing concurrent requests such as `/health` probes to respond with sub-10ms latencies.
+
+### 2. Bounded In-Memory File Uploads & OOM Crash Prevention (AI-012)
+- **Files Modified**:
+  - [`ai-service/food_api/app.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/ai-service/food_api/app.py)
+- **Impact**:
+  - Enforced a 10 MB payload ceiling (`MAX_FILE_SIZE = 10 * 1024 * 1024`) via `read_bounded_image(file)`.
+  - Attempts to upload oversized files (such as videos or disguised archive files) immediately raise HTTP 413 Content Too Large (`status.HTTP_413_CONTENT_TOO_LARGE`), preventing memory exhaustion and process crashes.
+
+### 3. Service-to-Service Shared Secret Header Authentication (AI-013)
+- **Files Modified**:
+  - [`ai-service/food_api/app.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/ai-service/food_api/app.py)
+  - `ai-service/food_api/.env`
+  - `backend/nutriplatform/.env`
+  - [`backend/nutriplatform/nutriplatform/settings.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/nutriplatform/settings.py)
+  - [`backend/nutriplatform/client/ai_processor.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/client/ai_processor.py)
+- **Impact**:
+  - Added `X-Internal-Secret` header authentication requirement using `fastapi.security.APIKeyHeader` and `hmac.compare_digest` in `require_internal_token`.
+  - Protected `/segment`, `/segment/estimate`, and `/segment/image` routes with `dependencies=[Depends(require_internal_token)]`. Unauthenticated or invalid requests return HTTP 401 Unauthorized.
+  - Kept `/health` public and unauthenticated for zero-friction liveness probing.
+  - Configured `AI_SERVICE_SECRET_KEY` in environment files and Django settings.
+  - Updated `client/ai_processor.py:process_ai_image` to supply `X-Internal-Secret` on all outbound requests to the AI service.
+
+### 4. Chatbot Prompt Injection Sanitization & Exception Masking (AI-014)
+- **Files Modified**:
+  - [`backend/nutriplatform/chatbot/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/chatbot/views.py)
+- **Impact**:
+  - Implemented `sanitize_context_str` to scrub control characters, newlines, tabs, and braces (`{`, `}`) from user attributes (`role`, `username`, `goal`, `diet`, `activity_level`, `health_history`), preventing prompt jailbreaks and template boundary attacks.
+  - Replaced raw exception string leakage with server-side `logger.exception()` and masked user response returning HTTP 503 with `"AI assistant is temporarily unavailable. Please try again shortly."`.
+
+### 5. Chatbot Client Timeouts, Retries & Provider Fallback Circuit Breaker (AI-020)
+- **Files Modified**:
+  - [`backend/nutriplatform/chatbot/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/chatbot/views.py)
+- **Impact**:
+  - Configured `Groq(api_key=settings.GROQ_API_KEY, timeout=10.0, max_retries=2)` with a 10-second request timeout and 2 automatic retries.
+  - Added a multi-model fallback cascade: `["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768"]`. If the primary model fails or encounters rate limits, the service automatically fails over to the next candidate without crashing.
+
+### 6. Codebase Portability & Cross-Platform Fixes
+- **Files Modified**:
+  - [`ai-service/food_api/app.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/ai-service/food_api/app.py)
+- **Impact**:
+  - Resolved model path and category names relative to `BASE_DIR = Path(__file__).resolve().parent`, allowing the FastAPI service and its test harness to run from any working directory.
+  - Replaced Unicode checkmark character in startup print logs to prevent Windows console `cp1252` encoding crashes.
+
+---
+
+## Verification & Test Results
+
+### 1. AI Service Automated Test Suite & Exit Gate Run
+Ran `python test_ai_service.py` in `ai-service/food_api/`:
+```text
+C:\Users\akram\AppData\Local\Programs\Python\Python311\Lib\site-packages\onnxruntime\capi\onnxruntime_inference_collection.py:123: UserWarning: Specified provider 'CUDAExecutionProvider' is not in available provider names.Available providers: 'AzureExecutionProvider, CPUExecutionProvider'
+  warnings.warn(
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 12.933s
+
+OK
+Loading model...
+[INFO] Model loaded
+  Classes  : 73
+  Input    : images
+  Output   : output0 [1, 109, 8400]
+  Output   : output1 [1, 32, 160, 160]
+
+[AI Phase 3 Exit Gate] Concurrent /health latency during inference: min=3.80ms, avg=6.15ms, count=276
+```
+**Result: 10/10 tests passed (100% GREEN)**
+- Verified unauthenticated `/health` access.
+- Verified 401 Unauthorized for `/segment`, `/segment/image`, and `/segment/estimate` without `X-Internal-Secret`.
+- Verified 413 Content Too Large when payload exceeds 10 MB (`test_segment_payload_too_large`).
+- Verified 200 OK inference with valid token and image.
+- Verified 200 OK binary JPEG output on `/segment/image`.
+- **Phase 3 Exit Gate**: Concurrent load testing demonstrated `/health` responds with **min=3.80ms and avg=6.15ms** during active ONNX segmentation inference (exceeding the <10ms requirement across 276 requests).
+
+### 2. Backend Automated Regression Suite
+Ran `python manage.py test` across all Django apps:
+```text
+Creating test database for alias 'default'...
+....................................
+----------------------------------------------------------------------
+Ran 36 tests in 144.346s
+
+OK
+Destroying test database for alias 'default'...
+Found 36 test(s).
+System check identified no issues (0 silenced).
+```
+**Result: 36/36 tests passed (100% GREEN)**
+- 7 Chatbot Integration tests (`chatbot/tests/test_chatbot_integration.py`):
+  - `test_unauthenticated_request_rejected`: 401 Unauthorized
+  - `test_missing_message_rejected`: 400 Bad Request
+  - `test_overlong_message_rejected`: 400 Bad Request
+  - `test_sanitization_helper`: Control characters, newlines, and braces scrubbed
+  - `test_prompt_injection_sanitization_in_prompt`: Malicious profile fields sanitized before Groq dispatch
+  - `test_model_fallback_circuit_breaker`: Primary model failure cascades to secondary model
+  - `test_all_models_fail_masked_error`: Generic 503 returned without leaking provider secrets or tracebacks
+- 1 Client AI Processor test (`client/tests/test_ai_integration.py`):
+  - `test_process_ai_image_passes_internal_secret_header`: Verifies outbound `X-Internal-Secret` transmission
+- 8 Checkout Integration tests (`marketplace/tests/test_checkout_integration.py`):
+  - Retested plan purchase, consultation slots, race condition locking, and review deduplication
+- 7 Auth Integration tests (`users/tests/test_auth_integration.py`):
+  - Retested client/nutritionist/admin auth, token refresh, token blacklist, and unapproved practitioner login rejections
+- 1 Plan Progression test (`client/tests/test_plan_progression.py`):
+  - Retested Day 7 meal plan completion boundary
+- 12 Existing Auth and Permission tests (`users/test.py`)
+
+### 3. Frontend Vitest Test Suite
+Ran `npm run test -- --run` in `frontend/`:
+```text
+ Test Files  3 passed (3)
+      Tests  15 passed (15)
+   Duration  5.84s
+```
+**Result: 15/15 tests passed (100% GREEN)**
+
+### 4. Frontend Production Build
+Ran `npm run build` in `frontend/`:
+```text
+✓ Compiled successfully in 116s
+✓ Generating static pages using 3 workers (50/50) in 5.4s
+```
+**Result: 50/50 static routes compiled with 0 TypeScript or compile errors.**
+
+---
+
+## Phase 3 Exit Gate Status
+**PASSED**:
+- All 5 Phase 3 issues (`AI-011`, `AI-012`, `AI-013`, `AI-014`, `AI-020`) have been resolved and verified with dedicated test coverage.
+- Concurrent load test confirmed `/health` responded in **3.80ms–6.15ms** during active ONNX segmentation inference (under the 10ms threshold).
+- Full regression suite passed 100% green across all tiers (backend 36/36, frontend 15/15, build 50/50 routes).
+
+---
+
+# Walkthrough: Phase 4 — Backend Hardening, Redis & API Optimization
+
+We have completed the implementation and validation of **Phase 4: Backend Hardening, Redis & API Optimization** from `MASTER_IMPLEMENTATON_PLAN.md`.
+
+---
+
+## Changes Summary
+
+### 1. Redis Distributed Rate Limiting & Cache Architecture (BE-018)
+- **Files Modified / Created**:
+  - [`backend/nutriplatform/nutriplatform/settings.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/nutriplatform/settings.py)
+  - [`backend/nutriplatform/utils/exceptions.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/utils/exceptions.py)
+  - [`backend/nutriplatform/users/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/users/views.py)
+  - [`backend/nutriplatform/utils/health_views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/utils/health_views.py) (NEW)
+  - [`backend/nutriplatform/nutriplatform/urls.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/nutriplatform/urls.py)
+  - `backend/nutriplatform/.env`
+- **Impact**:
+  - Configured Django `CACHES` with a dual-cache architecture using `django-redis` and `redis.connection.DefaultParser` (`hiredis`):
+    - `"default"` on Redis DB 1 with `IGNORE_EXCEPTIONS: True` (fail-open for general application data caching).
+    - `"ratelimit"` on Redis DB 2 with `IGNORE_EXCEPTIONS: False` (fail-closed for security enforcement, preventing brute-force bypasses during Redis outages).
+  - Routed `django-ratelimit` to the dedicated Redis database via `RATELIMIT_USE_CACHE = 'ratelimit'`.
+  - Added `@method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True))` across registration (`RegisterClientView`, `RegisterNutritionistView`) and updated `LoginView` to `rate='5/m'`.
+  - Intercepted `django_ratelimit.exceptions.Ratelimited` in `custom_exception_handler` to return clean DRF HTTP 429 Too Many Requests responses with `{ "status": "error", "message": "Too many requests. Please slow down.", "code": "RATE_LIMITED" }`.
+  - Created and exposed health check endpoints `GET /api/v1/health/redis/` and `GET /api/health/redis/` probing read/write operations against the `"ratelimit"` cache.
+
+### 2. Admin User Deactivation Logic Inadvertently Unbans Client Accounts (BE-015)
+- **Files Modified**:
+  - [`backend/nutriplatform/admin_panel/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/admin_panel/views.py)
+- **Impact**:
+  - Corrected line 181 in `AdminUserDeleteView.delete()`: replaced `Client.objects.filter(user=user).update(is_banned=False)` with `Client.objects.filter(user=user).update(is_banned=True)`.
+  - Admin deactivation now properly soft-deletes the client account (`user.is_active = False`) and records the ban (`client.is_banned = True`).
+
+### 3. Synchronous N+1 CalorieNinjas HTTP Calls Exhausting Gunicorn Worker Threads (BE-016)
+- **Files Modified**:
+  - [`backend/nutriplatform/client/apiNinja.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/client/apiNinja.py)
+- **Impact**:
+  - Replaced the sequential HTTP GET loop in `get_nutrition_data` with a single comma-separated batch query: `batch_query = ", ".join([f"100g {item['name'].strip()}" for item in valid_items])`.
+  - A single HTTP GET request with a 10s timeout is sent to CalorieNinjas regardless of the number of ingredient items detected.
+  - Implemented exact and fuzzy name matching to map API response items back to the input ingredient list, scaling nutrient totals by `mass_grams / 100.0`.
+
+### 4. Negative Food Mass Allowed, Permitting Negative Calorie Tampering (BE-017)
+- **Files Modified**:
+  - [`backend/nutriplatform/client/serializers.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/client/serializers.py)
+  - [`backend/nutriplatform/client/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/client/views.py)
+  - [`backend/nutriplatform/client/apiNinja.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/client/apiNinja.py)
+- **Impact**:
+  - Created `AICalorieConfirmItemSerializer` enforcing `mass_grams = serializers.FloatField(min_value=1.0, max_value=5000.0)`.
+  - Created `AICalorieConfirmSerializer` validating `user_final_log` payloads.
+  - In `AICalorieConfirmView.patch`: validated request data against `AICalorieConfirmSerializer`, returning HTTP 400 Bad Request on invalid or non-positive mass submissions.
+  - In `apiNinja.get_nutrition_data`: enforced `if mass_grams <= 0: raise ValueError("mass_grams must be strictly positive")`.
+
+### 5. Unpaginated Admin User Endpoints Inducing Server Memory Spikes and Timeouts (BE-019)
+- **Files Modified**:
+  - [`backend/nutriplatform/admin_panel/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/admin_panel/views.py)
+  - [`frontend/src/lib/admin/service.ts`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/lib/admin/service.ts)
+- **Impact**:
+  - Added explicit `AdminUserPagination` (`PageNumberPagination` with `page_size=20`, `page_size_query_param='page_size'`, `max_page_size=100`) to `AdminUserListView`.
+  - Queryset is paginated and returned using `paginator.get_paginated_response(serializer.data)`.
+  - Updated `frontend/src/lib/admin/service.ts:getAdminUsers` with an optional `page` parameter, unwrapping `{ count, next, previous, results }` seamlessly.
+
+---
+
+## Verification & Test Results
+
+### 1. Phase 4 Automated Test Suite (`users/tests/test_phase4_hardening.py`)
+Ran `python manage.py test users.tests.test_phase4_hardening`:
+```text
+Creating test database for alias 'default'...
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 86.461s
+
+OK
+Destroying test database for alias 'default'...
+Found 9 test(s).
+System check identified no issues (0 silenced).
+```
+**Result: 9/9 tests passed (100% GREEN)**
+- `test_redis_health_probe`: Verified `GET /api/v1/health/redis/` returns 200 with `healthy`, `connected`, `ratelimit_db: active`.
+- `test_rate_limiting_triggered_after_5_attempts`: Verified sequential POST requests from the same IP are rejected with 401, and the 6th attempt triggers HTTP 429 Too Many Requests (`code: "RATE_LIMITED"`).
+- `test_multi_client_shared_redis_rate_limit_bucket`: Verified that separate worker client instances hitting the same IP share the Redis rate limit bucket, triggering HTTP 429 on the 6th attempt across workers (**Phase 4 Exit Gate**).
+- `test_ratelimit_cache_fail_closed_configuration`: Verified rate limit cache uses `IGNORE_EXCEPTIONS: False` (fail-closed).
+- `test_admin_user_deactivation_sets_client_banned`: Verified soft-deleting a client sets `client.is_banned = True` and `user.is_active = False` (`BE-015`).
+- `test_calorieninjas_single_batch_http_request`: Verified CalorieNinjas calls are consolidated into 1 single batch HTTP GET request with comma-separated ingredients (`BE-016`).
+- `test_api_ninja_rejects_negative_and_zero_mass`: Verified `get_nutrition_data` raises `ValueError` for `mass_grams <= 0` (`BE-017`).
+- `test_ai_calorie_confirm_view_rejects_negative_mass`: Verified `AICalorieConfirmView` rejects negative mass with HTTP 400 validation error (`BE-017`).
+- `test_admin_user_list_returns_20_per_page_with_pagination_metadata`: Verified `AdminUserListView` returns paginated structure with `count`, `next`, `previous`, `results`, and exactly 20 records on page 1 (`BE-019`).
+
+### 2. Full Backend Automated Regression Suite
+Ran `python manage.py test` across all Django apps:
+```text
+Creating test database for alias 'default'...
+.............................................
+----------------------------------------------------------------------
+Ran 45 tests in 224.387s
+
+OK
+Destroying test database for alias 'default'...
+Found 45 test(s).
+System check identified no issues (0 silenced).
+```
+**Result: 45/45 tests passed (100% GREEN)**
+- 9 Phase 4 hardening & optimization tests (`users/tests/test_phase4_hardening.py`)
+- 7 Chatbot integration & resilience tests (`chatbot/tests/test_chatbot_integration.py`)
+- 1 Client AI processor tests (`client/tests/test_ai_integration.py`)
+- 8 Checkout & slot locking integration tests (`marketplace/tests/test_checkout_integration.py`)
+- 7 Auth, registration & permission integration tests (`users/tests/test_auth_integration.py`)
+- 1 Day-7 plan progression test (`client/tests/test_plan_progression.py`)
+- 12 Core user & permission tests (`users/test.py`)
+
+### 3. AI Service Automated Test Suite
+Ran `python test_ai_service.py` in `ai-service/food_api/`:
+```text
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 13.214s
+
+OK
+[AI Phase 3 Exit Gate] Concurrent /health latency during inference: min=3.90ms, avg=6.16ms, count=287
+```
+**Result: 10/10 tests passed (100% GREEN)**
+
+### 4. Frontend Vitest Test Suite
+Ran `npm run test -- --run` in `frontend/`:
+```text
+ ✓ src/lib/payment.test.ts (8 tests)
+ ✓ src/lib/auth.test.ts (6 tests)
+ ✓ src/components/payment.smoke.test.tsx (1 test)
+
+ Test Files  3 passed (3)
+      Tests  15 passed (15)
+   Duration  6.05s
+```
+**Result: 15/15 tests passed (100% GREEN)**
+
+### 5. Frontend Production Build
+Ran `npm run build` in `frontend/`:
+```text
+▲ Next.js 16.1.6 (Turbopack)
+✓ Compiled successfully in 109s
+  Running TypeScript ...
+✓ Generating static pages using 3 workers (50/50) in 4.3s
+```
+**Result: 50/50 static routes compiled with 0 TypeScript or compile errors.**
+
+---
+
+## Decisions & Deviations
+1. **`hiredis` Parser Class Compatibility (`BE-018`)**:
+   In modern `redis-py` (v5+ / v8+), the class `redis.connection.HiredisParser` was deprecated and renamed internally to `_HiredisParser`, while `redis.connection.DefaultParser` automatically uses the hiredis parser backend when available. We configured `PARSER_CLASS: 'redis.connection.DefaultParser'`, ensuring C-accelerated hiredis parsing while maintaining complete compatibility with modern redis-py.
+2. **Deterministic Time-Window Freezing in Rate Limit Testing (`BE-018`)**:
+   `django-ratelimit` evaluates 1-minute buckets based on epoch minute timestamps (`epoch // 60`). In the test harness, we utilized `with patch("time.time", return_value=...)` to freeze the evaluation timestamp, eliminating flaky failures caused by wall-clock minute boundary rollovers during test execution.
+3. **WSL Idle Keep-Alive (`BE-018`)**:
+   Identified that Windows WSL2 automatically suspends idle Linux distributions when no process is executing, causing local Redis ports to refuse connections. Launched a background keep-alive daemon (`wsl -e sleep infinity`) ensuring continuous Redis and PostgreSQL availability during development and testing.
+
+---
+
+## Phase 4 Exit Gate Status
+**PASSED**:
+- Multi-worker rate limiting test confirmed HTTP 429 (`RATE_LIMITED`) is triggered after 5 failed login attempts across processes sharing Redis DB 2.
+- All 5 Phase 4 findings (`BE-018`, `BE-015`, `BE-016`, `BE-017`, `BE-019`) are completely implemented, verified, and protected by automated tests.
+- Full regression suites across all system tiers (Backend: 45/45, AI Service: 10/10, Frontend: 15/15, Build: 50/50 static pages) passed 100% GREEN.
+
+

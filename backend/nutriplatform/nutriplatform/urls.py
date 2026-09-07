@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from client.views import ServiceReviewView
+from utils.health_views import RedisHealthCheckView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
@@ -20,6 +21,8 @@ urlpatterns = [
     path('api/redoc/',        SpectacularRedocView.as_view(),      name='redoc'),
     path('api/v1/checkout/', include('marketplace.checkout_urls')),
     path('api/v1/chatbot/', include('chatbot.urls')),
+    path('api/v1/health/redis/', RedisHealthCheckView.as_view(), name='redis-health-v1'),
+    path('api/health/redis/',    RedisHealthCheckView.as_view(), name='redis-health'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
