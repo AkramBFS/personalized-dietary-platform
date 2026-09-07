@@ -32,12 +32,10 @@ describe("SecurePayment smoke and PCI compliance test", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getCheckoutSession").mockResolvedValue({
-      checkout_id: "session-test-uuid",
       type: "MEAL_PLAN",
       type_label: "Weight Loss Meal Plan",
       price: 49.99,
       currency: "USD",
-      status: "pending",
       details: {
         title: "Weight Loss Meal Plan",
         duration_days: 14,

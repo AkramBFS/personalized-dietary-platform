@@ -26,7 +26,6 @@ import {
 } from "@/lib/api";
 import { buildPaymentUrl } from "@/lib/payment";
 import NutritionistProfileModal from "./NutritionistProfileModal";
-import { getLocalNutritionistAverage, mergeRating } from "@/lib/localRatings";
 
 interface TimeSlot {
   start_time: string;
@@ -324,6 +323,11 @@ export default function ScheduleConsultation({
                 alt={currentNutritionist.name}
                 className="w-full h-full object-cover"
                 src={currentNutritionist.profile_image}
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "/placeholder-avatar.png";
+                }}
               />
             </div>
             <div className="flex flex-col w-full">
@@ -337,13 +341,7 @@ export default function ScheduleConsultation({
                       {currentNutritionist.specialization}
                     </p>
                     {(() => {
-                      const localAvg = getLocalNutritionistAverage(
-                        Number(currentNutritionist.id),
-                      );
-                      const finalRating = mergeRating(
-                        currentNutritionist.rating,
-                        localAvg,
-                      );
+                      const finalRating = Number(currentNutritionist.rating ?? 0);
                       return (
                         <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
                           <Star className="w-3.5 h-3.5 fill-amber-500" />

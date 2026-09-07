@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, IntegrityError
+from rest_framework.exceptions import ValidationError
 import datetime
 
 from .models import CheckoutSession, Plan, UserPlan, Invoice, Consultation
@@ -235,33 +236,56 @@ class CheckoutConfirmView(APIView):
         # ── Route internally based on item_type ────────────────────────────────
         # Frontend NEVER sees this logic — it only sends checkout_id
 
-        with transaction.atomic():
+        try:
+            with transaction.atomic():
 
-            if session.item_type == 'MEAL_PLAN':
-                result = self._confirm_plan(
-                    session, client, transaction_number
-                )
+                if session.item_type == 'MEAL_PLAN':
+                    result = self._confirm_plan(
+                        session, client, transaction_number
+                    )
 
-            elif session.item_type == 'CONSULTATION':
-                # For consultations, additional booking details are required
-                result = self._confirm_consultation(
-                    session, client, request.data, transaction_number
-                )
+                elif session.item_type == 'CONSULTATION':
+                    # For consultations, additional booking details are required
+                    result = self._confirm_consultation(
+                        session, client, request.data, transaction_number
+                    )
 
-            elif session.item_type == 'SUBSCRIPTION':
-                result = self._confirm_subscription(
-                    session, client, transaction_number
-                )
+                elif session.item_type == 'SUBSCRIPTION':
+                    result = self._confirm_subscription(
+                        session, client, transaction_number
+                    )
 
-            else:
-                return Response({
-                    "status":  "error",
-                    "message": "Unknown item type."
-                }, status=400)
+                else:
+                    return Response({
+                        "status":  "error",
+                        "message": "Unknown item type."
+                    }, status=400)
 
-            # Mark session as confirmed
-            session.status = 'confirmed'
-            session.save()
+                # Mark session as confirmed
+                session.status = 'confirmed'
+                session.save()
+
+        except ValidationError as e:
+            msg = e.detail if hasattr(e, 'detail') else str(e)
+            if isinstance(msg, list):
+                msg = msg[0]
+            return Response({
+                "status": "error",
+                "message": str(msg),
+                "code": "SLOT_ALREADY_BOOKED"
+            }, status=status.HTTP_409_CONFLICT)
+        except IntegrityError:
+            return Response({
+                "status": "error",
+                "message": "This time slot has just been booked by another user. Please select another slot.",
+                "code": "SLOT_ALREADY_BOOKED"
+            }, status=status.HTTP_409_CONFLICT)
+        except ValueError as e:
+            return Response({
+                "status": "error",
+                "message": str(e),
+                "code": "INVALID_BOOKING_DETAILS"
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             "status":  "success",
@@ -325,6 +349,16 @@ class CheckoutConfirmView(APIView):
 
         if not all([appointment_date, start_time, end_time]):
             raise ValueError("appointment_date, start_time, end_time are required for consultation.")
+
+        # Check for slot conflicts with row locking (BE-008)
+        conflict = Consultation.objects.select_for_update().filter(
+            nutritionist=nutritionist,
+            appointment_date=appointment_date,
+            start_time=start_time,
+            status__in=['scheduled', 'notified']
+        ).exists()
+        if conflict:
+            raise ValidationError("This time slot has just been booked by another user. Please select another slot.")
 
         commission = round(session.resolved_price * (1 - PLATFORM_COMMISSION), 2)
 

@@ -116,3 +116,50 @@ class AuthIntegrationTests(APITestCase):
             "refresh": refresh,
         }, format="json")
         self.assertEqual(post_logout_refresh.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_pending_nutritionist_rejected(self):
+        """BE-009: Pending nutritionists must be rejected at login with ACCOUNT_PENDING."""
+        pending_user = User.objects.create_user(
+            username="nutri_pending",
+            email="nutri_pending@test.com",
+            password="TestPassword123!",
+            role="nutritionist",
+        )
+        from nutritionist.models import Nutritionist as NutriModel
+        NutriModel.objects.create(
+            user=pending_user,
+            country=self.country,
+            specialization=self.specialization,
+            is_approved=False,
+            approval_status="pending",
+        )
+        resp = self.client.post("/api/v1/auth/login/", {
+            "email": "nutri_pending@test.com",
+            "password": "TestPassword123!",
+        }, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.data.get("code"), "ACCOUNT_PENDING")
+
+    def test_login_rejected_nutritionist_rejected(self):
+        """BE-009: Rejected nutritionists must be rejected at login with ACCOUNT_REJECTED."""
+        rejected_user = User.objects.create_user(
+            username="nutri_rejected",
+            email="nutri_rejected@test.com",
+            password="TestPassword123!",
+            role="nutritionist",
+        )
+        from nutritionist.models import Nutritionist as NutriModel
+        NutriModel.objects.create(
+            user=rejected_user,
+            country=self.country,
+            specialization=self.specialization,
+            is_approved=False,
+            approval_status="rejected",
+            rejection_reason="Invalid certification",
+        )
+        resp = self.client.post("/api/v1/auth/login/", {
+            "email": "nutri_rejected@test.com",
+            "password": "TestPassword123!",
+        }, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.data.get("code"), "ACCOUNT_REJECTED")

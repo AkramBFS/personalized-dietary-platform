@@ -181,3 +181,7 @@ SPECTACULAR_SETTINGS = {
 
 
 GROQ_API_KEY = config('GROQ_API_KEY')
+
+import sys
+TESTING = 'test' in sys.argv
+RATELIMIT_ENABLE = not TESTING

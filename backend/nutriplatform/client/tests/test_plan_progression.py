@@ -62,12 +62,11 @@ class PlanProgressionTests(APITestCase):
         token = login_resp.data["data"]["tokens"]["access"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
-    def test_day_7_advancement_baseline(self):
+    def test_day_7_advancement_progression(self):
         """
-        Captures the off-by-one behavior where advancing to day index 6 (Day 7)
-        in a 7-day plan triggers premature completion (status='completed')
-        because current_day_index >= duration - 1.
-        This records the baseline before the Phase 2 fix.
+        Verifies the BE-006 fix: advancing from day index 5 (Day 6) to day index 6 (Day 7)
+        in a 7-day plan keeps status='active' so Day 7 remains accessible.
+        A subsequent advancement from Day 7 transitions status to 'completed'.
         """
         self.authenticate_client()
 
@@ -78,11 +77,21 @@ class PlanProgressionTests(APITestCase):
             status="active",
         )
 
-        # Advance to day index 6 via PATCH
+        # Advance to day index 6 (Day 7) via PATCH
         response = self.client.patch(f"/api/v1/client/user-plans/{user_plan.id}/advance/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         user_plan.refresh_from_db()
         self.assertEqual(user_plan.current_day_index, 6)
-        # Baseline behavior in current codebase: marks as 'completed' prematurely
+        self.assertEqual(user_plan.status, "active")
+        self.assertFalse(response.data["data"]["is_completed"])
+
+        # Advancing from Day 7 marks the plan as completed
+        response_final = self.client.patch(f"/api/v1/client/user-plans/{user_plan.id}/advance/")
+        self.assertEqual(response_final.status_code, status.HTTP_200_OK)
+
+        user_plan.refresh_from_db()
+        self.assertEqual(user_plan.current_day_index, 6)
         self.assertEqual(user_plan.status, "completed")
+        self.assertTrue(response_final.data["data"]["is_completed"])
+        self.assertEqual(response_final.data["data"]["progress_percent"], 100.0)

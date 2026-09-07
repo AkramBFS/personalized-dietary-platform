@@ -28,7 +28,7 @@ import {
   LookupItem,
 } from "@/lib/lookups";
 import NutritionistProfileModal from "./NutritionistProfileModal";
-import { getLocalNutritionistAverage, mergeRating } from "@/lib/localRatings";
+import { Button } from "@/components/ui/Button";
 
 export default function ChooseNutritionist() {
   // ── Search ──────────────────────────────────────────────────────────────
@@ -313,8 +313,7 @@ export default function ChooseNutritionist() {
           </div>
         ) : (
           displayedNutritionists.map((nutri) => {
-            const localAvg = getLocalNutritionistAverage(nutri.nutritionist_id);
-            const finalRating = mergeRating(nutri.rating, localAvg);
+            const finalRating = Number(nutri.rating ?? 0);
 
             // Build dynamic tag list from real data
             const tags = [
@@ -338,8 +337,9 @@ export default function ChooseNutritionist() {
                     className="w-20 h-20 rounded-full object-cover border-2 border-border flex-shrink-0"
                     src={avatarSrc}
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        "/placeholder-avatar.png";
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "/placeholder-avatar.png";
                     }}
                   />
                   <div className="min-w-0">

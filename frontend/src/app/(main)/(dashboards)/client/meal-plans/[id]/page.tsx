@@ -80,11 +80,16 @@ export default function MealPlanDetailPage() {
           setViewingDayIndex(data.day_index);
         }
 
+        const rawSnacks = (data as any)?.snacks;
+        const snackCount = Array.isArray(rawSnacks)
+          ? rawSnacks.length
+          : (rawSnacks && rawSnacks.name ? 1 : 0);
+
         setCheckedMeals({
           breakfast: false,
           lunch: false,
           dinner: false,
-          snacks: [false],
+          snacks: new Array(snackCount).fill(false),
         });
       } catch (err) {
         if (retryCount < 1) {
@@ -183,12 +188,26 @@ export default function MealPlanDetailPage() {
     setCheckedMeals((prev) => ({ ...prev, [meal]: checked }));
   };
 
+  const rawSnacks = (content as any)?.snacks;
+  const hasSnacks = Boolean(
+    rawSnacks &&
+      (Array.isArray(rawSnacks)
+        ? rawSnacks.length > 0
+        : Boolean(rawSnacks.name || rawSnacks.calories)),
+  );
+  const snacksComplete =
+    !hasSnacks ||
+    (Array.isArray(rawSnacks)
+      ? checkedMeals.snacks.length === rawSnacks.length &&
+        checkedMeals.snacks.every(Boolean)
+      : Boolean(checkedMeals.snacks[0]));
+
   const isAllComplete =
     Boolean(content) &&
     checkedMeals.breakfast &&
     checkedMeals.lunch &&
     checkedMeals.dinner &&
-    checkedMeals.snacks[0];
+    snacksComplete;
 
   const isViewingCurrentDay = viewingDayIndex === currentDayIndex;
 

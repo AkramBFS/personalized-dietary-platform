@@ -105,6 +105,13 @@ class Consultation(models.Model):
 
     class Meta:
         db_table = 'consultations'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nutritionist', 'appointment_date', 'start_time'],
+                condition=models.Q(status__in=['scheduled', 'notified']),
+                name='unique_active_consultation_slot'
+            )
+        ]
 
 
 class Invoice(models.Model):
@@ -142,6 +149,12 @@ class ServiceReview(models.Model):
 
     class Meta:
         db_table = 'service_reviews'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['client', 'item_type', 'item_id'],
+                name='unique_client_service_review'
+            )
+        ]
 
 
 

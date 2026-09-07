@@ -339,6 +339,12 @@ class UserPlanAdvanceView(APIView):
     permission_classes = [IsAuthenticated, IsClient]
 
     def patch(self, request, pk):
+        return self._advance(request, pk)
+
+    def post(self, request, pk):
+        return self._advance(request, pk)
+
+    def _advance(self, request, pk):
         try:
             client = Client.objects.get(user=request.user)
         except Client.DoesNotExist:
@@ -356,8 +362,8 @@ class UserPlanAdvanceView(APIView):
 
         duration = user_plan.plan.duration_days
 
-        # Check if already on last day
-        if user_plan.current_day_index >= duration - 1:
+        if user_plan.current_day_index + 1 >= duration:
+            user_plan.current_day_index = duration - 1
             user_plan.status = 'completed'
             user_plan.save()
             return Response({
@@ -365,30 +371,24 @@ class UserPlanAdvanceView(APIView):
                 "message": "🎉 Congratulations! You completed the plan!",
                 "data": {
                     "current_day_index": user_plan.current_day_index,
-                    "status":            "completed",
-                    "progress_percent":  100,
+                    "status":            user_plan.status,
+                    "progress_percent":  100.0,
+                    "is_completed":      True
                 }
             })
-
-        # Advance to next day
-        user_plan.current_day_index += 1
-
-        # Check if now completed
-        if user_plan.current_day_index >= duration - 1:
-            user_plan.status = 'completed'
-
-        user_plan.save()
-
-        progress = round((user_plan.current_day_index / duration) * 100, 1)
-
-        return Response({
-            "status": "success",
-            "data": {
-                "current_day_index": user_plan.current_day_index,
-                "status":            user_plan.status,
-                "progress_percent":  progress,
-            }
-        })
+        else:
+            user_plan.current_day_index += 1
+            user_plan.save()
+            progress = round((user_plan.current_day_index / duration) * 100, 1)
+            return Response({
+                "status": "success",
+                "data": {
+                    "current_day_index": user_plan.current_day_index,
+                    "status":            user_plan.status,
+                    "progress_percent":  progress,
+                    "is_completed":      False
+                }
+            })
 
 
 # ── Invoices ───────────────────────────────────────────────────────────────────
@@ -469,6 +469,16 @@ class ServiceReviewView(APIView):
         item_type = data['item_type']
         item_id   = data['item_id']
 
+        # Check for duplicate review (CROSS-002)
+        if ServiceReview.objects.filter(
+            client=client, item_type=item_type, item_id=item_id
+        ).exists():
+            return Response({
+                "status":  "error",
+                "message": "You have already reviewed this service.",
+                "code":    "ALREADY_REVIEWED"
+            }, status=409)
+
         # Validate the item exists and belongs to this client
         if item_type == 'consultation':
             from marketplace.models import Consultation
@@ -497,7 +507,9 @@ class ServiceReviewView(APIView):
             comment   = data.get('comment', ''),
         )
 
-        # ── Update nutritionist rating ─────────────────────────────────────────
+        # ── Update nutritionist rating idempotently via Avg() ──────────────────
+        from django.db.models import Avg, Count
+
         nutritionist = None
         if item_type == 'consultation':
             from marketplace.models import Consultation as C
@@ -509,26 +521,18 @@ class ServiceReviewView(APIView):
                 pass
 
             if nutritionist:
-                # Get all finished consultation IDs for this nutritionist
                 nutri_consult_ids = C.objects.filter(
-                    nutritionist = nutritionist,
-                    status       = 'finished',
+                    nutritionist=nutritionist,
+                    status='finished',
                 ).values_list('id', flat=True)
 
-                # Get all reviews for those consultations
-                all_reviews = ServiceReview.objects.filter(
-                    item_type   = 'consultation',
-                    item_id__in = list(nutri_consult_ids),
-                )
+                agg = ServiceReview.objects.filter(
+                    item_type='consultation',
+                    item_id__in=list(nutri_consult_ids),
+                ).aggregate(avg=Avg('rating'), count=Count('id'))
 
-                if all_reviews.exists():
-                    avg = round(
-                        sum(r.rating for r in all_reviews) / all_reviews.count(), 2
-                    )
-                    nutritionist.rating = avg
-                    nutritionist.save()
-
-                    print(f"DEBUG: Nutritionist {nutritionist.nutritionist_id} rating updated to {avg}")
+                nutritionist.rating = round(agg['avg'] or 0.0, 2)
+                nutritionist.save(update_fields=['rating'])
 
         return Response({
             "status": "success",
