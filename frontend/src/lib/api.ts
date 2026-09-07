@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getCookie, withAuthHeader } from "./auth";
 
-export const API_BASE_URL = "http://127.0.0.1:8000/api/v1/";
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1/";
+export const API_BASE_URL = rawUrl.endsWith("/") ? rawUrl : `${rawUrl}/`;
 
 export interface ApiEnvelope<T> {
   status: "success" | "error";
@@ -293,7 +294,12 @@ export const getCheckoutSession = async (checkoutId: string): Promise<CheckoutSe
  */
 export const confirmCheckoutSession = async (
   checkoutId: string,
-  payload: Record<string, unknown> & { transaction_number: string },
+  payload: Record<string, unknown> & {
+    transaction_number?: string;
+    payment_method_id?: string;
+    payment_intent_id?: string;
+    token?: string;
+  },
 ) => {
   const response = await api.post(`checkout/${checkoutId}/confirm/`, payload);
   return unwrapResponse(response.data);

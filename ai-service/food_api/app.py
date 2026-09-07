@@ -459,37 +459,6 @@ async def segment_image(file: UploadFile = File(...)):
     )
 
 
-@app.post("/segment/save")
-async def segment_save(
-    file: UploadFile = File(...),
-    output_path: str = Query("output/segmented.jpg")
-):
-    """Saves the annotated image to disk and returns JSON + path."""
-    contents = await file.read()
-    nparr    = np.frombuffer(contents, np.uint8)
-    img_bgr  = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img_bgr is None:
-        raise HTTPException(400, "Invalid image file")
-
-    orig_hw     = img_bgr.shape[:2]
-    tensor      = preprocess(img_bgr)
-    outputs     = session.run(None, {input_name: tensor})
-    ingredients = postprocess(outputs, orig_hw)
-    ingredients = merge_duplicate_classes(ingredients)   # ← dedup
-
-    vis = draw_visualization(img_bgr, ingredients) \
-          if ingredients else img_bgr
-
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    cv2.imwrite(output_path, vis)
-
-    return {
-        "saved_to"       : output_path,
-        "num_ingredients": len(ingredients),
-        "ingredients"    : clean_results(ingredients),
-    }
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

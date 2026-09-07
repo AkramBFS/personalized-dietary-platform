@@ -350,7 +350,7 @@ export const HeroTopNavbar = () => {
                         href="/login"
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          clearAuthSession();
+                          void clearAuthSession();
                         }}
                         className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-[#ef4444] hover:bg-[#ef4444]/10 transition-all"
                       >

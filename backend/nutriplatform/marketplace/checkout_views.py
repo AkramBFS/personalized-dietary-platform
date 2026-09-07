@@ -88,9 +88,13 @@ class CheckoutCreateView(APIView):
                 return Response({"status": "error", "message": "Nutritionist not found."}, status=404)
 
             resolved_price = nutritionist.consultation_price or 0
+            incoming_meta = request.data.get('metadata')
+            if not isinstance(incoming_meta, dict):
+                incoming_meta = {}
             metadata = {
                 "nutritionist_name":  nutritionist.user.username,
                 "consultation_price": resolved_price,
+                **incoming_meta,
             }
 
         elif item_type == 'SUBSCRIPTION':
@@ -209,11 +213,20 @@ class CheckoutConfirmView(APIView):
             }, status=410)
 
         transaction_number = request.data.get('transaction_number')
+        payment_method_id  = request.data.get('payment_method_id')
+        payment_intent_id  = request.data.get('payment_intent_id')
+        token              = request.data.get('token')
+
         if not transaction_number:
-            return Response({
-                "status":  "error",
-                "message": "transaction_number is required."
-            }, status=400)
+            token_val = payment_method_id or payment_intent_id or token
+            if token_val and str(token_val).strip():
+                clean_ref = str(token_val).strip()[:40]
+                transaction_number = f"TXN-STRIPE-{clean_ref}"
+            else:
+                return Response({
+                    "status":  "error",
+                    "message": "transaction_number or payment_method_id is required."
+                }, status=400)
 
         client = get_client(request.user)
         if not client:
@@ -303,11 +316,12 @@ class CheckoutConfirmView(APIView):
 
     def _confirm_consultation(self, session, client, data, transaction_number):
         nutritionist = Nutritionist.objects.get(nutritionist_id=session.item_id)
+        meta = session.metadata or {}
 
-        appointment_date  = data.get('appointment_date')
-        start_time        = data.get('start_time')
-        end_time          = data.get('end_time')
-        consultation_type = data.get('consultation_type', 'advice_only')
+        appointment_date  = data.get('appointment_date') or meta.get('appointment_date')
+        start_time        = data.get('start_time') or meta.get('start_time')
+        end_time          = data.get('end_time') or meta.get('end_time')
+        consultation_type = data.get('consultation_type') or meta.get('consultation_type', 'advice_only')
 
         if not all([appointment_date, start_time, end_time]):
             raise ValueError("appointment_date, start_time, end_time are required for consultation.")
@@ -324,6 +338,16 @@ class CheckoutConfirmView(APIView):
             status                  = 'scheduled',
             price_paid              = session.resolved_price,
             nutritionist_commission = commission,
+        )
+
+        Invoice.objects.create(
+            client             = client,
+            nutritionist       = nutritionist,
+            transaction_number = transaction_number,
+            total_paid         = session.resolved_price,
+            commission_rate    = PLATFORM_COMMISSION,
+            net_earnings       = commission,
+            item_type          = 'consultation_custom' if consultation_type == 'plan_included' else 'consultation_advice',
         )
 
         NutritionistPatient.objects.get_or_create(

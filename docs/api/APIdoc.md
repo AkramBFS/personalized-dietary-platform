@@ -556,6 +556,8 @@ Client Auth
 **POST /client/consultations/book/** --- Book a consultation --- Client
 Auth
 
+> **⚠️ DEPRECATED (Phase 1 / BE-002)**: Direct consultation booking via this endpoint is deprecated and returns HTTP 400 with `code: "CHECKOUT_REQUIRED"`. All consultation bookings must now be created through unified checkout sessions via `POST /checkout/create/` (or `/checkout/session/`) and confirmed via `POST /checkout/<id>/confirm/`.
+
 **Field** **Type** **Required** **Description**
 
 ---
@@ -568,9 +570,14 @@ consultation_type string Yes advice_only or plan_included
 user_plan_id integer No Required if using free consultation from a plan
 is_free_from_plan boolean No True if covered by plan free consultations
 
-> **⚠** _Backend must validate the slot against
-> nutritionist_availability and nutritionist_holidays before creating
-> the consultation._
+> **Response on Direct Call (HTTP 400)**:
+> ```json
+> {
+>   "status": "error",
+>   "message": "Direct consultation booking is deprecated. Please create a checkout session via /api/v1/checkout/create/ and confirm via /api/v1/checkout/<id>/confirm/",
+>   "code": "CHECKOUT_REQUIRED"
+> }
+> ```
 
 **Field** **Type** **Description**
 
@@ -699,12 +706,14 @@ required
 **POST /marketplace/plans/{id}/purchase/** --- Purchase a plan ---
 Client Auth
 
+> **🔒 SECURITY ENFORCEMENT (Phase 1 / CROSS-001)**: Server-authoritative pricing is strictly enforced. The backend validates `amount_paid` against `plan.price`. If `amount_paid` is submitted and does not match the canonical database price, the transaction is rejected with HTTP 400 and `code: "PRICE_TAMPERING_DETECTED"`.
+
 **Field** **Type** **Required** **Description**
 
 ---
 
-transaction_number string Yes Simulated payment transaction reference
-amount_paid float Yes Amount charged
+transaction_number string No Simulated payment transaction reference (auto-generated if omitted)
+amount_paid float No Amount charged (must match `plan.price` if provided; defaults to `plan.price`)
 
 > **ℹ** _On purchase: creates user_plan, creates invoice, adds client to
 > nutritionist_patients if not already present, and triggers
@@ -773,6 +782,81 @@ item_type string Yes plan or consultation
 item_id integer Yes ID of the reviewed item
 rating integer Yes 1--5 stars
 comment string No Optional written review
+
+## **5.5 Unified Checkout API**
+
+> **Phase 1 / CROSS-001 & FE-012**: Centralized, secure checkout engine providing server-authoritative pricing and tokenized payment processing.
+
+**POST /checkout/create/** (Alias: `POST /checkout/session/`) --- Create checkout session --- Client Auth
+
+**Field** **Type** **Required** **Description**
+
+---
+
+item_type string Yes MEAL_PLAN, CONSULTATION, or SUBSCRIPTION
+item_id integer/string Yes Target plan ID, nutritionist ID, or subscription plan type
+appointment_date date No Required for CONSULTATION (YYYY-MM-DD)
+start_time time No Required for CONSULTATION (HH:MM)
+end_time time No Required for CONSULTATION (HH:MM)
+consultation_type string No advice_only or plan_included (for CONSULTATION)
+metadata object No Optional booking details and client context
+
+**Response (HTTP 201)**:
+```json
+{
+  "status": "success",
+  "data": {
+    "checkout_id": "8f7b3c2e-...",
+    "item_type": "MEAL_PLAN",
+    "price": 29.99,
+    "currency": "USD",
+    "status": "pending",
+    "expires_at": "2026-09-07T05:00:00Z"
+  }
+}
+```
+
+**GET /checkout/{id}/** --- Get checkout session detail --- Client Auth
+
+**Response (HTTP 200)**:
+```json
+{
+  "status": "success",
+  "data": {
+    "checkout_id": "8f7b3c2e-...",
+    "item_type": "MEAL_PLAN",
+    "type_label": "Weight Loss Plan",
+    "price": 29.99,
+    "currency": "USD",
+    "status": "pending",
+    "details": { ... }
+  }
+}
+```
+
+**POST /checkout/{id}/confirm/** --- Confirm checkout session --- Client Auth
+
+**Field** **Type** **Required** **Description**
+
+---
+
+payment_method_id string No Stripe payment method ID (e.g. `pm_...` or sandbox token). Preferred.
+payment_intent_id string No Stripe payment intent ID
+token string No Stripe token (`tok_...`)
+transaction_number string No Fallback transaction identifier. If omitted and `payment_method_id` is supplied, server generates `TXN-STRIPE-<id>`.
+
+**Response (HTTP 201)**:
+```json
+{
+  "status": "success",
+  "message": "Payment confirmed and item activated.",
+  "data": {
+    "session_id": "8f7b3c2e-...",
+    "status": "confirmed",
+    "invoice_id": 42
+  }
+}
+```
 
 # **6. Nutritionist APIs**
 

@@ -8,6 +8,7 @@ from .views import (
     NutritionistAvailabilityCheckView,
 )
 from client.views import PlanRatingView
+from .checkout_views import CheckoutCreateView
 
 urlpatterns = [
     path('plans/',                                  MarketplacePlanListView.as_view(),            name='marketplace-plans'),
@@ -17,4 +18,5 @@ urlpatterns = [
     path('nutritionists/',                          NutritionistDirectoryView.as_view(),          name='nutritionist-directory'),
     path('nutritionists/<int:pk>/',                 NutritionistPublicProfileView.as_view(),      name='nutritionist-public-profile'),
     path('nutritionists/<int:pk>/availability/',    NutritionistAvailabilityCheckView.as_view(),  name='nutritionist-availability-check'),
+    path('checkout/session/',                       CheckoutCreateView.as_view(),                 name='marketplace-checkout-session'),
 ]

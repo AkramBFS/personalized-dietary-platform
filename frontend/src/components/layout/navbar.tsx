@@ -400,7 +400,7 @@ export const HeroHeader = () => {
                         href="/login"
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          clearAuthSession();
+                          void clearAuthSession();
                         }}
                         className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-destructive hover:bg-destructive/10 transition-all"
                       >

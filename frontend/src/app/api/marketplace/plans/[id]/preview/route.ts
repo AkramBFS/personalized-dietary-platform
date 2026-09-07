@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const DJANGO_API_BASE_URL = "http://127.0.0.1:8000/api/v1/";
+import { API_BASE_URL } from "@/lib/api";
 
 export async function GET(
   _req: NextRequest,
@@ -9,7 +8,7 @@ export async function GET(
   const { id } = await params;
   
   try {
-    const upstream = await fetch(`${DJANGO_API_BASE_URL}marketplace/plans/${id}/`, {
+    const upstream = await fetch(`${API_BASE_URL}marketplace/plans/${id}/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

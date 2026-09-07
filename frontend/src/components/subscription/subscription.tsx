@@ -69,7 +69,7 @@ export default function SubscriptionPlans() {
       id: "item-1",
       question: "Is my payment information secure?",
       answer:
-        "Absolutely. We use industry-standard 256-bit encryption and partner with top-tier payment processors like Stripe. Your credit card details are never stored on our servers, ensuring bank-level security for every transaction.",
+        "We use industry-standard 256-bit encryption and process payments through PCI-DSS Level 1 certified payment processors like Stripe. Your raw credit card details are tokenized client-side and never touch or reside on our servers, ensuring bank-level security for every transaction.",
     },
     {
       id: "item-2",

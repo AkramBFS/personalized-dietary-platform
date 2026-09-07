@@ -7,6 +7,7 @@ from .checkout_views import (
 
 urlpatterns = [
     path('create/',                  CheckoutCreateView.as_view(),  name='checkout-create'),
+    path('session/',                 CheckoutCreateView.as_view(),  name='checkout-session'),
     path('<uuid:checkout_id>/',      CheckoutDetailView.as_view(),  name='checkout-detail'),
     path('<uuid:checkout_id>/confirm/', CheckoutConfirmView.as_view(), name='checkout-confirm'),
 ]

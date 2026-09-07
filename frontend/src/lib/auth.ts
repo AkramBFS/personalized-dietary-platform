@@ -28,21 +28,28 @@ export function withAuthHeader(config: InternalAxiosRequestConfig): InternalAxio
   return config;
 }
 
+function getSecurityFlags(): string {
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    return "; SameSite=Lax; Secure";
+  }
+  return "; SameSite=Lax";
+}
+
 export function setAccessToken(token: string) {
   if (typeof document !== "undefined") {
-    document.cookie = `access_token=${token}; path=/; max-age=3600`;
+    document.cookie = `access_token=${token}; path=/; max-age=3600${getSecurityFlags()}`;
   }
 }
 
 export function setRefreshToken(token: string) {
   if (typeof document !== "undefined") {
-    document.cookie = `refresh_token=${token}; path=/; max-age=604800`; // 7 days
+    document.cookie = `refresh_token=${token}; path=/; max-age=604800${getSecurityFlags()}`; // 7 days
   }
 }
 
 export function setUserRoleCookie(role: string) {
   if (typeof document !== "undefined") {
-    document.cookie = `user_role=${role}; path=/; max-age=604800; SameSite=Lax`;
+    document.cookie = `user_role=${role}; path=/; max-age=604800${getSecurityFlags()}`;
   }
 }
 
@@ -72,13 +79,36 @@ export function getSessionUser(): SessionUser | null {
   return null;
 }
 
-export function clearAuthSession() {
+export async function clearAuthSession(callServerLogout: boolean = true) {
+  if (callServerLogout && typeof document !== "undefined") {
+    const refresh = getCookie("refresh_token");
+    if (refresh) {
+      try {
+        const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1/";
+        const apiBase = rawUrl.endsWith("/") ? rawUrl : `${rawUrl}/`;
+        const access = getCookie("access_token");
+        await fetch(`${apiBase}auth/logout/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(access ? { Authorization: `Bearer ${access}` } : {}),
+          },
+          body: JSON.stringify({ refresh }),
+        });
+      } catch (err) {
+        console.error("Failed to revoke token on server:", err);
+      }
+    }
+  }
+
   if (typeof document !== "undefined") {
-    document.cookie = "access_token=; path=/; max-age=0";
-    document.cookie = "refresh_token=; path=/; max-age=0";
-    document.cookie = "user_role=; path=/; max-age=0";
+    const security = getSecurityFlags();
+    document.cookie = `access_token=; path=/; max-age=0${security}`;
+    document.cookie = `refresh_token=; path=/; max-age=0${security}`;
+    document.cookie = `user_role=; path=/; max-age=0${security}`;
   }
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(SESSION_USER_KEY);
   }
 }
+

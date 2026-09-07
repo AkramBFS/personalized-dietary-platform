@@ -76,8 +76,12 @@ web_modules/
 # Virtual env
 venv/
 .env
+.env.local
+.env.*.local
+*.env
 .env.*
 !.env.example
+
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
