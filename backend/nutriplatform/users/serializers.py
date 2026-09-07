@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import transaction
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.storage import default_storage
@@ -76,41 +77,41 @@ class RegisterClientSerializer(serializers.Serializer):
         # Extract file separately
         profile_photo = validated_data.pop('profile_photo', None)
 
-        # Create User
-        user = User.objects.create_user(
-            username = validated_data['username'],
-            email    = validated_data['email'],
-            password = validated_data['password'],
-            role     = 'client',
-        )
-
-        # Handle profile photo upload
-        photo_url = 'default_avatar.png'
-        if profile_photo:
-            path = default_storage.save(
-                f'profiles/clients/{user.id}_{profile_photo.name}',
-                profile_photo
+        with transaction.atomic():
+            # Create User
+            user = User.objects.create_user(
+                username = validated_data['username'],
+                email    = validated_data['email'],
+                password = validated_data['password'],
+                role     = 'client',
             )
-            photo_url = path
-        
 
-        # Create Client profile
-        client = Client.objects.create(
-            user              = user,
-            age               = validated_data['age'],
-            weight            = validated_data['weight'],
-            height            = validated_data['height'],
-            gender            = validated_data['gender'],
-            country_id        = validated_data['country_id'],
-            goal_id           = validated_data['goal_id'],
-            health_history    = validated_data.get('health_history', ''),
-            profile_photo_url = photo_url,
-            activity_level    = validated_data.get('activity_level', None), 
-            diet              = validated_data.get('diet', None),           
-            # BMI and BMR are auto-calculated in Client.save()
-        )
+            # Handle profile photo upload
+            photo_url = 'default_avatar.png'
+            if profile_photo:
+                path = default_storage.save(
+                    f'profiles/clients/{user.id}_{profile_photo.name}',
+                    profile_photo
+                )
+                photo_url = path
 
-        return user, client
+            # Create Client profile
+            client = Client.objects.create(
+                user              = user,
+                age               = validated_data['age'],
+                weight            = validated_data['weight'],
+                height            = validated_data['height'],
+                gender            = validated_data['gender'],
+                country_id        = validated_data['country_id'],
+                goal_id           = validated_data['goal_id'],
+                health_history    = validated_data.get('health_history', ''),
+                profile_photo_url = photo_url,
+                activity_level    = validated_data.get('activity_level', None), 
+                diet              = validated_data.get('diet', None),           
+                # BMI and BMR are auto-calculated in Client.save()
+            )
+
+            return user, client
 
 
 # ── Nutritionist Registration ──────────────────────────────────────────────────
@@ -170,49 +171,50 @@ class RegisterNutritionistSerializer(serializers.Serializer):
         profile_photo = validated_data.pop('profile_photo', None)
         language_ids  = validated_data.pop('language_ids')
 
-        # Create User
-        user = User.objects.create_user(
-            username = validated_data['username'],
-            email    = validated_data['email'],
-            password = validated_data['password'],
-            role     = 'nutritionist',
-        )
-
-        # Handle file uploads
-        cert_path = default_storage.save(
-            f'certifications/{user.id}_{cert_image.name}',
-            cert_image
-        )
-        photo_url = 'default_nutri.png'
-        if profile_photo:
-            path = default_storage.save(
-                f'profiles/nutritionists/{user.id}_{profile_photo.name}',
-                profile_photo
-            )
-            photo_url = path
-
-        # Create Nutritionist profile
-        nutritionist = Nutritionist.objects.create(
-            user               = user,
-            country_id         = validated_data['country_id'],
-            specialization_id  = validated_data['specialization_id'],
-            years_experience   = validated_data['years_experience'],
-            consultation_price = validated_data['consultation_price'],
-            bio                = validated_data.get('bio', ''),
-            certification_ref  = validated_data['certification_ref'],
-            cert_image_url     = cert_path,
-            approval_status='pending',
-            profile_photo_url  = photo_url,
-        )
-
-        # Add languages (ManyToMany via junction table)
-        for lang_id in language_ids:
-            NutritionistLanguage.objects.create(
-                nutritionist=nutritionist,
-                language_id=lang_id
+        with transaction.atomic():
+            # Create User
+            user = User.objects.create_user(
+                username = validated_data['username'],
+                email    = validated_data['email'],
+                password = validated_data['password'],
+                role     = 'nutritionist',
             )
 
-        return user, nutritionist
+            # Handle file uploads
+            cert_path = default_storage.save(
+                f'certifications/{user.id}_{cert_image.name}',
+                cert_image
+            )
+            photo_url = 'default_nutri.png'
+            if profile_photo:
+                path = default_storage.save(
+                    f'profiles/nutritionists/{user.id}_{profile_photo.name}',
+                    profile_photo
+                )
+                photo_url = path
+
+            # Create Nutritionist profile
+            nutritionist = Nutritionist.objects.create(
+                user               = user,
+                country_id         = validated_data['country_id'],
+                specialization_id  = validated_data['specialization_id'],
+                years_experience   = validated_data['years_experience'],
+                consultation_price = validated_data['consultation_price'],
+                bio                = validated_data.get('bio', ''),
+                certification_ref  = validated_data['certification_ref'],
+                cert_image_url     = cert_path,
+                approval_status    = 'pending',
+                profile_photo_url  = photo_url,
+            )
+
+            # Add languages (ManyToMany via junction table)
+            for lang_id in language_ids:
+                NutritionistLanguage.objects.create(
+                    nutritionist=nutritionist,
+                    language_id=lang_id
+                )
+
+            return user, nutritionist
 
 
 # ── Login ──────────────────────────────────────────────────────────────────────
@@ -232,6 +234,18 @@ class LoginSerializer(serializers.Serializer):
                 "Your account has been banned. Contact support.",
                 code='ACCOUNT_BANNED'
             )
+
+        if user.role == 'nutritionist':
+            try:
+                profile = user.nutritionist
+                if profile.approval_status != 'approved':
+                    raise serializers.ValidationError({
+                        "detail": f"Account approval {profile.approval_status}.",
+                        "code": f"ACCOUNT_{profile.approval_status.upper()}",
+                        "rejection_reason": profile.rejection_reason if profile.approval_status == 'rejected' else None
+                    })
+            except Nutritionist.DoesNotExist:
+                raise serializers.ValidationError("Nutritionist profile missing.")
 
         data['user'] = user
         return data

@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from django.core.files.storage import default_storage
 
-from users.permissions import IsNutritionist
+from users.permissions import IsNutritionist, IsApprovedNutritionist
 from .models import (
     Nutritionist, NutritionistLanguage, Language,
     NutritionistAvailability, NutritionistHoliday,
@@ -110,7 +110,7 @@ class NutritionistProfileView(APIView):
 # ── Schedule ───────────────────────────────────────────────────────────────────
 
 class ScheduleView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get(self, request):
         nutritionist = get_nutritionist(request.user)
@@ -135,7 +135,7 @@ class ScheduleView(APIView):
 
 
 class AvailabilityView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def put(self, request):
         nutritionist = get_nutritionist(request.user)
@@ -185,7 +185,7 @@ class AvailabilityView(APIView):
 # ── Holidays ───────────────────────────────────────────────────────────────────
 
 class HolidayView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def post(self, request):
         nutritionist = get_nutritionist(request.user)
@@ -221,7 +221,7 @@ class HolidayView(APIView):
 
 
 class HolidayDeleteView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def delete(self, request, pk):
         nutritionist = get_nutritionist(request.user)
@@ -243,7 +243,7 @@ class HolidayDeleteView(APIView):
 # ── Consultations ──────────────────────────────────────────────────────────────
 
 class NutritionistConsultationListView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get(self, request):
         nutritionist = get_nutritionist(request.user)
@@ -269,7 +269,7 @@ class NutritionistConsultationListView(APIView):
 
 
 class ConsultationZoomView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def patch(self, request, pk):
         nutritionist = get_nutritionist(request.user)
@@ -311,7 +311,7 @@ class ConsultationZoomView(APIView):
 
 
 class ConsultationStatusView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     ALLOWED_STATUSES = ['notified', 'finished', 'cancelled']
 
@@ -354,7 +354,7 @@ class ConsultationStatusView(APIView):
 # ── Plan Management ────────────────────────────────────────────────────────────
 
 class NutritionistPlanListView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
     
 
 
@@ -479,7 +479,7 @@ class NutritionistPlanListView(APIView):
         }, status=201)
 
 class NutritionistPlanDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get_plan(self, pk, nutritionist):
         try:
@@ -564,9 +564,9 @@ class NutritionistPlanDetailView(APIView):
     
 
 # ── Patient Management ─────────────────────────────────────────────────────────
-
+ 
 class NutritionistPatientListView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get(self, request):
         nutritionist = get_nutritionist(request.user)
@@ -583,7 +583,7 @@ class NutritionistPatientListView(APIView):
 
 
 class NutritionistPatientDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get(self, request, client_id):
         nutritionist = get_nutritionist(request.user)
@@ -603,7 +603,7 @@ class NutritionistPatientDetailView(APIView):
 
 
 class NutritionistPatientNoteView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def post(self, request, client_id):
         nutritionist = get_nutritionist(request.user)
@@ -642,7 +642,7 @@ class NutritionistPatientNoteView(APIView):
 # ── Earnings ───────────────────────────────────────────────────────────────────
 
 class NutritionistEarningsView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get(self, request):
         nutritionist = get_nutritionist(request.user)
@@ -671,7 +671,7 @@ class NutritionistEarningsView(APIView):
 
 
 class NutritionistInvoiceListView(APIView):
-    permission_classes = [IsAuthenticated, IsNutritionist]
+    permission_classes = [IsAuthenticated, IsApprovedNutritionist]
 
     def get(self, request):
         nutritionist = get_nutritionist(request.user)

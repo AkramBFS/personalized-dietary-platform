@@ -14,11 +14,10 @@ interface ReviewModalProps {
   id: number;
   title: string;
   nutritionistId?: number;
+  onSuccess?: () => void;
 }
 
-import { saveLocalPlanRating, saveLocalConsultationRating } from "@/lib/localRatings";
-
-export default function ReviewModal({ isOpen, onClose, type, id, title, nutritionistId }: ReviewModalProps) {
+export default function ReviewModal({ isOpen, onClose, type, id, title, nutritionistId, onSuccess }: ReviewModalProps) {
   const [rating, setRating] = useState(5);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -43,13 +42,8 @@ export default function ReviewModal({ isOpen, onClose, type, id, title, nutritio
         comment: comment.trim() || undefined,
       });
       
-      // Save rating locally to override API until API syncs/re-calculates
-      if (type === "meal-plan") {
-        saveLocalPlanRating(id, rating, nutritionistId);
-      } else if (type === "consultation") {
-        saveLocalConsultationRating(id, rating, nutritionistId);
-      }
-      
+      toast.success("Thank you! Your review has been submitted.");
+      onSuccess?.();
       setIsSubmitted(true);
       // Automatically close after 3 seconds
       setTimeout(() => {

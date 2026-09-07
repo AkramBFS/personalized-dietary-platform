@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { getNutritionistProfile, resolveApiUrl, unwrapResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { getLocalNutritionistAverage, mergeRating } from "@/lib/localRatings";
 
 interface NutritionistPublicProfile {
   nutritionist_id: number;
@@ -137,6 +136,11 @@ export default function NutritionistProfileModal({
                           src={avatarSrc}
                           alt={profile.username}
                           className="h-full w-full rounded-full object-cover border-4 border-card shadow-lg"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = "/placeholder-avatar.png";
+                          }}
                         />
                         <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1.5 rounded-full border-2 border-card shadow-sm">
                           <Award className="h-4 w-4" />
@@ -148,8 +152,7 @@ export default function NutritionistProfileModal({
                             {profile.username}
                           </Dialog.Title>
                           {(() => {
-                            const localAvg = getLocalNutritionistAverage(profile.nutritionist_id ?? Number(id));
-                            const finalRating = mergeRating(profile.rating, localAvg);
+                            const finalRating = Number(profile.rating ?? 0);
                             return (
                               <div className="flex items-center justify-center sm:justify-start gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full w-fit mx-auto sm:mx-0">
                                 <Star className="h-4 w-4 fill-amber-500" />

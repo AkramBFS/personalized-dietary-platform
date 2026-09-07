@@ -183,3 +183,129 @@ class CheckoutIntegrationTests(APITestCase):
         self.assertEqual(resp.data.get("code"), "CHECKOUT_REQUIRED")
         self.assertFalse(Consultation.objects.filter(client=self.client_profile).exists())
 
+    def test_concurrent_slot_booking_race_condition(self):
+        """
+        BE-008: When two clients attempt to book the exact same consultation slot,
+        the first confirmation succeeds and the second is rejected with HTTP 409 Conflict
+        and code SLOT_ALREADY_BOOKED.
+        """
+        self.authenticate_client()
+
+        # Create Client 2
+        client2_user = User.objects.create_user(
+            username="client2_slot",
+            email="client2_slot@test.com",
+            password="TestPassword123!",
+            role="client",
+        )
+        Client.objects.create(
+            user=client2_user,
+            country=self.country,
+            goal=self.goal,
+            age=30,
+            weight=80.0,
+            height=180.0,
+            gender="female",
+        )
+
+        slot_data = {
+            "appointment_date": "2026-11-20",
+            "start_time": "14:00:00",
+            "end_time": "15:00:00",
+            "consultation_type": "advice_only",
+        }
+
+        # Client 1 creates checkout session
+        resp1 = self.client.post("/api/v1/checkout/create/", {
+            "item_type": "CONSULTATION",
+            "item_id": self.nutritionist_profile.nutritionist_id,
+            "metadata": slot_data,
+        }, format="json")
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        checkout_id_1 = resp1.data["data"]["checkout_id"]
+
+        # Client 2 logs in and creates checkout session for the same slot
+        login2 = self.client.post("/api/v1/auth/login/", {
+            "email": "client2_slot@test.com",
+            "password": "TestPassword123!",
+        }, format="json")
+        token2 = login2.data["data"]["tokens"]["access"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token2}")
+
+        resp2 = self.client.post("/api/v1/checkout/create/", {
+            "item_type": "CONSULTATION",
+            "item_id": self.nutritionist_profile.nutritionist_id,
+            "metadata": slot_data,
+        }, format="json")
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+        checkout_id_2 = resp2.data["data"]["checkout_id"]
+
+        # Client 1 confirms first
+        self.authenticate_client()
+        confirm1 = self.client.post(f"/api/v1/checkout/{checkout_id_1}/confirm/", {
+            "transaction_number": "TXN-SLOT-001",
+            **slot_data,
+        }, format="json")
+        self.assertEqual(confirm1.status_code, status.HTTP_201_CREATED)
+
+        # Client 2 attempts to confirm same slot -> must fail with HTTP 409
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token2}")
+        confirm2 = self.client.post(f"/api/v1/checkout/{checkout_id_2}/confirm/", {
+            "transaction_number": "TXN-SLOT-002",
+            **slot_data,
+        }, format="json")
+        self.assertEqual(confirm2.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(confirm2.data.get("code"), "SLOT_ALREADY_BOOKED")
+
+        # Verify only one consultation was booked for this slot
+        consultations = Consultation.objects.filter(
+            nutritionist=self.nutritionist_profile,
+            appointment_date="2026-11-20",
+            start_time="14:00:00",
+        )
+        self.assertEqual(consultations.count(), 1)
+        self.assertEqual(consultations.first().client, self.client_profile)
+
+    def test_service_review_duplicate_rejected(self):
+        """
+        CROSS-002: A client cannot submit multiple reviews for the same service.
+        Duplicate reviews return HTTP 409 with code ALREADY_REVIEWED.
+        """
+        self.authenticate_client()
+
+        consultation = Consultation.objects.create(
+            client=self.client_profile,
+            nutritionist=self.nutritionist_profile,
+            appointment_date="2026-10-01",
+            start_time="10:00:00",
+            end_time="11:00:00",
+            status="finished",
+            price_paid=50.0,
+        )
+
+        # First review succeeds
+        rev1 = self.client.post("/api/v1/client/reviews/", {
+            "item_type": "consultation",
+            "item_id": consultation.id,
+            "rating": 5,
+            "comment": "Great session!",
+        }, format="json")
+        self.assertEqual(rev1.status_code, status.HTTP_201_CREATED)
+
+        self.nutritionist_profile.refresh_from_db()
+        self.assertEqual(self.nutritionist_profile.rating, 5.0)
+
+        # Second review for the same consultation must fail with 409
+        rev2 = self.client.post("/api/v1/client/reviews/", {
+            "item_type": "consultation",
+            "item_id": consultation.id,
+            "rating": 1,
+            "comment": "Changed my mind",
+        }, format="json")
+        self.assertEqual(rev2.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(rev2.data.get("code"), "ALREADY_REVIEWED")
+
+        # Rating remains 5.0
+        self.nutritionist_profile.refresh_from_db()
+        self.assertEqual(self.nutritionist_profile.rating, 5.0)
+

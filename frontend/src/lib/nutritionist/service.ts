@@ -13,6 +13,8 @@ export interface NutritionistProfile {
   languages?: Array<{ language__id: number; language__name: string }>;
   profile_photo_url: string | null;
   specialization_name?: string;
+  approval_status?: "approved" | "pending" | "rejected";
+  rejection_reason?: string | null;
   user?: {
     username?: string;
     email?: string;

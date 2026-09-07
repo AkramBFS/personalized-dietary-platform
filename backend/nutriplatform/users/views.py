@@ -99,10 +99,6 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user   = serializer.validated_data['user']
-            if user.role == 'nutritionist' and not user.nutritionist.is_approved:
-                return Response({
-                "error": "Your account is not approved yet."
-                }, status=403)
             tokens = get_tokens_for_user(user)
             return Response({
                 "status": "success",
@@ -116,6 +112,35 @@ class LoginView(APIView):
                     }
                 }
             }, status=status.HTTP_200_OK)
+
+        # Check if error is an account approval restriction
+        errors = serializer.errors
+        code = None
+        detail = None
+        rejection_reason = None
+
+        if isinstance(errors, dict):
+            if 'code' in errors:
+                c = errors['code']
+                code = c[0] if isinstance(c, list) else c
+                d = errors.get('detail', [])
+                detail = d[0] if isinstance(d, list) else d
+                r = errors.get('rejection_reason', [])
+                rejection_reason = r[0] if isinstance(r, list) else r
+            elif 'non_field_errors' in errors:
+                nfe = errors['non_field_errors']
+                if nfe and isinstance(nfe[0], dict):
+                    code = nfe[0].get('code')
+                    detail = nfe[0].get('detail')
+                    rejection_reason = nfe[0].get('rejection_reason')
+
+        if code in ['ACCOUNT_PENDING', 'ACCOUNT_REJECTED']:
+            return Response({
+                "status": "error",
+                "message": str(detail) if detail else f"Account approval {code.replace('ACCOUNT_', '').lower()}.",
+                "code": str(code),
+                "rejection_reason": rejection_reason
+            }, status=status.HTTP_403_FORBIDDEN)
 
         return Response({
             "status": "error",

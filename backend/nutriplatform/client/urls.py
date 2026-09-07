@@ -39,6 +39,6 @@ urlpatterns = [
     path('invoices/<int:pk>/',           InvoiceDetailView.as_view(),          name='invoice-detail'),
     path('feedback/',                    ClientFeedbackCreateView.as_view(),   name='client-feedback-create'),
     path('feedback/list/',               ClientFeedbackListView.as_view(),     name='client-feedback-list'),
-    
+    path('reviews/',                     ServiceReviewView.as_view(),          name='client-reviews'),
 
 ]

@@ -27,7 +27,6 @@ import {
   getSpecializations,
   LookupItem,
 } from "@/lib/lookups";
-import { getLocalPlanAverage, mergeRating } from "@/lib/localRatings";
 import { Input } from "@/components/ui/Input";
 import {
   Select,
@@ -92,8 +91,7 @@ function PlanCard({
     ? "Seasonal"
     : plan.specialization_name || "Clinical Plan";
 
-  const localAvg = getLocalPlanAverage(plan.id);
-  const finalRating = mergeRating(plan.rating_avg, localAvg);
+  const finalRating = Number(plan.rating_avg ?? 0);
 
   return (
     <Link

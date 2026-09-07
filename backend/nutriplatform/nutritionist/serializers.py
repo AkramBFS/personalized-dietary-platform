@@ -77,11 +77,11 @@ class NutritionistProfileSerializer(serializers.ModelSerializer):
             'specialization', 'specialization_name',
             'country', 'country_name',
             'languages', 'rating',
-            'approval_status',
+            'approval_status', 'rejection_reason',
         ]
         read_only_fields = [
             'nutritionist_id', 'rating',
-            'approval_status', 'cert_image_url',
+            'approval_status', 'rejection_reason', 'cert_image_url',
         ]
 
     def get_languages(self, obj):

@@ -28,7 +28,6 @@ import {
   resolveApiUrl,
 } from "@/lib/api";
 import { buildPaymentUrl } from "@/lib/payment";
-import { getLocalPlanAverage, mergeRating } from "@/lib/localRatings";
 
 interface PlanProps {
   slug: string;
@@ -288,8 +287,7 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
             ) : null}
 
             {(() => {
-              const localAvg = getLocalPlanAverage(plan.id);
-              const finalRating = mergeRating(plan.rating_avg, localAvg);
+              const finalRating = Number(plan.rating_avg ?? 0);
               return (
                 <div className="flex items-center gap-4 mt-4">
                   {renderStars(finalRating)}
