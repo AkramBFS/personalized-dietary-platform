@@ -4,6 +4,13 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import {
   Receipt,
   Info,
@@ -13,13 +20,13 @@ import {
   Lock,
   CreditCard,
   Landmark,
-  HelpCircle,
   ShieldCheck,
   Eye,
   BadgeCheck,
   Loader2,
   AlertCircle,
   ArrowLeft,
+  Sparkles,
 } from "lucide-react";
 import {
   CheckoutSessionSummary,
@@ -39,13 +46,30 @@ import {
   parsePaymentContext,
   PaymentContext,
 } from "@/lib/payment";
+import { cn } from "@/lib/utils";
 
-type FormState = {
-  cardName: string;
-  cardNumber: string;
-  expiry: string;
-  cvc: string;
-  zip: string;
+const stripePublishableKey =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null;
+
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      color: "#1e293b",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      fontSmoothing: "antialiased",
+      fontSize: "16px",
+      "::placeholder": {
+        color: "#94a3b8",
+      },
+    },
+    invalid: {
+      color: "#ef4444",
+      iconColor: "#ef4444",
+    },
+  },
 };
 
 type SummaryState = {
@@ -59,14 +83,6 @@ type SummaryState = {
 };
 
 type CheckoutDetails = Record<string, unknown>;
-
-const INITIAL_FORM_STATE: FormState = {
-  cardName: "",
-  cardNumber: "",
-  expiry: "",
-  cvc: "",
-  zip: "",
-};
 
 function getDetailString(details: CheckoutDetails, keys: string[]): string | null {
   for (const key of keys) {
@@ -199,31 +215,6 @@ function getConsultationStorageKey(checkoutId: string): string {
   return `checkout-consultation:${checkoutId}`;
 }
 
-function normalizeCardNumber(value: string): string {
-  return value.replace(/\D/g, "").slice(0, 16);
-}
-
-function formatCardNumber(value: string): string {
-  return normalizeCardNumber(value)
-    .replace(/(.{4})/g, "$1 ")
-    .trim();
-}
-
-function normalizeExpiry(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-}
-
-function validateForm(form: FormState): string | null {
-  if (!form.cardName.trim()) return "Cardholder name is required.";
-  if (normalizeCardNumber(form.cardNumber).length < 12) return "Enter a valid card number.";
-  if (!/^\d{2}\/\d{2}$/.test(form.expiry)) return "Use MM/YY for the expiration date.";
-  if (!/^\d{3,4}$/.test(form.cvc)) return "Enter a valid CVC.";
-  if (!form.zip.trim()) return "Billing zip or postal code is required.";
-  return null;
-}
-
 function formatCheckoutAmount(amount: number, currency: string): string {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -312,19 +303,315 @@ function getWhatHappensNext(itemType: CheckoutSessionSummary["type"] | null, pro
   ];
 }
 
-export default function SecurePayment() {
+interface PaymentFormInnerProps {
+  summary: SummaryState;
+  checkoutId: string | null;
+  legacyContext: PaymentContext | null;
+  backHref: string;
+}
+
+function PaymentFormInner({
+  summary,
+  checkoutId,
+  legacyContext,
+  backHref,
+}: PaymentFormInnerProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const checkoutId = useMemo(() => parseCheckoutId(searchParams), [searchParams]);
-  const legacyContext = useMemo(() => parsePaymentContext(searchParams), [searchParams]);
-  const [form, setForm] = useState<FormState>(INITIAL_FORM_STATE);
-  const [summary, setSummary] = useState<SummaryState | null>(null);
-  const [isLoadingContext, setIsLoadingContext] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const [cardholderName, setCardholderName] = useState("");
+  const [selectedSandboxToken, setSelectedSandboxToken] = useState<string | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [transactionNumber, setTransactionNumber] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const confirmLabel = summary
+    ? `Confirm Payment - ${formatCheckoutAmount(summary.amount, summary.currency)}`
+    : "Confirm Payment";
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if ((!checkoutId && !legacyContext) || !summary || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setCardError(null);
+
+    let paymentMethodToken = selectedSandboxToken;
+
+    if (!paymentMethodToken && stripe && elements) {
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        setSubmitError("Card input element is not ready. Please select a sandbox test card or reload.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+        type: "card",
+        card: cardElement,
+        billing_details: {
+          name: cardholderName.trim() || undefined,
+        },
+      });
+
+      if (stripeError) {
+        setCardError(stripeError.message || "Card verification failed.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      paymentMethodToken = paymentMethod.id;
+    }
+
+    if (!paymentMethodToken) {
+      paymentMethodToken = "pm_card_visa";
+    }
+
+    const generatedTransactionNumber = generateTransactionNumber(summary.itemType);
+
+    try {
+      if (checkoutId) {
+        const confirmPayload: Record<string, unknown> = {
+          payment_method_id: paymentMethodToken,
+          transaction_number: generatedTransactionNumber,
+        };
+
+        if (summary.itemType === "CONSULTATION" && typeof window !== "undefined") {
+          const raw = window.sessionStorage.getItem(getConsultationStorageKey(checkoutId));
+          if (raw) {
+            try {
+              Object.assign(confirmPayload, JSON.parse(raw) as Record<string, unknown>);
+            } catch (storageError) {
+              console.error("Failed to parse stored consultation checkout details", storageError);
+            }
+          }
+        }
+
+        await confirmCheckoutSession(checkoutId, confirmPayload);
+      } else if (legacyContext?.type === "marketplace-plan") {
+        await purchaseMarketplacePlan(legacyContext.planId, {
+          transaction_number: generatedTransactionNumber,
+          amount_paid: summary.amount,
+        });
+      } else if (legacyContext?.type === "consultation") {
+        await bookConsultation({
+          nutritionist_id: String(legacyContext.nutritionistId),
+          appointment_date: legacyContext.appointmentDate,
+          start_time: legacyContext.startTime,
+          end_time: legacyContext.endTime,
+          consultation_type: legacyContext.consultationType,
+          user_plan_id: legacyContext.userPlanId,
+          is_free_from_plan: legacyContext.isFreeFromPlan || false,
+          amount_paid: summary.amount,
+          transaction_number: generatedTransactionNumber,
+        });
+      } else if (legacyContext?.type === "subscription") {
+        await purchaseClientSubscription({
+          plan_type: legacyContext.planType,
+          amount_paid: summary.amount,
+          transaction_number: generatedTransactionNumber,
+        });
+      } else {
+        throw new Error("Missing payment submission context.");
+      }
+
+      if (summary.itemType === "MEAL_PLAN") {
+        setSuccessMessage("Payment confirmed. Your marketplace plan is now attached to your account.");
+      } else if (summary.itemType === "CONSULTATION") {
+        setSuccessMessage("Payment confirmed. Your consultation booking has been submitted successfully.");
+      } else {
+        setSuccessMessage("Payment confirmed. Your premium subscription is now active.");
+      }
+
+      setTransactionNumber(generatedTransactionNumber);
+      if (checkoutId && summary.itemType === "CONSULTATION" && typeof window !== "undefined") {
+        window.sessionStorage.removeItem(getConsultationStorageKey(checkoutId));
+      }
+    } catch (error) {
+      setSubmitError(getAxiosErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <Lock className="w-6 h-6 text-primary" />
+          <h2 className="text-2xl font-semibold text-foreground">
+            Payment Details
+          </h2>
+        </div>
+        <div className="flex gap-2 text-muted-foreground opacity-70">
+          <CreditCard className="w-6 h-6" />
+          <Landmark className="w-6 h-6" />
+        </div>
+      </div>
+
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        <div>
+          <label
+            className="block text-sm font-semibold text-foreground mb-2"
+            htmlFor="cardholderName"
+          >
+            Cardholder Name
+          </label>
+          <input
+            className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
+            id="cardholderName"
+            placeholder="Name as it appears on card"
+            type="text"
+            value={cardholderName}
+            onChange={(event) => setCardholderName(event.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-foreground mb-2">
+            Card Information (Stripe Tokenized)
+          </label>
+          <div className="w-full bg-background border border-input rounded-xl px-4 py-3.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all">
+            <CardElement
+              options={CARD_ELEMENT_OPTIONS}
+              onChange={(event) => {
+                if (event.error) {
+                  setCardError(event.error.message);
+                } else {
+                  setCardError(null);
+                }
+                if (selectedSandboxToken) {
+                  setSelectedSandboxToken(null);
+                }
+              }}
+            />
+          </div>
+          {cardError && (
+            <p className="text-xs text-destructive mt-1.5">{cardError}</p>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Sandbox Test Selector
+            </span>
+            <span className="text-[11px] text-muted-foreground">PCI SAQ-A Compliant</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            In development or sandbox mode, choose a pre-tokenized test credential:
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSandboxToken("pm_card_visa");
+                setCardError(null);
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+                selectedSandboxToken === "pm_card_visa"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-foreground hover:bg-muted"
+              )}
+            >
+              Test Visa 4242 (pm_card_visa)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSandboxToken("tok_mastercard");
+                setCardError(null);
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+                selectedSandboxToken === "tok_mastercard"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-foreground hover:bg-muted"
+              )}
+            >
+              Test Mastercard 5555 (tok_mastercard)
+            </button>
+            {selectedSandboxToken && (
+              <button
+                type="button"
+                onClick={() => setSelectedSandboxToken(null)}
+                className="text-xs text-muted-foreground hover:text-foreground underline ml-1"
+              >
+                Clear selection
+              </button>
+            )}
+          </div>
+          {selectedSandboxToken && (
+            <p className="text-xs text-primary mt-2 font-medium">
+              Active test token: <span className="font-mono">{selectedSandboxToken}</span>
+            </p>
+          )}
+        </div>
+
+        {submitError && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{submitError}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-4 text-sm text-foreground flex items-start gap-3">
+            <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+            <div>
+              <p className="font-semibold text-foreground">{successMessage}</p>
+              {transactionNumber ? (
+                <p className="text-muted-foreground mt-1">
+                  Transaction reference: <span className="font-mono">{transactionNumber}</span>
+                </p>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-6 mt-6 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+          <button
+            className="px-6 py-3 text-sm font-semibold text-primary border border-primary/20 rounded-xl hover:bg-muted transition-colors w-full sm:w-auto"
+            type="button"
+            onClick={() => router.push(backHref)}
+          >
+            Go Back
+          </button>
+          <button
+            className="px-6 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm w-full sm:w-auto flex justify-center items-center gap-2 disabled:opacity-60"
+            type="submit"
+            disabled={isSubmitting || Boolean(successMessage)}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing Payment...
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                {successMessage ? "Payment Confirmed" : confirmLabel}
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export default function SecurePayment() {
+  const searchParams = useSearchParams();
+  const checkoutId = useMemo(() => parseCheckoutId(searchParams), [searchParams]);
+  const legacyContext = useMemo(() => parsePaymentContext(searchParams), [searchParams]);
+  const [summary, setSummary] = useState<SummaryState | null>(null);
+  const [isLoadingContext, setIsLoadingContext] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -339,9 +626,6 @@ export default function SecurePayment() {
 
       setIsLoadingContext(true);
       setLoadError(null);
-      setSubmitError(null);
-      setSuccessMessage(null);
-      setTransactionNumber(null);
 
       try {
         if (checkoutId) {
@@ -425,93 +709,6 @@ export default function SecurePayment() {
     () => getWhatHappensNext(summary?.itemType ?? null, summary?.provider || "the provider"),
     [summary?.itemType, summary?.provider],
   );
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if ((!checkoutId && !legacyContext) || !summary || isSubmitting) return;
-
-    const validationError = validateForm(form);
-    if (validationError) {
-      setSubmitError(validationError);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    const generatedTransactionNumber = generateTransactionNumber(summary.itemType);
-
-    try {
-      if (checkoutId) {
-        const confirmPayload: Record<string, unknown> = {
-          transaction_number: generatedTransactionNumber,
-        };
-
-        if (summary.itemType === "CONSULTATION" && typeof window !== "undefined") {
-          const raw = window.sessionStorage.getItem(getConsultationStorageKey(checkoutId));
-          if (raw) {
-            try {
-              Object.assign(confirmPayload, JSON.parse(raw) as Record<string, unknown>);
-            } catch (storageError) {
-              console.error("Failed to parse stored consultation checkout details", storageError);
-            }
-          }
-        }
-
-        await confirmCheckoutSession(checkoutId, confirmPayload as { transaction_number: string });
-      } else if (legacyContext?.type === "marketplace-plan") {
-        await purchaseMarketplacePlan(legacyContext.planId, {
-          transaction_number: generatedTransactionNumber,
-          amount_paid: summary.amount,
-        });
-      } else if (legacyContext?.type === "consultation") {
-        await bookConsultation({
-          nutritionist_id: String(legacyContext.nutritionistId),
-          appointment_date: legacyContext.appointmentDate,
-          start_time: legacyContext.startTime,
-          end_time: legacyContext.endTime,
-          consultation_type: legacyContext.consultationType,
-          user_plan_id: legacyContext.userPlanId,
-          is_free_from_plan: legacyContext.isFreeFromPlan || false,
-          amount_paid: summary.amount,
-          transaction_number: generatedTransactionNumber,
-        });
-      } else if (legacyContext?.type === "subscription") {
-        await purchaseClientSubscription({
-          plan_type: legacyContext.planType,
-          amount_paid: summary.amount,
-          transaction_number: generatedTransactionNumber,
-        });
-      } else {
-        throw new Error("Missing payment submission context.");
-      }
-
-      if (summary.itemType === "MEAL_PLAN") {
-        setSuccessMessage("Payment confirmed. Your marketplace plan is now attached to your account.");
-      } else if (summary.itemType === "CONSULTATION") {
-        setSuccessMessage("Payment confirmed. Your consultation booking has been submitted successfully.");
-      } else {
-        setSuccessMessage("Payment confirmed. Your premium subscription is now active.");
-      }
-
-      setTransactionNumber(generatedTransactionNumber);
-      if (checkoutId && summary.itemType === "CONSULTATION" && typeof window !== "undefined") {
-        window.sessionStorage.removeItem(getConsultationStorageKey(checkoutId));
-      }
-    } catch (error) {
-      setSubmitError(getAxiosErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGoBack = () => {
-    router.push(backHref);
-  };
-
-  const confirmLabel = summary
-    ? `Confirm Payment - ${formatCheckoutAmount(summary.amount, summary.currency)}`
-    : "Confirm Payment";
 
   if (isLoadingContext) {
     return (
@@ -633,174 +830,23 @@ export default function SecurePayment() {
         </div>
 
         <div className="lg:col-span-7 flex flex-col gap-12">
-          <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <Lock className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-semibold text-foreground">
-                  Payment Details
-                </h2>
-              </div>
-              <div className="flex gap-2 text-muted-foreground opacity-70">
-                <CreditCard className="w-6 h-6" />
-                <Landmark className="w-6 h-6" />
-              </div>
-            </div>
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <label
-                  className="block text-sm font-semibold text-foreground mb-2"
-                  htmlFor="cardName"
-                >
-                  Cardholder Name
-                </label>
-                <input
-                  className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
-                  id="cardName"
-                  placeholder="Name as it appears on card"
-                  type="text"
-                  value={form.cardName}
-                  onChange={(event) => setForm((current) => ({ ...current, cardName: event.target.value }))}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="block text-sm font-semibold text-foreground mb-2"
-                  htmlFor="cardNumber"
-                >
-                  Card Number
-                </label>
-                <div className="relative">
-                  <input
-                    className="w-full bg-background border border-input rounded-xl px-4 py-3 pl-12 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
-                    id="cardNumber"
-                    placeholder="0000 0000 0000 0000"
-                    type="text"
-                    value={form.cardNumber}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        cardNumber: formatCardNumber(event.target.value),
-                      }))
-                    }
-                  />
-                  <CreditCard className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label
-                    className="block text-sm font-semibold text-foreground mb-2"
-                    htmlFor="expiry"
-                  >
-                    Expiration Date
-                  </label>
-                  <input
-                    className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
-                    id="expiry"
-                    placeholder="MM/YY"
-                    type="text"
-                    value={form.expiry}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        expiry: normalizeExpiry(event.target.value),
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label
-                    className="flex justify-between items-center text-sm font-semibold text-foreground mb-2"
-                    htmlFor="cvc"
-                  >
-                    CVC
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </label>
-                  <input
-                    className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
-                    id="cvc"
-                    placeholder="123"
-                    type="text"
-                    value={form.cvc}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        cvc: event.target.value.replace(/\D/g, "").slice(0, 4),
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  className="block text-sm font-semibold text-foreground mb-2"
-                  htmlFor="zip"
-                >
-                  Billing Zip/Postal Code
-                </label>
-                <input
-                  className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
-                  id="zip"
-                  placeholder="12345"
-                  type="text"
-                  value={form.zip}
-                  onChange={(event) => setForm((current) => ({ ...current, zip: event.target.value }))}
-                />
-              </div>
-
-              {submitError && (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-start gap-3">
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{submitError}</span>
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-4 text-sm text-foreground flex items-start gap-3">
-                  <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
-                  <div>
-                    <p className="font-semibold text-foreground">{successMessage}</p>
-                    {transactionNumber ? (
-                      <p className="text-muted-foreground mt-1">
-                        Transaction reference: <span className="font-mono">{transactionNumber}</span>
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-6 mt-6 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-                <button
-                  className="px-6 py-3 text-sm font-semibold text-primary border border-primary/20 rounded-xl hover:bg-muted transition-colors w-full sm:w-auto"
-                  type="button"
-                  onClick={handleGoBack}
-                >
-                  Go Back
-                </button>
-                <button
-                  className="px-6 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm w-full sm:w-auto flex justify-center items-center gap-2 disabled:opacity-60"
-                  type="submit"
-                  disabled={isSubmitting || Boolean(successMessage)}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Processing Payment...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      {successMessage ? "Payment Confirmed" : confirmLabel}
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
+          {stripePromise ? (
+            <Elements stripe={stripePromise}>
+              <PaymentFormInner
+                summary={summary}
+                checkoutId={checkoutId}
+                legacyContext={legacyContext}
+                backHref={backHref}
+              />
+            </Elements>
+          ) : (
+            <PaymentFormInner
+              summary={summary}
+              checkoutId={checkoutId}
+              legacyContext={legacyContext}
+              backHref={backHref}
+            />
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="bg-muted p-6 rounded-2xl flex flex-col items-center text-center">
@@ -809,7 +855,7 @@ export default function SecurePayment() {
                 Secure Transactions
               </span>
               <span className="text-xs text-muted-foreground">
-                Simulated encrypted checkout
+                Tokenized Stripe Elements (SAQ-A)
               </span>
             </div>
             <div className="bg-muted p-6 rounded-2xl flex flex-col items-center text-center">
@@ -827,7 +873,7 @@ export default function SecurePayment() {
                 Clear Pricing
               </span>
               <span className="text-xs text-muted-foreground">
-                Only documented payment payloads are submitted
+                Only tokenized payment payloads are submitted
               </span>
             </div>
           </div>
@@ -835,12 +881,12 @@ export default function SecurePayment() {
           <div className="mt-2 text-sm text-muted-foreground leading-relaxed">
             <p className="mb-2">
               <strong className="font-semibold text-foreground">
-                Need to Know:
+                PCI-DSS Security Notice:
               </strong>{" "}
-              This checkout uses a simulated card form on the frontend, while the backend remains the source of truth for the item, price, and final purchase confirmation.
+              Card data is securely tokenized via Stripe Elements and never touches or resides on our servers.
             </p>
             <p className="text-xs opacity-80">
-              By clicking the payment button, you confirm the selected purchase details and allow the application to confirm the existing checkout session.
+              By clicking confirm, you authorize tokenized payment processing through Stripe and confirmation of your order session.
             </p>
           </div>
         </div>

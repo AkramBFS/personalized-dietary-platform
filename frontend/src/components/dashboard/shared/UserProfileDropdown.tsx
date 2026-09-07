@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,9 +26,16 @@ interface UserProfileDropdownProps {
 }
 
 export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await clearAuthSession(true);
+    router.push("/login");
+  };
 
   // useEffect to avoid hydration mismatch
   React.useEffect(() => {
@@ -147,10 +155,10 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
           asChild
           className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 py-2.5"
         >
-          <Link href="/login" onClick={clearAuthSession} className="flex items-center w-full">
+          <button type="button" onClick={handleLogout} className="flex items-center w-full text-left">
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
-          </Link>
+          </button>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

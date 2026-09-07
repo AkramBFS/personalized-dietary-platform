@@ -293,20 +293,12 @@ export default function ScheduleConsultation({
           "Failed to create consultation checkout session",
           checkoutIssue,
         );
-        const totalPrice =
-          (nutritionist.consultation_price ?? 0) +
-          (consultationType === "plan_included" ? 50 : 0);
-        router.push(
-          buildPaymentUrl({
-            type: "consultation",
-            nutritionistId: Number(nutritionist.id),
-            appointmentDate: format(selectedDate, "yyyy-MM-dd"),
-            startTime: selectedSlot.start_time,
-            endTime: selectedSlot.end_time,
-            consultationType,
-            amount: totalPrice,
-          }),
+        setCheckoutError(
+          checkoutIssue instanceof Error
+            ? checkoutIssue.message
+            : "Failed to create checkout session. Please try again.",
         );
+        setIsRedirectingToPayment(false);
       }
     };
 

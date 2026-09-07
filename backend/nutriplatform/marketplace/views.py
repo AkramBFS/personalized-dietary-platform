@@ -141,8 +141,26 @@ class PlanPurchaseView(APIView):
                 "errors": serializer.errors
             }, status=400)
 
-        amount_paid        = serializer.validated_data['amount_paid']
-        transaction_number = serializer.validated_data['transaction_number']
+        # Explicit server-side price verification (CROSS-001)
+        client_amount = request.data.get('amount_paid')
+        if client_amount is not None:
+            from decimal import Decimal
+            plan_price_dec = Decimal(str(plan.price or 0.0))
+            client_amount_dec = Decimal(str(client_amount))
+            if client_amount_dec != plan_price_dec:
+                return Response({
+                    "status": "error",
+                    "message": "Price tampering detected. Submitted price does not match plan price.",
+                    "code": "PRICE_TAMPERING_DETECTED"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Server is sole authority on price
+        amount_paid = plan.price or 0.0
+        import uuid
+        transaction_number = (
+            serializer.validated_data.get('transaction_number')
+            or f"TXN-PLAN-{uuid.uuid4().hex[:10].upper()}"
+        )
 
         with transaction.atomic():
             # 1 — Create UserPlan

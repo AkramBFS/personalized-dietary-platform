@@ -85,8 +85,9 @@ class NutritionistDirectorySerializer(serializers.ModelSerializer):
 # ── Purchase ───────────────────────────────────────────────────────────────────
 
 class PurchasePlanSerializer(serializers.Serializer):
-    transaction_number = serializers.CharField()
-    amount_paid        = serializers.FloatField(min_value=0)
+    transaction_number = serializers.CharField(required=False, allow_blank=True)
+    amount_paid        = serializers.FloatField(required=False, min_value=0)
+
 
 
 # ── UserPlan ───────────────────────────────────────────────────────────────────
