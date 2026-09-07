@@ -16,7 +16,7 @@ from .serializers import (
     ServiceReviewSerializer,
     PlanRatingSerializer,
     CreateFeedbackSerializer,
-
+    AICalorieConfirmSerializer,
 )
 from .apiNinja import get_nutrition_data
 
@@ -815,14 +815,17 @@ class AICalorieConfirmView(APIView):
                 "message": "Log not found or not ready for confirmation."
             }, status=404)
 
-        user_final_log = request.data.get('user_final_log')
-        meal_type      = request.data.get('meal_type', log.meal_type)
-
-        if not user_final_log or not isinstance(user_final_log, list):
+        confirm_serializer = AICalorieConfirmSerializer(data=request.data)
+        if not confirm_serializer.is_valid():
             return Response({
-                "status":  "error",
-                "message": "user_final_log must be a list of {label, mass_grams}."
+                "status": "error",
+                "message": "Validation failed",
+                "errors": confirm_serializer.errors
             }, status=400)
+
+        validated_data = confirm_serializer.validated_data
+        user_final_log = validated_data['user_final_log']
+        meal_type      = validated_data.get('meal_type', log.meal_type)
 
         # Recalculate nutrition with user-corrected masses
         # using CalorieNinjas (same as manual tracker for consistency)
@@ -830,13 +833,18 @@ class AICalorieConfirmView(APIView):
             from .apiNinja import get_nutrition_data
             ingredients = [
                 {
-                    "name":       item.get('label', ''),
-                    "mass_grams": item.get('mass_grams', 100)
+                    "name":       item.get('label') or item.get('name') or '',
+                    "mass_grams": item['mass_grams']
                 }
                 for item in user_final_log
             ]
             nutrition = get_nutrition_data(ingredients)
 
+        except ValueError as ve:
+            return Response({
+                "status":  "error",
+                "message": str(ve)
+            }, status=400)
         except Exception as e:
             return Response({
                 "status":  "error",

@@ -15,6 +15,7 @@ from .serializers import (
 )
 
 
+@method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='post')
 class RegisterClientView(APIView):
     permission_classes = [AllowAny]
     parser_classes     = [MultiPartParser, FormParser]
@@ -48,6 +49,7 @@ class RegisterClientView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+@method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='post')
 class RegisterNutritionistView(APIView):
     permission_classes = [AllowAny]
     parser_classes     = [MultiPartParser, FormParser]
@@ -94,7 +96,7 @@ class RegisterNutritionistView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     parser_classes     = [JSONParser, FormParser]
-    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    @method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True))
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():

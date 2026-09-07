@@ -209,3 +209,25 @@ class FeedbackSerializer(serializers.ModelSerializer):
 class CreateFeedbackSerializer(serializers.Serializer):
     subject = serializers.CharField(max_length=255)
     message = serializers.CharField()
+
+
+# ── AI Calorie Confirmation ────────────────────────────────────────────────────
+
+class AICalorieConfirmItemSerializer(serializers.Serializer):
+    label = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    mass_grams = serializers.FloatField(min_value=1.0, max_value=5000.0)
+
+    def validate(self, attrs):
+        if not attrs.get('label') and not attrs.get('name'):
+            # Default to name from label if label exists
+            attrs['label'] = attrs.get('label') or attrs.get('name') or ''
+        return attrs
+
+
+class AICalorieConfirmSerializer(serializers.Serializer):
+    meal_type = serializers.CharField(max_length=50, required=False)
+    user_final_log = serializers.ListField(
+        child=AICalorieConfirmItemSerializer(),
+        allow_empty=False
+    )

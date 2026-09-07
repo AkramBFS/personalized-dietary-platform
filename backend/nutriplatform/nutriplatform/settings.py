@@ -167,8 +167,8 @@ CALORIE_NINJAS_KEY = config('CALORIE_NINJAS_KEY')
 
 
 USE_TZ = True   
-
 AI_SERVICE_URL = config('AI_SERVICE_URL', default='http://127.0.0.1:8001')
+AI_SERVICE_SECRET_KEY = config('AI_SERVICE_SECRET_KEY', default='nutriplatform-ai-internal-secret-2026')
 
 SPECTACULAR_SETTINGS = {
     'TITLE':       'NutriPlatform API',
@@ -182,6 +182,33 @@ SPECTACULAR_SETTINGS = {
 
 GROQ_API_KEY = config('GROQ_API_KEY')
 
+# ─── Redis Cache & Rate Limiting Architecture ────────────────────────────────
+REDIS_BASE_URL = config('REDIS_URL', default='redis://127.0.0.1:6379')
+if REDIS_BASE_URL.endswith(('/1', '/2')):
+    REDIS_BASE_URL = REDIS_BASE_URL.rsplit('/', 1)[0]
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'{REDIS_BASE_URL}/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PARSER_CLASS': 'redis.connection.DefaultParser',
+            'IGNORE_EXCEPTIONS': True,  # Fail-open: general app cache drops gracefully without crashing HTTP responses
+        }
+    },
+    'ratelimit': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'{REDIS_BASE_URL}/2',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PARSER_CLASS': 'redis.connection.DefaultParser',
+            'IGNORE_EXCEPTIONS': False, # Fail-closed: security enforcement must NEVER silently bypass during Redis downtime
+        }
+    }
+}
+RATELIMIT_USE_CACHE = 'ratelimit'
+
 import sys
 TESTING = 'test' in sys.argv
-RATELIMIT_ENABLE = not TESTING
+RATELIMIT_ENABLE = not TESTING

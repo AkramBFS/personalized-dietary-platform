@@ -2,26 +2,30 @@
 # ── Single-model pipeline: YOLOv8l-seg ONNX (trained on FoodInsSeg, 73 classes)
 import json
 import os
-from dotenv import load_dotenv  # reads .env file into os.environ
+import hmac
+import base64
+from pathlib import Path
+from urllib.parse import quote
+from dotenv import load_dotenv
 
-load_dotenv()  # call this before any os.getenv() so the key is available
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+load_dotenv()  # fallback to parent/system env
 
 import cv2
 import numpy as np
 import onnxruntime as ort
-from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Security, Depends, status, Request
+from fastapi.security import APIKeyHeader
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi import Request
 import httpx
-from urllib.parse import quote
-import base64
 
 # ── Config ────────────────────────────────────────────────────
-MODEL_PATH    = Path("best_foodinsseg.onnx")
-CAT_NAMES     = json.loads(Path("cat_names.json").read_text())
+MODEL_PATH    = BASE_DIR / "best_foodinsseg.onnx"
+CAT_NAMES     = json.loads((BASE_DIR / "cat_names.json").read_text(encoding="utf-8"))
 INPUT_SIZE    = 640
 CONF_THRESH   = 0.25
 IOU_THRESH    = 0.45
@@ -85,15 +89,44 @@ session    = ort.InferenceSession(
 )
 input_name = session.get_inputs()[0].name
 
-print(f"✓ Model loaded")
+print(f"[INFO] Model loaded")
 print(f"  Classes  : {len(CAT_NAMES)}")
 print(f"  Input    : {input_name}")
 for o in session.get_outputs():
     print(f"  Output   : {o.name} {o.shape}")
 
 app = FastAPI(title="FoodInsSeg API", version="2.0")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+if (BASE_DIR / "static").exists():
+    app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+if (BASE_DIR / "templates").exists():
+    templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+else:
+    templates = None
+
+# ── Security & Payload Bounds ─────────────────────────────────
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+internal_header = APIKeyHeader(name="X-Internal-Secret", auto_error=False)
+
+
+async def require_internal_token(token: str = Security(internal_header)):
+    expected = os.getenv("AI_SERVICE_SECRET_KEY", "")
+    if not expected or not token or not hmac.compare_digest(token, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized internal service access"
+        )
+
+
+async def read_bounded_image(file: UploadFile) -> bytes:
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="Uploaded image exceeds maximum allowable limit of 10 MB."
+        )
+    return contents
+
 
 
 # ══════════════════════════════════════════════════════════════
@@ -160,7 +193,7 @@ def estimate_mass(mask_pixels: int, img_hw: tuple, category: str) -> float:
     return round(mass, 1)
 
 
-def postprocess(outputs, orig_hw: tuple) -> list:
+def postprocess(outputs, orig_hw: tuple, conf_threshold: float = CONF_THRESH) -> list:
     """
     Decode YOLOv8l-seg ONNX outputs.
     Auto-detects number of mask coefficients from output shapes.
@@ -192,7 +225,7 @@ def postprocess(outputs, orig_hw: tuple) -> list:
     confs   = scores.max(axis=1)
 
     # Confidence filter
-    keep_mask = confs > CONF_THRESH
+    keep_mask = confs > conf_threshold
     if not keep_mask.any():
         return []
 
@@ -281,6 +314,18 @@ def merge_duplicate_classes(results: list) -> list:
     out = list(merged.values())
     out.sort(key=lambda x: x["estimated_mass_g"], reverse=True)
     return out
+
+
+def execute_onnx_inference(img_bgr: np.ndarray, conf_threshold: float = CONF_THRESH) -> list:
+    """
+    Synchronous CPU-bound ONNX inference and postprocessing pipeline.
+    Suitable for offloading to a worker thread via run_in_threadpool.
+    """
+    orig_hw = img_bgr.shape[:2]
+    tensor = preprocess(img_bgr)
+    outputs = session.run(None, {input_name: tensor})
+    ingredients = postprocess(outputs, orig_hw, conf_threshold)
+    return merge_duplicate_classes(ingredients)
 
 
 def build_nutrition_query(ingredients: list) -> str:
@@ -378,6 +423,8 @@ async def fetch_nutrition(ingredients: list) -> dict:
 
 @app.get("/", response_class=HTMLResponse)
 async def frontend(request: Request):
+    if templates is None:
+        return HTMLResponse("<h1>FoodInsSeg API v2.0</h1><p>Templates not mounted.</p>")
     return templates.TemplateResponse(request=request, name="index.html")
 
 
@@ -393,23 +440,20 @@ async def health():
     }
 
 
-@app.post("/segment")
+@app.post("/segment", dependencies=[Depends(require_internal_token)])
+@app.post("/segment/estimate", dependencies=[Depends(require_internal_token)])
 async def segment(
     file: UploadFile = File(...),
     visualize: bool  = Query(False,
                              description="Include annotated image as base64")
 ):
-    contents = await file.read()
+    contents = await read_bounded_image(file)
     nparr    = np.frombuffer(contents, np.uint8)
     img_bgr  = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img_bgr is None:
         raise HTTPException(400, "Invalid image file")
 
-    orig_hw     = img_bgr.shape[:2]
-    tensor      = preprocess(img_bgr)
-    outputs     = session.run(None, {input_name: tensor})
-    ingredients = postprocess(outputs, orig_hw)
-    ingredients = merge_duplicate_classes(ingredients)   # ← dedup before nutrition
+    ingredients = await run_in_threadpool(execute_onnx_inference, img_bgr, CONF_THRESH)
 
     nutrition_data = {}
     if ingredients and CALORIENINJAS_API_KEY:
@@ -431,20 +475,16 @@ async def segment(
     return response
 
 
-@app.post("/segment/image")
+@app.post("/segment/image", dependencies=[Depends(require_internal_token)])
 async def segment_image(file: UploadFile = File(...)):
     """Returns the annotated image as a binary JPEG response."""
-    contents = await file.read()
+    contents = await read_bounded_image(file)
     nparr    = np.frombuffer(contents, np.uint8)
     img_bgr  = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img_bgr is None:
         raise HTTPException(400, "Invalid image file")
 
-    orig_hw     = img_bgr.shape[:2]
-    tensor      = preprocess(img_bgr)
-    outputs     = session.run(None, {input_name: tensor})
-    ingredients = postprocess(outputs, orig_hw)
-    ingredients = merge_duplicate_classes(ingredients)   # ← dedup
+    ingredients = await run_in_threadpool(execute_onnx_inference, img_bgr, CONF_THRESH)
 
     vis    = draw_visualization(img_bgr, ingredients) \
              if ingredients else img_bgr
