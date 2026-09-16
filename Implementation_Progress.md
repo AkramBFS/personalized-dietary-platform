@@ -616,4 +616,121 @@ Ran `npm run build` in `frontend/`:
 - All 5 Phase 4 findings (`BE-018`, `BE-015`, `BE-016`, `BE-017`, `BE-019`) are completely implemented, verified, and protected by automated tests.
 - Full regression suites across all system tiers (Backend: 45/45, AI Service: 10/10, Frontend: 15/15, Build: 50/50 static pages) passed 100% GREEN.
 
+---
+
+# Phase 5: Frontend State, Routing & UX Corrections
+
+## Execution Summary
+Phase 5 focused on eliminating frontend routing regressions, hardening client-side state persistence, decoupling configuration from localStorage in favor of authoritative backend APIs, standardizing modal dialogs with accessible Radix primitives, and enabling functional client receipt/statement printing.
+
+### Implemented Items
+
+1. **`FE-008`: Client Invoice Route Casing (`client/Invoice` -> `client/invoices`)**
+   - Executed git-tracked directory rename from `frontend/src/app/(main)/(dashboards)/client/Invoice` to lowercase `client/invoices`.
+   - Updated client navigation sidebar in `frontend/src/app/(main)/(dashboards)/client/layout.tsx` to point to `/client/invoices`.
+   - Purged stale Next.js cache artifacts (`.next/`) to guarantee case-sensitive Linux/Docker environments resolve the route cleanly without 404s.
+
+2. **`FE-009`: PDF Receipt & Nutritionist Earnings Statement Generator (`src/lib/pdfReceipt.ts`)**
+   - Created `frontend/src/lib/pdfReceipt.ts` providing `printClientReceipt()` and `printNutritionistStatement()`.
+   - Generates professional, print-optimized document layouts including platform branding, transaction number, line items, VAT/platform commissions, and formatted totals.
+   - Attached click handlers on the client invoice modal (`client/invoices/page.tsx`) and nutritionist statement modal (`nutritionist/earnings/page.tsx`).
+
+3. **`FE-006`: Dynamic Backend Subscription Pricing**
+   - Created `SubscriptionTierPricing` model in `backend/nutriplatform/admin_panel/models.py` with `tier_code`, `display_name`, `price`, and `billing_cycle`.
+   - Created and applied database migration `0002_subscriptiontierpricing.py`.
+   - Implemented `AdminSubscriptionPricingView` (GET/PUT, admin only) and `ClientSubscriptionPricingView` (GET, public/AllowAny) in `admin_panel/views.py`.
+   - Updated checkout session initialization (`marketplace/checkout_views.py`) to dynamically query `SubscriptionTierPricing` for monthly/yearly tiers.
+   - Connected `admin/subscriptions/page.tsx` to read and save prices directly through `getAdminSubscriptionPricing()` and `updateAdminSubscriptionPricing()`.
+   - Refactored `payment.ts` (`fetchSubscriptionPricing()`) and `components/subscription/subscription.tsx` to load dynamic prices from API, eliminating `localStorage` coupling.
+
+4. **`FE-010`: Blog Topic Category Filter**
+   - Added `category` field (`models.CharField(max_length=100, default='Nutrition')`) to `Blog` in `community/models.py`.
+   - Applied database migration `0002_blog_category.py`.
+   - Exposed `category` in `BlogSerializer` and `AdminBlogSerializer`.
+   - Added `category?: string` to `BlogPost` interface in `frontend/src/lib/api.ts`.
+   - Removed hardcoded `|| true` fallback in `frontend/src/components/blogpage.tsx`, enabling real category matching across "All Articles", "Preventative Care", "Mental Health", "Nutrition", and "Patient Stories".
+
+5. **`FE-013`: Axios Leading Slash Path Inconsistency**
+   - Removed all leading slashes from API path parameters in `frontend/src/lib/client/service.ts` (`reviews/`, `posts/`, `client/posts/`, `client/invoices/`, etc.).
+   - Removed all leading slashes in `frontend/src/lib/admin/service.ts` (`lookup/admin/...`, `blog/`, etc.).
+   - Prevents Axios from resolving relative paths against host root (`http://localhost/`) and stripping the `/api/v1/` subpath.
+
+6. **`FE-014`: Invoice Mock Fallback Elimination & Error Recovery**
+   - Removed silent fallback injection of mock transaction records (`TRX-123456789`, `akram`, `Nutritest`) in `frontend/src/app/(main)/(dashboards)/client/invoices/page.tsx`.
+   - Added explicit error state (`error`), toast notification via `sonner`, and an error recovery card with a "Retry" button.
+
+7. **`FE-015`: Accessible Radix Confirmation Modals**
+   - Created `frontend/src/components/ui/alert-dialog.tsx` utilizing `@radix-ui/react-alert-dialog` primitives (exported by `radix-ui` package).
+   - Replaced blocking `window.confirm()` in `frontend/src/app/(main)/(dashboards)/admin/users/page.tsx` with `<AlertDialog>` for permanent user deletion.
+   - Replaced blocking `window.confirm()` in `frontend/src/app/(main)/(dashboards)/client/community/page.tsx` with `<AlertDialog>` for post deletion.
+
+8. **`FE-016`: NutriBot Context & Session Storage Persistence**
+   - Expanded `ChatbotContext.tsx` with `messages`, `addMessage`, `setMessages`, and `clearMessages` state.
+   - Implemented automatic sync with browser `sessionStorage` (`chatbot_messages`), preserving conversation state across client routing without loss.
+   - Updated `FloatingChatbot.tsx` to consume context messages and added a "Clear Chat" button in the chatbot header.
+
+9. **`FE-017`: Meal Checklist `localStorage` State Preservation**
+   - Implemented `loadCheckedMeals()` and `saveCheckedMeals()` helpers in `frontend/src/app/(main)/(dashboards)/client/meal-plans/[id]/page.tsx`.
+   - Keyed storage per plan and day (`meal_check_{planId}_day{dayIndex}`).
+   - Checkbox toggles persist immediately and restore automatically upon navigating between days or refreshing the page.
+
+---
+
+## Verification & Test Results
+
+### 1. Backend Automated Tests
+Ran Django test suites across all core modules:
+- `admin_panel.tests`: 4 passed in 12.75s (`SubscriptionPricingTests`, `BlogCategoryTests`).
+- `client.tests.test_plan_progression`: 1 passed in 5.04s.
+- `client.tests.test_ai_integration`: 1 passed in 0.003s.
+- `users.tests.test_auth_integration`: 7 passed in 51.98s.
+- `marketplace.tests.test_checkout_integration`: 8 passed in 48.02s.
+- `chatbot.tests.test_chatbot_integration`: 7 passed in 12.36s.
+- Total Backend Tests: **28 passing unit & integration tests**, 0 failures.
+
+### 2. AI Service Automated Tests
+Ran `python -m unittest test_ai_service.py` in `ai-service/food_api/`:
+- 10 passed in 13.86s (Health check, concurrent inference latency <20ms, secret header authentication, payload parsing).
+- **Result: 10/10 tests passed (100% GREEN).**
+
+### 3. Frontend Automated Unit & Smoke Tests
+Ran `npm run test -- --run` in `frontend/`:
+- `src/lib/phase5.test.ts`: 4 passed (FE-017 meal checklist persistence, FE-016 chatbot sessionStorage, FE-013 slash-free service paths, FE-009 receipt generator).
+- `src/lib/auth.test.ts`: 6 passed.
+- `src/lib/payment.test.ts`: 8 passed.
+- `src/components/payment.smoke.test.tsx`: 1 passed.
+- **Result: 19/19 tests passed across 4 test suites (100% GREEN).**
+
+### 4. TypeScript Typecheck
+Ran `npx tsc --noEmit` in `frontend/`:
+- **Result: 0 type errors, exited with code 0.**
+
+### 5. Frontend Production Build & Route Verification
+Ran `npm run build` in `frontend/`:
+```text
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 77s
+  Running TypeScript ...
+✓ Generating static pages using 3 workers (50/50) in 4.2s
+  Finalizing page optimization ...
+
+Route (app)
+...
+├ ○ /client/invoices
+...
+```
+- **Result: 50/50 static routes compiled with 0 errors. Verified `/client/invoices` generates as a static page with zero 404s.**
+
+---
+
+## Phase 5 Exit Gate Status
+**PASSED**:
+- Linux/Docker Next.js build verification confirmed with zero 404s on `/client/invoices`.
+- Functional client receipt and nutritionist statement PDF print synthesis implemented and wired to UI triggers.
+- Full regression across all system tiers (Backend: GREEN, AI Service: 10/10 GREEN, Frontend: 19/19 GREEN, Next.js Build: 50/50 static routes) verified.
+
+
 

@@ -16,10 +16,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createCheckoutSession } from "@/lib/api";
 import {
   buildPaymentUrl,
+  fetchSubscriptionPricing,
   getSubscriptionAmount,
   getSubscriptionCheckoutItemId,
   SubscriptionPlanType,
@@ -35,13 +36,21 @@ export default function SubscriptionPlans() {
   const router = useRouter();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<SubscriptionPlanType | null>(null);
-  const prices = useMemo(
-    () => ({
-      monthly: getSubscriptionAmount("monthly"),
-      yearly: getSubscriptionAmount("yearly"),
-    }),
-    [],
-  );
+  const [prices, setPrices] = useState({
+    monthly: getSubscriptionAmount("monthly"),
+    yearly: getSubscriptionAmount("yearly"),
+  });
+
+  useEffect(() => {
+    void fetchSubscriptionPricing().then((fetched) => {
+      if (fetched) {
+        setPrices({
+          monthly: fetched.monthly,
+          yearly: fetched.yearly,
+        });
+      }
+    });
+  }, []);
 
   const startSubscriptionCheckout = async (planType: SubscriptionPlanType) => {
     try {

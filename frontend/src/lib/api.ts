@@ -467,6 +467,7 @@ export interface BlogPost {
   admin_username: string;
   title: string;
   content: string;
+  category?: string;
   created_at: string;
 }
 

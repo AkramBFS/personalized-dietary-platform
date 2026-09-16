@@ -6,21 +6,40 @@ import { Save, DollarSign, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/Card";
-import { DEFAULT_SUBSCRIPTION_PRICES, getSubscriptionAmount } from "@/lib/payment";
+import { DEFAULT_SUBSCRIPTION_PRICES } from "@/lib/payment";
+import {
+  getAdminSubscriptionPricing,
+  updateAdminSubscriptionPricing,
+} from "@/lib/admin/service";
 
 export default function AdminSubscriptionsPage() {
   const [monthlyPrice, setMonthlyPrice] = useState<string>("");
   const [yearlyPrice, setYearlyPrice] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setMonthlyPrice(getSubscriptionAmount("monthly").toString());
-    setYearlyPrice(getSubscriptionAmount("yearly").toString());
+    const loadPricing = async () => {
+      try {
+        const pricing = await getAdminSubscriptionPricing();
+        if (pricing) {
+          setMonthlyPrice(pricing.monthly?.toString() ?? DEFAULT_SUBSCRIPTION_PRICES.monthly.toString());
+          setYearlyPrice(pricing.yearly?.toString() ?? DEFAULT_SUBSCRIPTION_PRICES.yearly.toString());
+        }
+      } catch (err) {
+        console.error("Failed to load subscription pricing from API", err);
+        setMonthlyPrice(DEFAULT_SUBSCRIPTION_PRICES.monthly.toString());
+        setYearlyPrice(DEFAULT_SUBSCRIPTION_PRICES.yearly.toString());
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void loadPricing();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
       const parsedMonthly = parseFloat(monthlyPrice);
@@ -38,13 +57,11 @@ export default function AdminSubscriptionsPage() {
         return;
       }
 
-      const pricesToSave = {
+      await updateAdminSubscriptionPricing({
         monthly: parsedMonthly,
         yearly: parsedYearly,
-      };
+      });
 
-      localStorage.setItem("admin_subscription_prices", JSON.stringify(pricesToSave));
-      
       toast.success("Subscription prices updated successfully.");
     } catch (error) {
       console.error("Failed to save prices", error);
@@ -54,11 +71,22 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const handleReset = () => {
-    setMonthlyPrice(DEFAULT_SUBSCRIPTION_PRICES.monthly.toString());
-    setYearlyPrice(DEFAULT_SUBSCRIPTION_PRICES.yearly.toString());
-    localStorage.removeItem("admin_subscription_prices");
-    toast.success("Prices reset to default values.");
+  const handleReset = async () => {
+    setIsSaving(true);
+    try {
+      await updateAdminSubscriptionPricing({
+        monthly: DEFAULT_SUBSCRIPTION_PRICES.monthly,
+        yearly: DEFAULT_SUBSCRIPTION_PRICES.yearly,
+      });
+      setMonthlyPrice(DEFAULT_SUBSCRIPTION_PRICES.monthly.toString());
+      setYearlyPrice(DEFAULT_SUBSCRIPTION_PRICES.yearly.toString());
+      toast.success("Prices reset to default values.");
+    } catch (error) {
+      console.error("Failed to reset prices", error);
+      toast.error("Failed to reset prices on server.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!mounted) {

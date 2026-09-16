@@ -12,6 +12,16 @@ import { deleteCommunityPost, getClientOwnPosts, postCreateCommunityPost, type C
 import { resolveApiUrl } from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type CommunityPostWithLikes = CommunityPost & {
   likes_count?: number;
@@ -24,6 +34,7 @@ export default function CommunityDashboardPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<number | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -52,15 +63,21 @@ export default function CommunityDashboardPage() {
     fetchPosts();
   }, []);
 
-  const handleDeletePost = async (postId: number) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
+  const handleDeletePost = (postId: number) => {
+    setPostToDelete(postId);
+  };
+
+  const confirmDeletePost = async () => {
+    if (postToDelete === null) return;
     try {
-      await deleteCommunityPost(postId);
-      setPosts(posts.filter((p) => p.id !== postId));
+      await deleteCommunityPost(postToDelete);
+      setPosts(posts.filter((p) => p.id !== postToDelete));
+      toast.success("Post deleted successfully");
     } catch (err) {
       console.error("Error deleting post:", err);
-      // Fallback for mock if API fails
-      setPosts(posts.filter((p) => p.id !== postId));
+      setPosts(posts.filter((p) => p.id !== postToDelete));
+    } finally {
+      setPostToDelete(null);
     }
   };
 
@@ -215,6 +232,27 @@ export default function CommunityDashboardPage() {
           ))
         )}
       </div>
+
+      {/* Delete Post Confirmation Dialog */}
+      <AlertDialog open={postToDelete !== null} onOpenChange={(open) => !open && setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPostToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePost}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Post
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

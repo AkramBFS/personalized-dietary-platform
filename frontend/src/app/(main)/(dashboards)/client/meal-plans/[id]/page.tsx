@@ -40,6 +40,40 @@ interface CheckedMeals {
   snacks: boolean[];
 }
 
+function getMealCheckKey(planId: string | string[], dayIndex: number): string {
+  return `meal_check_${planId}_day${dayIndex}`;
+}
+
+function loadCheckedMeals(planId: string | string[], dayIndex: number, snackCount: number): CheckedMeals {
+  try {
+    const stored = localStorage.getItem(getMealCheckKey(planId, dayIndex));
+    if (stored) {
+      const parsed = JSON.parse(stored) as CheckedMeals;
+      // Ensure snacks array matches current snack count
+      const snacks = Array.isArray(parsed.snacks)
+        ? parsed.snacks.slice(0, snackCount).concat(new Array(Math.max(0, snackCount - parsed.snacks.length)).fill(false))
+        : new Array(snackCount).fill(false);
+      return {
+        breakfast: !!parsed.breakfast,
+        lunch: !!parsed.lunch,
+        dinner: !!parsed.dinner,
+        snacks,
+      };
+    }
+  } catch {
+    // localStorage unavailable or corrupt — fall through
+  }
+  return { breakfast: false, lunch: false, dinner: false, snacks: new Array(snackCount).fill(false) };
+}
+
+function saveCheckedMeals(planId: string | string[], dayIndex: number, checked: CheckedMeals): void {
+  try {
+    localStorage.setItem(getMealCheckKey(planId, dayIndex), JSON.stringify(checked));
+  } catch {
+    // localStorage full or unavailable — silently ignore
+  }
+}
+
 export default function MealPlanDetailPage() {
   const { id } = useParams();
   const [content, setContent] = useState<MealPlanDayContent | null>(null);
@@ -85,12 +119,8 @@ export default function MealPlanDetailPage() {
           ? rawSnacks.length
           : (rawSnacks && rawSnacks.name ? 1 : 0);
 
-        setCheckedMeals({
-          breakfast: false,
-          lunch: false,
-          dinner: false,
-          snacks: new Array(snackCount).fill(false),
-        });
+        const effectiveDayIndex = dayIdx ?? data.day_index;
+        setCheckedMeals(loadCheckedMeals(id!, effectiveDayIndex, snackCount));
       } catch (err) {
         if (retryCount < 1) {
           console.warn("Failed to fetch plan content, retrying...");
@@ -172,11 +202,12 @@ export default function MealPlanDetailPage() {
   };
 
   const handleSnackChange = (index: number, checked: boolean) => {
-    // TODO: Future backend integration for saving individual checking state immediately
     setCheckedMeals((prev) => {
       const newSnacks = [...prev.snacks];
       newSnacks[index] = checked;
-      return { ...prev, snacks: newSnacks };
+      const updated = { ...prev, snacks: newSnacks };
+      if (viewingDayIndex !== null) saveCheckedMeals(id!, viewingDayIndex, updated);
+      return updated;
     });
   };
 
@@ -184,8 +215,11 @@ export default function MealPlanDetailPage() {
     meal: "breakfast" | "lunch" | "dinner",
     checked: boolean,
   ) => {
-    // TODO: Future backend integration for saving individual checking state immediately
-    setCheckedMeals((prev) => ({ ...prev, [meal]: checked }));
+    setCheckedMeals((prev) => {
+      const updated = { ...prev, [meal]: checked };
+      if (viewingDayIndex !== null) saveCheckedMeals(id!, viewingDayIndex, updated);
+      return updated;
+    });
   };
 
   const rawSnacks = (content as any)?.snacks;

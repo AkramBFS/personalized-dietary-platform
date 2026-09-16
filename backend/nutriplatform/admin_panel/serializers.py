@@ -90,8 +90,16 @@ class AdminBlogSerializer(serializers.ModelSerializer):
     class Meta:
         from community.models import Blog
         model  = Blog
-        fields = ['id', 'title', 'content', 'created_at']
+        fields = ['id', 'title', 'content', 'category', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class SubscriptionTierPricingSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import SubscriptionTierPricing
+        model  = SubscriptionTierPricing
+        fields = ['id', 'tier_code', 'display_name', 'price', 'billing_cycle', 'updated_at']
+        read_only_fields = ['id', 'updated_at']
 
 
 # ── Subscription ───────────────────────────────────────────────────────────────

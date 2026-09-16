@@ -441,11 +441,11 @@ export interface ReviewPayload {
 }
 
 export async function submitReview(payload: ReviewPayload): Promise<void> {
-  await api.post("/reviews/", payload);
+  await api.post("reviews/", payload);
 }
 
 export async function getNutritionistAvailability(nutritionistId: number, date: string): Promise<unknown> {
-  const response = await api.get(`/marketplace/nutritionists/${nutritionistId}/availability/`, {
+  const response = await api.get(`marketplace/nutritionists/${nutritionistId}/availability/`, {
     params: { date },
   });
   return unwrapResponse(response.data);
@@ -453,7 +453,7 @@ export async function getNutritionistAvailability(nutritionistId: number, date: 
 
 export async function getCommunityPosts(page?: number): Promise<CommunityPost[]> {
   const response = await api.get<ApiEnvelope<CommunityPost[]> | CommunityPost[] | { results?: CommunityPost[] }>(
-    "/posts/",
+    "posts/",
     { params: page ? { page } : undefined },
   );
   return unwrapList(response.data);
@@ -475,7 +475,7 @@ export async function postCreateCommunityPost(payload: CreatePostPayload): Promi
     payload.tags.forEach(tag => formData.append("tags", tag));
   }
 
-  const response = await api.post<ApiEnvelope<CommunityPost> | CommunityPost>("/client/posts/", formData, {
+  const response = await api.post<ApiEnvelope<CommunityPost> | CommunityPost>("client/posts/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return unwrapResponse(response.data);
@@ -483,23 +483,23 @@ export async function postCreateCommunityPost(payload: CreatePostPayload): Promi
 
 export async function getClientOwnPosts(page?: number): Promise<CommunityPost[]> {
   const response = await api.get<ApiEnvelope<CommunityPost[]> | CommunityPost[] | { results?: CommunityPost[] }>(
-    "/client/posts/mine/",
+    "client/posts/mine/",
     { params: page ? { page } : undefined },
   );
   return unwrapList(response.data);
 }
 
 export async function deleteCommunityPost(postId: number): Promise<void> {
-  await api.delete(`/client/posts/${postId}/`);
+  await api.delete(`client/posts/${postId}/`);
 }
 
 export async function getClientInvoices(): Promise<ClientInvoice[]> {
-  const response = await api.get<ApiEnvelope<ClientInvoice[]> | ClientInvoice[] | { results?: ClientInvoice[] }>("/client/invoices/");
+  const response = await api.get<ApiEnvelope<ClientInvoice[]> | ClientInvoice[] | { results?: ClientInvoice[] }>("client/invoices/");
   return unwrapList(response.data);
 }
 
 export async function getInvoiceDetail(id: number): Promise<ClientInvoice> {
-  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`/client/invoices/${id}/`);
+  const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`client/invoices/${id}/`);
   console.log("Invoice detail response:", response.data);
   return unwrapResponse(response.data);
 }

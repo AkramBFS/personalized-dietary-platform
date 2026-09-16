@@ -22,6 +22,16 @@ import {
   type AdminUser,
 } from "@/lib/admin";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import GenericDropdown from "@/components/ui/GenericDropdown";
 import {
   Eye,
@@ -51,6 +61,7 @@ export default function AdminUsersPage() {
   const [userDetails, setUserDetails] = useState<any>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -96,19 +107,18 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleDeleteUser = async (user: AdminUser) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete user ${user.username}? This action is irreversible.`,
-      )
-    ) {
-      return;
-    }
+  const handleDeleteUser = (user: AdminUser) => {
+    setUserToDelete(user);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
 
     try {
-      await deleteUser(user.id);
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      await deleteUser(userToDelete.id);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
       setIsModalOpen(false);
+      setUserToDelete(null);
       toast.success("User deleted successfully");
     } catch (error) {
       toast.error("Failed to delete user");
@@ -505,6 +515,27 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete user <strong>{userToDelete?.username}</strong>? This action is permanent and irreversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteUser}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

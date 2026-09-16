@@ -55,6 +55,7 @@ import {
 } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { printNutritionistStatement } from "@/lib/pdfReceipt";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Interfaces ──────────────────────────────────────────────────────────
@@ -694,7 +695,13 @@ export default function EarningsPage() {
 
                   {/* Actions */}
                   <div className="pt-4 flex flex-col gap-3">
-                    <Button className="w-full h-14 rounded-2xl font-bold shadow-xl shadow-primary/20 group relative overflow-hidden">
+                    <Button
+                      onClick={() => {
+                        const target = invoiceDetail || selectedInvoice;
+                        if (target) printNutritionistStatement(target);
+                      }}
+                      className="w-full h-14 rounded-2xl font-bold shadow-xl shadow-primary/20 group relative overflow-hidden"
+                    >
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/10 to-primary/0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] transition-transform" />
                       <Download className="w-5 h-5 mr-2 group-hover:translate-y-0.5 transition-transform" />
                       Download Statement

@@ -36,6 +36,7 @@ class Blog(models.Model):
     admin      = models.ForeignKey(User, on_delete=models.CASCADE, db_column='admin_id')
     title      = models.CharField(max_length=255, null=True, blank=True)
     content    = models.TextField(null=True, blank=True)
+    category   = models.CharField(max_length=100, default='Nutrition')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

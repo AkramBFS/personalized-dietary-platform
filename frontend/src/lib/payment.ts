@@ -1,5 +1,7 @@
 "use client";
 
+import api from "./api";
+
 export type CheckoutItemType = "MEAL_PLAN" | "CONSULTATION" | "SUBSCRIPTION";
 export type SubscriptionPlanType = "monthly" | "yearly";
 export type ConsultationPaymentType = "advice_only" | "plan_included";
@@ -69,21 +71,30 @@ export function formatPaymentAmount(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
 
-export function getSubscriptionAmount(planType: SubscriptionPlanType): number {
-  if (typeof window !== "undefined") {
-    try {
-      const stored = localStorage.getItem("admin_subscription_prices");
-      if (stored) {
-        const prices = JSON.parse(stored);
-        if (prices && typeof prices[planType] === "number") {
-          return prices[planType];
-        }
+let cachedSubscriptionPrices: Record<SubscriptionPlanType, number> = {
+  ...DEFAULT_SUBSCRIPTION_PRICES,
+};
+
+export async function fetchSubscriptionPricing(): Promise<Record<SubscriptionPlanType, number>> {
+  try {
+    const res = await api.get("client/subscriptions/pricing/");
+    const data = res.data?.data || res.data;
+    if (data) {
+      const m = typeof data.monthly === "number" ? data.monthly : Number(data.monthly);
+      const y = typeof data.yearly === "number" ? data.yearly : Number(data.yearly);
+      if (!isNaN(m) && !isNaN(y)) {
+        cachedSubscriptionPrices = { monthly: m, yearly: y };
+        return cachedSubscriptionPrices;
       }
-    } catch (e) {
-      console.error("Failed to parse subscription prices from local storage", e);
     }
+  } catch (e) {
+    console.warn("Using default subscription prices due to fetch issue", e);
   }
-  return DEFAULT_SUBSCRIPTION_PRICES[planType];
+  return cachedSubscriptionPrices;
+}
+
+export function getSubscriptionAmount(planType: SubscriptionPlanType): number {
+  return cachedSubscriptionPrices[planType] ?? DEFAULT_SUBSCRIPTION_PRICES[planType];
 }
 
 export function generateTransactionNumber(prefix: string): string {

@@ -39,7 +39,7 @@ const clientLinks: SidebarLink[] = [
   },
   {
     title: "Invoices",
-    url: "/client/Invoice",
+    url: "/client/invoices",
     icon: Receipt,
   },
   {

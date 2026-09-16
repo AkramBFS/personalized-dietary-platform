@@ -20,6 +20,7 @@ from .views import (
     AICalorieStatusView,    
     AICalorieConfirmView, 
 )
+from admin_panel.views import ClientSubscriptionPricingView
 
 urlpatterns = [
     path('profile/',                     ClientProfileView.as_view(),          name='client-profile'),
@@ -40,5 +41,6 @@ urlpatterns = [
     path('feedback/',                    ClientFeedbackCreateView.as_view(),   name='client-feedback-create'),
     path('feedback/list/',               ClientFeedbackListView.as_view(),     name='client-feedback-list'),
     path('reviews/',                     ServiceReviewView.as_view(),          name='client-reviews'),
+    path('subscriptions/pricing/',       ClientSubscriptionPricingView.as_view(), name='client-subscription-pricing'),
 
 ]
