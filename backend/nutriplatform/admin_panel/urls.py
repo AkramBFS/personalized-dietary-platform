@@ -38,6 +38,8 @@ from .views import (
     ActivityLevelListView,
     DietListView,
     AdminDashboardStatsView,
+    AdminSubscriptionPricingView,
+    ClientSubscriptionPricingView,
 )
 
 urlpatterns = [
@@ -77,6 +79,8 @@ urlpatterns = [
     # ── Subscriptions ──────────────────────────────────────────────────────────
     path('client/subscriptions/',          SubscriptionStatusView.as_view(),   name='subscription-status'),
     path('client/subscriptions/purchase/', SubscriptionPurchaseView.as_view(), name='subscription-purchase'),
+    path('admin/subscriptions/pricing/',   AdminSubscriptionPricingView.as_view(), name='admin-subscription-pricing'),
+    path('client/subscriptions/pricing/',  ClientSubscriptionPricingView.as_view(), name='lookup-client-subscription-pricing'),
 
     
     path('admin/inquiries/',                     AdminInquiryListView.as_view(),    name='admin-inquiries'),

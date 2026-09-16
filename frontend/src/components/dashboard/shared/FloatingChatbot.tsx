@@ -15,13 +15,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { sendChatMessage } from "@/lib/chatbot";
 import { Suggestion, Suggestions } from "@/components/ai/suggestion";
-import { useChatbot } from "@/context/ChatbotContext";
+import { useChatbot, type ChatMessage } from "@/context/ChatbotContext";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
 }
+
+const WELCOME_MESSAGE: Message = {
+  id: "welcome",
+  role: "assistant",
+  content: "Hi! I'm NutriBot. How can I help you reach your health goals today?",
+};
 
 const chatbotSuggestions = [
   "What should I eat today?",
@@ -30,20 +36,27 @@ const chatbotSuggestions = [
   "Tips for weight loss",
 ];
 
+function contextToLocal(msgs: ChatMessage[]): Message[] {
+  return [
+    WELCOME_MESSAGE,
+    ...msgs.map((m, i) => ({ id: `ctx-${i}`, role: m.role, content: m.content })),
+  ];
+}
+
 export function FloatingChatbot() {
-  const { isOpen, openChatbot, closeChatbot } = useChatbot();
+  const { isOpen, openChatbot, closeChatbot, messages: ctxMessages, addMessage: ctxAddMessage, clearMessages } = useChatbot();
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hi! I'm NutriBot. How can I help you reach your health goals today?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => contextToLocal(ctxMessages));
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync from context when ctxMessages change (e.g. on mount from sessionStorage)
+  useEffect(() => {
+    if (!isTyping && !isLoading) {
+      setMessages(contextToLocal(ctxMessages));
+    }
+  }, [ctxMessages, isTyping, isLoading]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +87,8 @@ export function FloatingChatbot() {
       );
     }
 
+    // Persist final bot message to context
+    ctxAddMessage({ role: "assistant", content: fullText });
     setIsTyping(false);
   };
 
@@ -87,6 +102,7 @@ export function FloatingChatbot() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    ctxAddMessage({ role: "user", content: userMessage.content });
     setInput("");
     setIsLoading(true);
     setError(null);
@@ -152,6 +168,19 @@ export function FloatingChatbot() {
                 Your personal nutrition assistant
               </p>
             </div>
+            {ctxMessages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  clearMessages();
+                  setMessages([WELCOME_MESSAGE]);
+                }}
+                className="ml-auto text-xs text-muted-foreground hover:text-destructive px-2 h-7"
+              >
+                Clear Chat
+              </Button>
+            )}
           </div>
 
           {/* Messages Area - Unified background */}

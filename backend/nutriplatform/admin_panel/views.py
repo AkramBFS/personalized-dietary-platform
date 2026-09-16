@@ -742,3 +742,112 @@ class AdminDashboardStatsView(APIView):
                 "unresolved_inquiries": unresolved_inquiries,
             }
         })
+
+
+class AdminSubscriptionPricingView(APIView):
+    """
+    GET /api/v1/lookup/admin/subscriptions/pricing/
+    PUT /api/v1/lookup/admin/subscriptions/pricing/
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    @staticmethod
+    def _get_or_create_defaults():
+        from .models import SubscriptionTierPricing
+        monthly, _ = SubscriptionTierPricing.objects.get_or_create(
+            tier_code='pro_monthly',
+            defaults={'display_name': 'Pro Monthly', 'price': 9.99, 'billing_cycle': 'monthly'}
+        )
+        yearly, _ = SubscriptionTierPricing.objects.get_or_create(
+            tier_code='pro_yearly',
+            defaults={'display_name': 'Pro Yearly', 'price': 89.99, 'billing_cycle': 'yearly'}
+        )
+        return monthly, yearly
+
+    def get(self, request):
+        from .models import SubscriptionTierPricing
+        from .serializers import SubscriptionTierPricingSerializer
+        self._get_or_create_defaults()
+        tiers = SubscriptionTierPricing.objects.all().order_by('id')
+        serializer = SubscriptionTierPricingSerializer(tiers, many=True)
+        monthly_tier = tiers.filter(billing_cycle='monthly').first()
+        yearly_tier = tiers.filter(billing_cycle='yearly').first()
+        return Response({
+            "status": "success",
+            "data": {
+                "monthly": float(monthly_tier.price) if monthly_tier else 9.99,
+                "yearly": float(yearly_tier.price) if yearly_tier else 89.99,
+                "tiers": serializer.data
+            }
+        })
+
+    def put(self, request):
+        from .models import SubscriptionTierPricing
+        from .serializers import SubscriptionTierPricingSerializer
+        from decimal import Decimal, InvalidOperation
+
+        self._get_or_create_defaults()
+        data = request.data
+        if not isinstance(data, dict):
+            return Response({"status": "error", "message": "Expected JSON object."}, status=400)
+
+        monthly_price = data.get('monthly')
+        yearly_price = data.get('yearly')
+
+        if 'pro_monthly' in data:
+            monthly_price = data['pro_monthly']
+        if 'pro_yearly' in data:
+            yearly_price = data['pro_yearly']
+
+        try:
+            if monthly_price is not None:
+                dec_monthly = Decimal(str(monthly_price))
+                if dec_monthly < 0:
+                    return Response({"status": "error", "message": "Price cannot be negative."}, status=400)
+                SubscriptionTierPricing.objects.filter(billing_cycle='monthly').update(price=dec_monthly)
+
+            if yearly_price is not None:
+                dec_yearly = Decimal(str(yearly_price))
+                if dec_yearly < 0:
+                    return Response({"status": "error", "message": "Price cannot be negative."}, status=400)
+                SubscriptionTierPricing.objects.filter(billing_cycle='yearly').update(price=dec_yearly)
+        except (InvalidOperation, ValueError, TypeError):
+            return Response({"status": "error", "message": "Invalid price value provided."}, status=400)
+
+        tiers = SubscriptionTierPricing.objects.all().order_by('id')
+        serializer = SubscriptionTierPricingSerializer(tiers, many=True)
+        monthly_tier = tiers.filter(billing_cycle='monthly').first()
+        yearly_tier = tiers.filter(billing_cycle='yearly').first()
+        return Response({
+            "status": "success",
+            "message": "Subscription prices updated successfully.",
+            "data": {
+                "monthly": float(monthly_tier.price) if monthly_tier else 9.99,
+                "yearly": float(yearly_tier.price) if yearly_tier else 89.99,
+                "tiers": serializer.data
+            }
+        })
+
+
+class ClientSubscriptionPricingView(APIView):
+    """
+    GET /api/v1/client/subscriptions/pricing/ (public read)
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from .models import SubscriptionTierPricing
+        from .serializers import SubscriptionTierPricingSerializer
+        AdminSubscriptionPricingView._get_or_create_defaults()
+        tiers = SubscriptionTierPricing.objects.all().order_by('id')
+        serializer = SubscriptionTierPricingSerializer(tiers, many=True)
+        monthly_tier = tiers.filter(billing_cycle='monthly').first()
+        yearly_tier = tiers.filter(billing_cycle='yearly').first()
+        return Response({
+            "status": "success",
+            "data": {
+                "monthly": float(monthly_tier.price) if monthly_tier else 9.99,
+                "yearly": float(yearly_tier.price) if yearly_tier else 89.99,
+                "tiers": serializer.data
+            }
+        })

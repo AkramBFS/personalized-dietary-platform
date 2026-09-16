@@ -47,9 +47,13 @@ export default function BlogPageComponent() {
         article.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         article.content.toLowerCase().includes(debouncedSearch.toLowerCase());
 
-      // API doesn't return categories, so we just return all when selectedCategory matches 
-      // or if they are just filtering by search
-      const matchesCategory = selectedCategory === "All Articles" || true;
+      // Category matching
+      const matchesCategory =
+        selectedCategory === "All Articles" ||
+        Boolean(
+          article.category &&
+            article.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase(),
+        );
 
       return matchesSearch && matchesCategory;
     });

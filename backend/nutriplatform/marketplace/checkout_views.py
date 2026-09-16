@@ -101,7 +101,13 @@ class CheckoutCreateView(APIView):
         elif item_type == 'SUBSCRIPTION':
             # item_id is the plan_type: 1=monthly, 2=yearly
             plan_type = 'monthly' if str(item_id) == '1' else 'yearly'
-            resolved_price = 9.99 if plan_type == 'monthly' else 99.99
+            tier_code = 'pro_monthly' if plan_type == 'monthly' else 'pro_yearly'
+            from admin_panel.models import SubscriptionTierPricing
+            tier = SubscriptionTierPricing.objects.filter(tier_code=tier_code).first()
+            if tier:
+                resolved_price = tier.price
+            else:
+                resolved_price = 9.99 if plan_type == 'monthly' else 89.99
             metadata = {
                 "plan_type":    plan_type,
                 "duration_days": 30 if plan_type == 'monthly' else 365,

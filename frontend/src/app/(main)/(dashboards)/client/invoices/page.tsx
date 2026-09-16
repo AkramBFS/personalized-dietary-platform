@@ -29,6 +29,8 @@ import {
   Download,
   Calendar,
   CreditCard,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   getClientInvoices,
@@ -36,9 +38,11 @@ import {
   type ClientInvoice,
 } from "@/lib/client";
 import { toast } from "sonner";
+import { printClientReceipt } from "@/lib/pdfReceipt";
 
 export default function InvoicePage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [query, setQuery] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<ClientInvoice | null>(
@@ -50,29 +54,22 @@ export default function InvoicePage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const loadInvoices = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getClientInvoices();
+      setInvoices(data);
+    } catch (err) {
+      console.error("Failed to fetch invoices", err);
+      setError("Failed to load your invoices. Please check your connection and try again.");
+      toast.error("Failed to fetch invoices");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadInvoices = async () => {
-      try {
-        const data = await getClientInvoices();
-        setInvoices(data);
-      } catch (error) {
-        console.error("Failed to fetch invoices", error);
-        // Fallback for development/demo
-        setInvoices([
-          {
-            id: 1,
-            transaction_number: "TRX-123456789",
-            total_paid: 29.99,
-            item_type: "plan",
-            created_at: new Date().toISOString(),
-            client_username: "akram", // NEW
-            nutritionist_username: "Nutritest", // NEW
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
     void loadInvoices();
   }, []);
 
@@ -192,6 +189,26 @@ export default function InvoicePage() {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      ) : error && invoices.length === 0 ? (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-16 text-center">
+            <div className="bg-destructive/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-destructive/20">
+              <AlertCircle className="w-10 h-10 text-destructive" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Failed to load invoices</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto mt-2">
+              {error}
+            </p>
+            <Button
+              onClick={() => { void loadInvoices(); }}
+              className="mt-6 rounded-xl font-medium"
+              variant="outline"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
           </CardContent>
         </Card>
       ) : invoices.length === 0 ? (
@@ -399,7 +416,13 @@ export default function InvoicePage() {
 
                   {/* Actions */}
                   <div className="pt-4 flex flex-col gap-3">
-                    <Button className="w-full h-14 rounded-2xl font-bold shadow-xl shadow-primary/20 group relative overflow-hidden">
+                    <Button
+                      onClick={() => {
+                        const target = invoiceDetail || selectedInvoice;
+                        if (target) printClientReceipt(target);
+                      }}
+                      className="w-full h-14 rounded-2xl font-bold shadow-xl shadow-primary/20 group relative overflow-hidden"
+                    >
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/10 to-primary/0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] transition-transform" />
                       <Download className="w-5 h-5 mr-2 group-hover:translate-y-0.5 transition-transform" />
                       Download PDF Receipt
