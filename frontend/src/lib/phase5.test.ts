@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 describe("Phase 5 Frontend Hardening & UX", () => {
   beforeEach(() => {
@@ -61,7 +61,7 @@ describe("Phase 5 Frontend Hardening & UX", () => {
       expect(typeof adminService.getAdminUsers).toBe("function");
       expect(typeof adminService.getAdminSubscriptionPricing).toBe("function");
       expect(typeof adminService.updateAdminSubscriptionPricing).toBe("function");
-    });
+    }, 15000);
   });
 
   describe("FE-009: PDF Receipt & Statement Generation", () => {

@@ -16,6 +16,8 @@ import {
   Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function NutritionConsultations() {
   return (
@@ -45,30 +47,25 @@ export default function NutritionConsultations() {
             </p>
 
             <div className="pt-4">
-              <a
+              <Link
                 href="/consultations/nutritionists"
-                className="inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-xl"
+                className="bg-brand text-primary-foreground px-6 py-3 rounded-xl font-bold hover:bg-card hover:text-card-foreground transition-colors inline-flex items-center gap-2 tracking-wide shadow-[0_0_15px_rgba(61,220,151,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                aria-label="Book a Consultation"
               >
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-brand text-primary-foreground px-6 py-3 rounded-xl font-bold hover:bg-card hover:text-card-foreground transition-colors inline-flex items-center gap-2 tracking-wide shadow-[0_0_15px_rgba(61,220,151,0.2)]"
-                  type="button"
-                  tabIndex={-1}
-                  aria-label="Book a Consultation"
-                >
-                  Book a Consultation
-                  <ArrowRight className="w-5 h-5" />
-                </motion.button>
-              </a>
+                Book a Consultation
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </div>
           </div>
 
           <div className="relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-2xl bg-card border border-border md:order-1">
-            <img
+            <Image
               alt="Consultation Placeholder"
-              className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity"
-              src="branding/Expert-call.jpg"
+              className="object-cover opacity-80 mix-blend-luminosity"
+              src="/branding/Expert-call.jpg"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
             />
             <div className="absolute inset-0 bg-brand/10 mix-blend-overlay"></div>
           </div>

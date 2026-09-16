@@ -500,6 +500,5 @@ export async function getClientInvoices(): Promise<ClientInvoice[]> {
 
 export async function getInvoiceDetail(id: number): Promise<ClientInvoice> {
   const response = await api.get<ApiEnvelope<ClientInvoice> | ClientInvoice>(`client/invoices/${id}/`);
-  console.log("Invoice detail response:", response.data);
   return unwrapResponse(response.data);
 }

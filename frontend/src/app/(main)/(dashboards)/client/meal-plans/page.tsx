@@ -33,7 +33,6 @@ export default function MealPlansPage() {
   const [loading, setLoading] = useState(true);
   const [reviewTarget, setReviewTarget] = useState<{ id: number; title: string } | null>(null);
 
-  console.log(plans);
   useEffect(() => {
     const fetchPlans = async () => {
       try {
@@ -49,7 +48,6 @@ export default function MealPlansPage() {
       }
     };
     fetchPlans();
-    console.log("Rendering plan:", plans);
   }, []);
 
   return (
