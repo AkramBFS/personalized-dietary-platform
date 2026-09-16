@@ -91,7 +91,7 @@ export default function ServicesPage() {
               onClick={handleExploreServices}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
             >
               Explore Services
               <ArrowRight className="w-4 h-4" />
@@ -179,7 +179,7 @@ export default function ServicesPage() {
                   onClick={handleAiTrackerClick}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all mt-4"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all mt-4"
                 >
                   Try AI Tracker
                   <ArrowRight className="w-4 h-4" />
@@ -335,7 +335,7 @@ export default function ServicesPage() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
                   >
                     Book a Consultation
                     <ArrowRight className="w-4 h-4" />
@@ -405,7 +405,7 @@ export default function ServicesPage() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
                   >
                     Get a Personalized Plan
                     <ArrowRight className="w-4 h-4" />
@@ -564,7 +564,7 @@ export default function ServicesPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
                 >
                   Browse Meal Plans
                   <ArrowRight className="w-4 h-4" />
@@ -635,7 +635,7 @@ export default function ServicesPage() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground font-bold shadow-brand hover:opacity-90 transition-all"
                   >
                     Explore Seasonal Programs
                     <ArrowRight className="w-4 h-4" />
@@ -728,7 +728,7 @@ export default function ServicesPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-6 py-3 rounded-xl bg-button-primary bg-btn-primary text-button-primary-foreground text-sm font-bold shadow-brand hover:opacity-90 transition-all"
+                className="px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground text-sm font-bold shadow-brand hover:opacity-90 transition-all"
               >
                 Book a Consultation
               </motion.button>

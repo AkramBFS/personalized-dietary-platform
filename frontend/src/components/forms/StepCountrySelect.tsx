@@ -65,8 +65,6 @@ export default function StepCountrySelect({
     shadow-2xl rounded-2xl overflow-hidden py-2
     animate-in fade-in slide-in-from-top-2 duration-200
   `;
-  console.log("Languages Prop:", languages);
-  console.log("Countries Prop:", countries);
   return (
     <div
       className="flex flex-col items-center w-full space-y-10"

@@ -11,6 +11,7 @@ import { Loader2, Send, Trash2, Heart, MessageCircle, ImageIcon, X, ExternalLink
 import { deleteCommunityPost, getClientOwnPosts, postCreateCommunityPost, type CommunityPost } from "@/lib/client/service";
 import { resolveApiUrl } from "@/lib/api";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -132,8 +133,8 @@ export default function CommunityDashboardPage() {
             />
             {imagePreview && (
               <div className="relative inline-block w-max">
-                <img src={imagePreview} alt="Preview" className="max-h-48 rounded-lg object-contain border border-border" />
-                <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:opacity-90">
+                <Image unoptimized src={imagePreview} alt="Preview" width={300} height={200} className="max-h-48 rounded-lg object-contain border border-border" />
+                <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:opacity-90" aria-label="Remove image">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -206,6 +207,7 @@ export default function CommunityDashboardPage() {
                       onClick={() => handleDeletePost(post.id)}
                       className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                       title="Delete post"
+                      aria-label="Delete post"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -214,9 +216,9 @@ export default function CommunityDashboardPage() {
                 <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
                   {post.content}
                 </p>
-                {post.image_url && (
+                {resolveApiUrl(post.image_url) && (
                   <div className="mt-4 border border-border rounded-lg overflow-hidden">
-                    <img src={resolveApiUrl(post.image_url)} alt="Post attachment" className="max-h-80 w-full object-cover" />
+                    <Image unoptimized src={resolveApiUrl(post.image_url)!} alt="Post attachment" width={800} height={400} className="max-h-80 w-full object-cover" />
                   </div>
                 )}
               </CardContent>

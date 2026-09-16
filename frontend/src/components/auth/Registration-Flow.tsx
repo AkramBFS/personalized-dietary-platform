@@ -215,7 +215,6 @@ export default function RegistrationFlow() {
             l.name?.toLowerCase().trim() ===
             formData.language.toLowerCase().trim(),
         )?.id;
-        console.log("Mapped IDs:", { countryId, goalId, languageId });
         // Validate that we found all required Foreign Keys
         if (!countryId || !goalId || !languageId) {
           throw new Error(
@@ -270,7 +269,6 @@ export default function RegistrationFlow() {
           payload.append("profile_photo", formData.profilePhoto);
         }
 
-        console.log("Payload:", payload);
         // 4. API Request[cite: 1]
         await api.post("/auth/register/client/", payload, {
           headers: {
@@ -327,7 +325,6 @@ export default function RegistrationFlow() {
         return null;
     }
   };
-  console.log(formData);
   return (
     <main className="relative h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-background">
       <div className="absolute top-6 right-6 z-50 flex items-center gap-4">

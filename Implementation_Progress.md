@@ -732,5 +732,170 @@ Route (app)
 - Functional client receipt and nutritionist statement PDF print synthesis implemented and wired to UI triggers.
 - Full regression across all system tiers (Backend: GREEN, AI Service: 10/10 GREEN, Frontend: 19/19 GREEN, Next.js Build: 50/50 static routes) verified.
 
+---
+
+# Phase 6: Code Quality, Performance, Architecture & Playwright E2E
+
+## Execution Summary
+Phase 6 finalized the system's frontend architecture, accessibility, performance optimization, and end-to-end automated test harness. All 9 targeted items (`FE-018` through `FE-026`) were implemented and validated across production builds, unit test suites, and browser-driven end-to-end tests.
+
+### Implemented Items
+
+1. **`FE-018`: Invalid Interactive Nesting on Consultations CTA**
+   - Refactored [`frontend/src/components/consultations.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/components/consultations.tsx) to eliminate HTML specification violations where `<motion.button>` was nested inside `<a href="...">`.
+   - Converted the CTA into Next.js `<Link href="/consultations/nutritionists">` wrapping a styled interactive `<motion.span>` or semantic button, preventing hydration mismatches and screen reader navigation traps.
+
+2. **`FE-019`: Obsolete Prototype Route Cleanup & Server Role Redirection**
+   - Deleted the obsolete prototype component `frontend/src/components/dashboard/dashboard.tsx` via `git rm`.
+   - Replaced [`frontend/src/app/(main)/dashboard/page.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/app/(main)/dashboard/page.tsx) with a lightweight, asynchronous server component that inspects the `user_role` cookie and dynamically redirects:
+     - `nutritionist` -> `/nutritionist`
+     - `high_admin` -> `/admin`
+     - Default / unauthenticated -> `/client` (which is further protected by `src/proxy.ts` redirecting to `/login`).
+
+3. **`FE-020`: Zero-Byte Empty Placeholder Removal**
+   - Removed `frontend/src/lib/validators.ts` via `git rm`.
+   - Verified that no remaining imports in `frontend/src` reference this empty file.
+
+4. **`FE-021`: Debugging `console.log` Payload Dumps Removed**
+   - Scrubbed verbose debugging statements that dumped full form state, uploaded payload objects, and auth data to browser consoles from:
+     - `frontend/src/components/auth/Registration-Flow.tsx` (removed `console.log("Mapped IDs:", ...)`, `console.log("Payload:", ...)`, `console.log(formData)`)
+     - `frontend/src/components/forms/StepCountrySelect.tsx` (removed `console.log("Languages Prop:", ...)`, `console.log("Countries Prop:", ...)`)
+     - `frontend/src/app/(main)/(dashboards)/client/meal-plans/page.tsx` (removed `console.log(plans)`)
+     - `frontend/src/lib/client/service.ts` (removed `console.log("Invoice detail response:", ...)`)
+
+5. **`FE-022`: Native `<img>` Migrated to Next.js `<Image>` & Remote Patterns Configured**
+   - Updated [`frontend/next.config.ts`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/next.config.ts) `images.remotePatterns` to explicitly allow media served from local development backends:
+     - `{ protocol: 'http', hostname: '127.0.0.1', port: '8000', pathname: '/media/**' }`
+     - `{ protocol: 'http', hostname: 'localhost', port: '8000', pathname: '/media/**' }`
+   - Migrated native `<img>` elements to Next.js `<Image>` with explicit width/height, modern formats (WebP/AVIF), and responsive `sizes` attributes in:
+     - `frontend/src/components/PlanMarketplace.tsx`
+     - `frontend/src/app/(main)/(dashboards)/client/community/page.tsx`
+     - `frontend/src/components/consultations.tsx`
+
+6. **`FE-023`: Tailwind Class Duplication & Color Inconsistency Resolved**
+   - In [`frontend/src/components/services.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/components/services.tsx), eliminated conflicting and duplicate class declarations where both `bg-button-primary` and `bg-btn-primary` were applied simultaneously to CTA buttons.
+   - Standardized all buttons across the services page to use `bg-btn-primary`, ensuring consistent styling and preventing CSS cascade conflicts.
+
+7. **`FE-024`: Accessible Button Names on Icon-Only Actions**
+   - In [`frontend/src/app/(main)/(dashboards)/client/community/page.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/app/(main)/(dashboards)/client/community/page.tsx), added explicit `aria-label="Delete post"` to post deletion trigger buttons and `aria-label="Remove image"` to image preview removal buttons.
+   - Satisfies WCAG 2.1 Success Criterion 4.1.2 (Name, Role, Value) for screen readers and automated accessibility audits.
+
+8. **`FE-025`: Monolithic Component Decomposition & Static Mock Extraction**
+   - Extracted 200+ lines of hardcoded mock records from `frontend/src/lib/nutritionist/service.ts` into a dedicated mock module [`frontend/src/lib/nutritionist/mocks.ts`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/lib/nutritionist/mocks.ts), decoupling runtime business services from static fixtures.
+   - Decomposed the 1,242-line monolithic calorie tracker page (`frontend/src/app/(main)/(dashboards)/client/calorie-tracker/page.tsx`) into modular, reusable subcomponents:
+     - [`frontend/src/components/calorie-tracker/CalorieDailySummary.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/components/calorie-tracker/CalorieDailySummary.tsx): Displays progress bars, macronutrient targets (carbs, protein, fat), water intake, and daily statistics.
+     - [`frontend/src/components/calorie-tracker/AIMealConfirmationModal.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/components/calorie-tracker/AIMealConfirmationModal.tsx): Handles image preview, ingredient mass adjustments, unit selections, and CalorieNinjas verification.
+     - [`frontend/src/components/calorie-tracker/MealLoggingSection.tsx`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/components/calorie-tracker/MealLoggingSection.tsx): Manages AI photo upload triggers, quick manual item logging, and meal history item display.
+   - Reduced `calorie-tracker/page.tsx` line count from 1,242 down to 424 lines (~66% reduction), drastically improving maintainability, testability, and React re-render performance.
+
+9. **`FE-026`: Playwright E2E Test Suite & Automated Harness**
+   - Installed `@playwright/test` and installed the headless Chromium browser engine.
+   - Created [`frontend/playwright.config.ts`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/playwright.config.ts) configured with automatic `webServer` orchestration (`npm run start` on port 3000), failure screenshots, and test traces.
+   - Added `"test:e2e": "playwright test"` to `frontend/package.json`.
+   - Created comprehensive end-to-end test suites under `frontend/e2e/`:
+     - `e2e/auth-flow.spec.ts`: Validates landing page navigation, `/login` credentials form rendering, client-side disabled submit state on empty fields, unauthenticated `/client` redirect, and `/dashboard` dynamic role-based redirect.
+     - `e2e/checkout-flow.spec.ts`: Validates protected `/marketplace` rendering for authenticated clients, PCI-DSS SAQ-A compliance (zero raw card/cvc/expiry inputs in DOM), services CTA button styling, and valid interactive HTML nesting on consultations CTA.
+     - `e2e/meal-plan-flow.spec.ts`: Validates client meal plan checklist persistence in `localStorage` across page reloads, chatbot message context persistence in `sessionStorage`, and verified presence of the `/client/invoices` route without 404s.
+   - Created [`frontend/src/lib/phase6.test.ts`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/frontend/src/lib/phase6.test.ts) covering unit and architectural assertions for all Phase 6 deliverables.
+   - Scoped Vitest config (`vitest.config.ts`) to `src/**/*.{test,spec}.{ts,tsx}` so Playwright specs are executed exclusively by Playwright.
+
+---
+
+## Verification & Test Results
+
+### 1. Playwright End-to-End Suite (`npm run test:e2e`)
+Ran `playwright test` across all 3 E2E test suites with headless Chromium against the Next.js production server:
+```text
+> frontend@0.1.0 test:e2e
+> playwright test
+
+Running 12 tests using 2 workers
+
+  ok  1 [chromium] › e2e\auth-flow.spec.ts:11:7 › Authentication & Navigation Flow › navigates to login page and displays credentials form (12.5s)
+  ok  2 [chromium] › e2e\auth-flow.spec.ts:4:7 › Authentication & Navigation Flow › loads the landing page with navigation links (14.6s)
+  ok  3 [chromium] › e2e\auth-flow.spec.ts:17:7 › Authentication & Navigation Flow › validates required fields on empty login submission (3.6s)
+  ok  4 [chromium] › e2e\auth-flow.spec.ts:24:7 › Authentication & Navigation Flow › handles unauthenticated redirect on /client dashboard (2.7s)
+  ok  6 [chromium] › e2e\checkout-flow.spec.ts:4:7 › Marketplace & Checkout Flow › renders plan marketplace with protocols and plan cards (22.5s)
+  ok  5 [chromium] › e2e\auth-flow.spec.ts:31:7 › Authentication & Navigation Flow › verifies /dashboard performs redirect rather than showing prototype (24.8s)
+  ok  8 [chromium] › e2e\checkout-flow.spec.ts:34:7 › Marketplace & Checkout Flow › verifies services CTA button has correct styling and links to services (5.0s)
+  ok  7 [chromium] › e2e\checkout-flow.spec.ts:15:7 › Marketplace & Checkout Flow › verifies payment page enforces PCI-DSS SAQ-A tokenized elements (5.8s)
+  ok  9 [chromium] › e2e\checkout-flow.spec.ts:43:7 › Marketplace & Checkout Flow › verifies consultations page CTA link does not nest interactive buttons (4.9s)
+  ok 10 [chromium] › e2e\meal-plan-flow.spec.ts:4:7 › Meal Plan & Calorie Tracker Flow › preserves meal checklist state in localStorage across page reload (5.4s)
+  ok 11 [chromium] › e2e\meal-plan-flow.spec.ts:28:7 › Meal Plan & Calorie Tracker Flow › verifies chatbot message context session storage persistence (4.3s)
+  ok 12 [chromium] › e2e\meal-plan-flow.spec.ts:47:7 › Meal Plan & Calorie Tracker Flow › verifies /client/invoices route exists without 404 (4.3s)
+
+  12 passed (1.1m)
+```
+**Result: 12/12 Playwright E2E tests passed (100% GREEN).**
+
+### 2. Frontend Vitest Unit & Integration Suite (`npm run test`)
+Ran Vitest across all frontend test suites:
+```text
+Test Files  5 passed (5)
+     Tests  32 passed (32)
+  Duration  12.51s
+```
+- `src/lib/phase6.test.ts`: 13 passed (subcomponent exports, mock decoupling, remotePatterns, zero-byte validator removal, prototype route removal, console.log cleanup, HTML nesting, Tailwind consistency, aria-labels)
+- `src/lib/phase5.test.ts`: 4 passed (meal checklist persistence, chatbot storage, Axios paths, PDF receipt generation)
+- `src/components/payment.smoke.test.tsx`: 1 passed (PCI compliance, tokenized Stripe elements)
+- `src/lib/auth.test.ts`: 6 passed
+- `src/lib/payment.test.ts`: 8 passed
+**Result: 32/32 unit tests passed (100% GREEN).**
+
+### 3. Frontend TypeScript Check (`npx tsc --noEmit`)
+- **Result: 0 type errors, exited with code 0.**
+
+### 4. Frontend Production Build (`npm run build`)
+```text
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.1min
+  Running TypeScript ...
+  Collecting page data using 3 workers ...
+✓ Generating static pages using 3 workers (50/50) in 5.7s
+  Finalizing page optimization ...
+```
+**Result: 50/50 static routes compiled cleanly with 0 errors. Verified `/dashboard` compiles as dynamic redirect (`ƒ /dashboard`).**
+
+### 5. Backend Automated Regression Suite
+Ran Django test suites across all core modules:
+```text
+Ran 37 tests in 217.865s
+
+OK
+Destroying test database for alias 'default'...
+Found 37 test(s).
+System check identified no issues (0 silenced).
+```
+- `admin_panel.tests`: `SubscriptionPricingTests`, `BlogCategoryTests`
+- `client.tests.test_plan_progression`: Day 7 completion logic
+- `client.tests.test_ai_integration`: `X-Internal-Secret` transmission
+- `users.tests.test_auth_integration`: Client/Nutritionist/Admin auth, token refresh & blacklist, unapproved practitioner rejection
+- `users.tests.test_phase4_hardening`: Redis multi-worker rate limiting, fail-closed cache, ban enforcement, CalorieNinjas batch query, mass validation, admin pagination
+- `marketplace.tests.test_checkout_integration`: Plan purchases, slot booking concurrency, review deduplication
+- `chatbot.tests.test_chatbot_integration`: Prompt sanitization, exception masking, multi-model fallback circuit breaker
+**Result: 37/37 backend regression tests passed (100% GREEN).**
+
+### 6. AI Service Automated Test Suite
+Ran `python test_ai_service.py` in `ai-service/food_api/`:
+```text
+Ran 10 tests in 13.729s
+
+OK
+[AI Phase 3 Exit Gate] Concurrent /health latency during inference: min=4.10ms, avg=6.10ms, count=290
+```
+**Result: 10/10 tests passed (100% GREEN), health check latency 6.10ms (<10ms).**
+
+---
+
+## Phase 6 Exit Gate Status
+**PASSED**:
+- All 9 Phase 6 issues (`FE-018` through `FE-026`) are completely implemented, verified, and protected by automated tests.
+- Full Playwright E2E harness (`npm run test:e2e`) runs against Next.js production builds and passes 12/12 tests across auth, marketplace, checkout, and client dashboard workflows.
+- Full regression suite across all system tiers (Playwright: 12/12, Vitest: 32/32, Backend: 37/37, AI Service: 10/10, Next.js Build: 50/50 static pages) passed 100% GREEN.
+
+
 
 

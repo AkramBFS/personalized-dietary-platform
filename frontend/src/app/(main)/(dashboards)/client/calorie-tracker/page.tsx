@@ -1,37 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import imageCompression from "browser-image-compression";
 import { isAxiosError } from "axios";
-import {
-  AlertTriangle,
-  ArrowUpRight,
-  Camera,
-  Clock,
-  Crown,
-  History,
-  Image as ImageIcon,
-  Loader2,
-  Plus,
-  Salad,
-  Send,
-  Sparkles,
-  Target,
-  Trash2,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { resolveApiUrl } from "@/lib/api";
-import GenericDropdown from "@/components/ui/GenericDropdown";
 import {
   AICalorieLog,
   AIPrediction,
@@ -53,15 +25,11 @@ import {
   confirmAICalorieLog,
 } from "@/lib/client";
 import { toast } from "sonner";
-
-interface EditablePrediction {
-  id: string;
-  label: string;
-  mass_grams: string;
-  calories?: number;
-  count?: number;
-  confidence?: number;
-}
+import CalorieDailySummary from "@/components/calorie-tracker/CalorieDailySummary";
+import AIMealConfirmationModal, {
+  type EditablePrediction,
+} from "@/components/calorie-tracker/AIMealConfirmationModal";
+import MealLoggingSection from "@/components/calorie-tracker/MealLoggingSection";
 
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: "Breakfast",
@@ -165,63 +133,6 @@ function getIsSubscriptionActive(
   }
 
   return Boolean(status?.is_premium && subscription.status === "active");
-}
-
-function PremiumAiPaywall() {
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          AI Vision Tracker
-        </h1>
-        <p className="text-muted-foreground">
-          Premium access is required to analyze meals from photos.
-        </p>
-      </div>
-
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-card-foreground">
-            <Crown className="h-5 w-5 text-amber-500" />
-            Premium AI access
-          </CardTitle>
-          <CardDescription>
-            This feature requires an active premium subscription.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
-            <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-amber-500/10">
-                <Sparkles className="h-10 w-10 text-amber-500" />
-              </div>
-              <div className="absolute -right-1 -top-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                Premium
-              </div>
-            </div>
-            <div className="max-w-sm space-y-2">
-              <h3 className="text-xl font-bold text-foreground">
-                Unlock AI-powered tracking
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Snap a photo of your meal, review detected ingredients, and save
-                the corrected log.
-              </p>
-            </div>
-            <Button
-              asChild
-              className="rounded-xl px-8 py-6 text-base shadow-sm"
-            >
-              <Link href="/client/subscription">
-                <ArrowUpRight className="mr-2 h-5 w-5" />
-                Upgrade to Premium
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
 }
 
 export default function CalorieTrackerPage() {
@@ -650,222 +561,18 @@ export default function CalorieTrackerPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
-            <div className="flex shrink-0 items-center justify-between border-b border-border p-6">
-              <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
-                <Target className="h-5 w-5 text-primary" />
-                Confirm Meal Details
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Close review"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div
-              className="flex-1 space-y-5 overflow-y-auto bg-background p-6"
-              data-lenis-prevent
-            >
-              {segmentedImageUrl && (
-                <div className="overflow-hidden rounded-lg border border-border bg-card">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={segmentedImageUrl}
-                    alt="AI segmented meal"
-                    className="max-h-72 w-full object-contain"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-                <p className="text-sm font-medium leading-relaxed">
-                  ⚠️ AI estimates are approximations. Actual nutritional values
-                  may vary. Review and adjust items before saving.
-                </p>
-              </div>
-
-              {estimatedNutrition && (
-                <div className="mb-4 space-y-3">
-                  <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Nutrition Preview
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="flex flex-col items-center justify-center rounded-xl bg-primary/10 p-4 border border-primary/20">
-                      <p className="text-[10px] font-bold text-primary uppercase mb-1">
-                        Calories
-                      </p>
-                      <p className="text-2xl font-black text-primary">
-                        {estimatedNutrition.calories.toFixed(0)}
-                      </p>
-                      <p className="text-[10px] text-primary/70 font-medium">
-                        kcal
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
-                        Protein
-                      </p>
-                      <p className="text-2xl font-black text-foreground">
-                        {estimatedNutrition.protein?.toFixed(1) ?? "0.0"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        grams
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
-                        Carbs
-                      </p>
-                      <p className="text-2xl font-black text-foreground">
-                        {estimatedNutrition.carbs?.toFixed(1) ?? "0.0"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        grams
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 border border-border shadow-sm">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
-                        Fats
-                      </p>
-                      <p className="text-2xl font-black text-foreground">
-                        {estimatedNutrition.fats?.toFixed(1) ?? "0.0"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        grams
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {editableItems.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                  No AI items were returned. Add ingredients manually before
-                  saving.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    Detected Ingredients
-                  </h3>
-                  {editableItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/30"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-bold text-primary">
-                            {item.count ?? 1}x
-                          </span>
-                          {item.confidence !== undefined && (
-                            <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                              {Math.round(item.confidence * 100)}% Match
-                            </span>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Remove item"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap items-end gap-3">
-                        <div className="min-w-[140px] flex-1">
-                          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Food Type
-                          </label>
-                          <Input
-                            value={item.label}
-                            onChange={(event) =>
-                              handleItemChange(
-                                item.id,
-                                "label",
-                                event.target.value,
-                              )
-                            }
-                            className="bg-background"
-                          />
-                        </div>
-                        <div className="w-24 sm:w-32">
-                          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Mass (g)
-                          </label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={item.mass_grams}
-                            onChange={(event) =>
-                              handleItemChange(
-                                item.id,
-                                "mass_grams",
-                                event.target.value,
-                              )
-                            }
-                            className="bg-background"
-                          />
-                        </div>
-                        {item.calories !== undefined && (
-                          <div className="pb-2 text-right text-sm font-bold text-foreground">
-                            {item.calories.toFixed(0)} kcal
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <Button
-                type="button"
-                onClick={handleAddItem}
-                variant="outline"
-                className="w-full border-dashed py-6"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Ingredient
-              </Button>
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-card p-6">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsModalOpen(false)}
-                disabled={confirmingAi}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSaveMeal}
-                disabled={confirmingAi}
-              >
-                {confirmingAi ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Save Meal to Tracker
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AIMealConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        segmentedImageUrl={segmentedImageUrl}
+        estimatedNutrition={estimatedNutrition}
+        editableItems={editableItems}
+        onItemChange={handleItemChange}
+        onRemoveItem={handleRemoveItem}
+        onAddItem={handleAddItem}
+        onSave={handleSaveMeal}
+        confirmingAi={confirmingAi}
+      />
 
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -882,359 +589,51 @@ export default function CalorieTrackerPage() {
         </div>
       )}
 
-      <div className="flex w-fit rounded-xl border border-border bg-card p-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab("manual")}
-          className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "manual"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Salad className="h-4 w-4" /> Manual Entry
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("ai")}
-          className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "ai"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Camera className="h-4 w-4" /> AI Tracking
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="order-2 space-y-6 lg:order-1">
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg text-card-foreground">
-                <Clock className="h-5 w-5 text-primary" />
-                Today&apos;s Log
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {logsLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {MEAL_TYPES.map((type) => {
-                    const logs = mealSummary(todayLogs, type);
-                    const calories = logs.reduce(
-                      (sum, log) => sum + (log.total_calories ?? 0),
-                      0,
-                    );
-                    return (
-                      <div
-                        key={type}
-                        className="border-b border-border pb-3 last:border-0 last:pb-0"
-                      >
-                        <div className="mb-1 flex items-start justify-between gap-3">
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">
-                              {MEAL_LABELS[type]}
-                            </h4>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {logs.length > 0
-                                ? logs
-                                    .flatMap((log) => log.user_final_log ?? [])
-                                    .map(getIngredientName)
-                                    .join(", ")
-                                : `No ${MEAL_LABELS[type].toLowerCase()} logged`}
-                            </p>
-                          </div>
-                          {logs.length > 0 && (
-                            <span className="rounded bg-accent px-2 py-0.5 text-sm font-bold text-primary">
-                              {calories.toFixed(0)} kcal
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div className="flex items-center justify-between pt-2 text-sm">
-                    <span className="font-medium text-muted-foreground">
-                      Total Today
-                    </span>
-                    <span className="font-bold text-foreground">
-                      {totalToday.toFixed(0)}
-                      {dailyTarget ? (
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {" "}
-                          / {dailyTarget.toFixed(0)} kcal
-                        </span>
-                      ) : (
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {" "}
-                          kcal
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 border-t border-border pt-3">
-                    <div className="rounded-lg bg-background px-3 py-2 text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Protein
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {todayTotals.protein.toFixed(0)}g
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {macroTargets.protein
-                          ? `/ ${macroTargets.protein.toFixed(0)}g`
-                          : "No target"}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-background px-3 py-2 text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Carbs
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {todayTotals.carbs.toFixed(0)}g
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {macroTargets.carbs
-                          ? `/ ${macroTargets.carbs.toFixed(0)}g`
-                          : "No target"}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-background px-3 py-2 text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Fat
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {todayTotals.fats.toFixed(0)}g
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {macroTargets.fats
-                          ? `/ ${macroTargets.fats.toFixed(0)}g`
-                          : "No target"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <CalorieDailySummary
+          logsLoading={logsLoading}
+          todayLogs={todayLogs}
+          todayTotals={todayTotals}
+          dailyTarget={dailyTarget}
+          totalToday={totalToday}
+          macroTargets={{
+            protein: macroTargets.protein ?? 0,
+            carbs: macroTargets.carbs ?? 0,
+            fats: macroTargets.fats ?? 0,
+          }}
+          mealTypes={MEAL_TYPES}
+          mealLabels={MEAL_LABELS}
+          mealSummary={mealSummary}
+          getIngredientName={getIngredientName}
+        />
 
-          <Button
-            variant="outline"
-            asChild
-            className="flex w-full items-center justify-center gap-2 py-6 shadow-sm"
-          >
-            <Link href="/client/calorie-tracker/history">
-              <History className="h-5 w-5" /> View Full History
-            </Link>
-          </Button>
+        <div className="order-1 lg:order-2 lg:col-span-2">
+          <MealLoggingSection
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            subscriptionLoading={subscriptionLoading}
+            isSubscriptionActive={isSubscriptionActive}
+            mealType={mealType}
+            setMealType={setMealType}
+            mealTypes={MEAL_TYPES}
+            mealLabels={MEAL_LABELS}
+            aiPreview={aiPreview}
+            aiFile={aiFile}
+            aiLoading={aiLoading}
+            aiStatusText={aiStatusText}
+            handleAiUpload={handleAiUpload}
+            submitAiAnalysis={submitAiAnalysis}
+            manualSubmitting={manualSubmitting}
+            ingredientInput={ingredientName}
+            setIngredientInput={setIngredientName}
+            massInput={ingredientMass}
+            setMassInput={setIngredientMass}
+            ingredients={ingredients}
+            addManualIngredient={addManualIngredient}
+            removeManualIngredient={removeManualIngredient}
+            submitManualLog={submitManualLog}
+          />
         </div>
-
-        <Card className="order-1 lg:order-2 lg:col-span-2">
-          {activeTab === "ai" ? (
-            <>
-              {subscriptionLoading ? (
-                <CardContent className="flex justify-center py-16">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </CardContent>
-              ) : !isSubscriptionActive ? (
-                <PremiumAiPaywall />
-              ) : (
-                <>
-                  <CardHeader>
-                    <CardTitle className="text-card-foreground">
-                      AI Vision Tracker
-                    </CardTitle>
-                    <CardDescription>
-                      Upload a photo and review AI results before saving to your
-                      tracker.
-                    </CardDescription>
-                    <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[12px] font-medium text-amber-700 border border-amber-500/10 dark:text-amber-400">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      AI estimates are approximations. Always review the
-                      results.
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col gap-4">
-                      <div className="space-y-1">
-                        <GenericDropdown
-                          label="Meal Type"
-                          value={mealType}
-                          onChange={(val) => setMealType(val as MealType)}
-                          options={MEAL_TYPES.map((type) => ({
-                            label: MEAL_LABELS[type],
-                            value: type,
-                          }))}
-                        />
-                      </div>
-                      <label
-                        className={`relative flex h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors hover:bg-accent ${
-                          aiPreview ? "border-primary/50" : "border-border"
-                        }`}
-                      >
-                        {aiPreview ? (
-                          <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={aiPreview}
-                              alt="Meal preview"
-                              className="h-full w-full object-cover opacity-80"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                              <span className="rounded-lg bg-black/50 px-4 py-2 font-medium text-white">
-                                Change Image
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="space-y-2 p-6 text-center">
-                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                              <ImageIcon className="h-6 w-6" />
-                            </div>
-                            <p className="font-medium text-foreground">
-                              Click to upload a meal photo
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              JPG or PNG, max 10MB
-                            </p>
-                          </div>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleAiUpload}
-                        />
-                      </label>
-                      <Button
-                        onClick={submitAiAnalysis}
-                        disabled={!aiFile || aiLoading}
-                        className="w-full rounded-xl py-6 text-lg shadow-sm"
-                      >
-                        {aiLoading ? (
-                          <>
-                            <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                            {aiStatusText ?? "Analyzing meal with AI..."}
-                          </>
-                        ) : (
-                          <>
-                            <Camera className="mr-3 h-5 w-5" /> Analyze Image
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <CardHeader>
-                <CardTitle className="text-card-foreground">
-                  Manual Entry
-                </CardTitle>
-                <CardDescription>
-                  Add each ingredient and let the server calculate nutrition.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={submitManualLog} className="space-y-6">
-                  <div className="space-y-1">
-                    <GenericDropdown
-                      label="Meal Type"
-                      value={mealType}
-                      onChange={(val) => setMealType(val as MealType)}
-                      options={MEAL_TYPES.map((type) => ({
-                        label: MEAL_LABELS[type],
-                        value: type,
-                      }))}
-                    />
-                  </div>
-
-                  <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-                    <label className="text-sm font-medium text-foreground">
-                      Add Ingredient
-                    </label>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="e.g. Avocado"
-                        value={ingredientName}
-                        onChange={(event) =>
-                          setIngredientName(event.target.value)
-                        }
-                        className="flex-1"
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        placeholder="Grams"
-                        value={ingredientMass}
-                        onChange={(event) =>
-                          setIngredientMass(event.target.value)
-                        }
-                        className="w-28"
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={addManualIngredient}
-                        aria-label="Add ingredient"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    {ingredients.length > 0 && (
-                      <ul className="mt-4 space-y-2">
-                        {ingredients.map((ingredient, index) => (
-                          <li
-                            key={`${ingredient.name}-${index}`}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                          >
-                            <span className="font-medium text-foreground">
-                              {ingredient.name}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">
-                                {ingredient.mass_grams}g
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => removeManualIngredient(index)}
-                                className="h-8 px-2"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={manualSubmitting || ingredients.length === 0}
-                    className="w-full rounded-xl py-6"
-                  >
-                    {manualSubmitting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="mr-2 h-4 w-4" />
-                    )}
-                    Log {MEAL_LABELS[mealType]}
-                  </Button>
-                </form>
-              </CardContent>
-            </>
-          )}
-        </Card>
       </div>
     </div>
   );
