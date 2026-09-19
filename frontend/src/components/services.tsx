@@ -728,7 +728,7 @@ export default function ServicesPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-6 py-3 rounded-xl bg-btn-primary text-button-primary-foreground text-sm font-bold shadow-brand hover:opacity-90 transition-all"
+                className="px-6 py-3 rounded-xl bg-btn-primary text-foreground text-sm font-bold shadow-brand hover:opacity-90 transition-all"
               >
                 Book a Consultation
               </motion.button>
