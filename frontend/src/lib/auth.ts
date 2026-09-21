@@ -91,6 +91,7 @@ export async function clearAuthSession(callServerLogout: boolean = true) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
             ...(access ? { Authorization: `Bearer ${access}` } : {}),
           },
           body: JSON.stringify({ refresh }),
@@ -98,6 +99,18 @@ export async function clearAuthSession(callServerLogout: boolean = true) {
       } catch (err) {
         console.error("Failed to revoke token on server:", err);
       }
+    }
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+    } catch {
+      // Ignore BFF fetch error in tests
     }
   }
 

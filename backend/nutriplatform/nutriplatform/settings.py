@@ -83,10 +83,15 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# ── Security Headers ───────────────────────────────────────────────────────────
+# ── Security Headers & Proxy Topology ───────────────────────────────────────────
 SECURE_BROWSER_XSS_FILTER   = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS             = 'DENY'
+SECURE_PROXY_SSL_HEADER     = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST        = True
+SESSION_COOKIE_SECURE       = config('SESSION_COOKIE_SECURE', default=not DEBUG, cast=bool)
+CSRF_COOKIE_SECURE          = config('CSRF_COOKIE_SECURE', default=not DEBUG, cast=bool)
+SECURE_SSL_REDIRECT         = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 
 
 ROOT_URLCONF = 'nutriplatform.urls'

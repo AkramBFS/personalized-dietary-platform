@@ -67,23 +67,33 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/login/", {
-        email: result.data.email,
-        password: result.data.password,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({
+          email: result.data.email,
+          password: result.data.password,
+        }),
       });
 
-      const { data } = response.data;
-      const { tokens, user } = data;
+      const resData = await response.json();
+      if (!response.ok || resData.status === "error") {
+        const errorObj = new Error(resData.message || "Invalid credentials");
+        (errorObj as any).response = { status: response.status, data: resData };
+        throw errorObj;
+      }
 
-      setAccessToken(tokens.access);
-      setRefreshToken(tokens.refresh);
+      const user = resData.data.user;
+
       setSessionUser({
         id: user.id,
         role: user.role,
         username: user.username,
         email: user.email,
       });
-      setUserRoleCookie(user.role);
 
       if (user.role === "client") {
         router.push("/client");

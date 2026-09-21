@@ -1,7 +1,10 @@
 import axios from "axios";
 import { getCookie, withAuthHeader } from "./auth";
 
-const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1/";
+const isBrowser = typeof window !== "undefined";
+const rawUrl = isBrowser
+  ? "/api/backend/"
+  : (process.env.INTERNAL_DJANGO_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1/").replace(/\/?$/, "/");
 export const API_BASE_URL = rawUrl.endsWith("/") ? rawUrl : `${rawUrl}/`;
 
 export interface ApiEnvelope<T> {
@@ -21,29 +24,36 @@ export function resolveApiUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   if (/^(blob:|data:|https?:\/\/)/i.test(url)) return url;
 
-  const apiUrl = new URL(API_BASE_URL);
-  const origin = `${apiUrl.protocol}//${apiUrl.host}`;
-  
-  // Ensure we have /media/ prefix for relative paths if it's not already there
+  const backendOrigin = process.env.NEXT_PUBLIC_DJANGO_ORIGIN || "http://127.0.0.1:8000";
   let normalizedPath = url.replace(/^\/+/, "");
   if (!normalizedPath.startsWith("media/")) {
     normalizedPath = `media/${normalizedPath}`;
   }
-  
-  return new URL(normalizedPath, `${origin}/`).toString();
+
+  return `${backendOrigin}/${normalizedPath}`;
 }
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
 });
 
-// Request Interceptor to add access token
-api.interceptors.request.use(withAuthHeader, (error) => Promise.reject(error));
+// Request Interceptor to enforce X-Requested-With and add auth header if available
+api.interceptors.request.use(
+  (config) => {
+    if (config.headers) {
+      config.headers["X-Requested-With"] = "XMLHttpRequest";
+    }
+    return withAuthHeader(config);
+  },
+  (error) => Promise.reject(error)
+);
 
-// Response Interceptor for handling token refresh
+// Response Interceptor for handling token refresh via BFF
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -54,24 +64,17 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = getCookie("refresh_token");
-        if (!refreshToken) {
-          throw new Error("No refresh token available");
-        }
+        // Trigger token refresh through BFF
+        await axios.post(
+          "/api/auth/refresh",
+          {},
+          {
+            withCredentials: true,
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          }
+        );
 
-        // Call the refresh endpoint directly to avoid looping
-        const response = await axios.post(`${API_BASE_URL}auth/token/refresh/`, {
-          refresh: refreshToken
-        });
-
-        const newAccessToken = response.data.access;
-        // Optionally update the client-side cookie if it's not httpOnly
-        if (typeof document !== "undefined") {
-          document.cookie = `access_token=${newAccessToken}; path=/; max-age=3600`;
-        }
-
-        // Retry the original request with the new token
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        // Retry original request with same-origin credentials
         return api(originalRequest);
       } catch (refreshError) {
         // If refresh fails, redirect to login
