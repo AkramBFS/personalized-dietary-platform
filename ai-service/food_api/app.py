@@ -512,4 +512,6 @@ async def segment_image(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    host = os.environ.get("AI_SERVICE_HOST", "127.0.0.1")
+    port = int(os.environ.get("AI_SERVICE_PORT", "8001"))
+    uvicorn.run(app, host=host, port=port)

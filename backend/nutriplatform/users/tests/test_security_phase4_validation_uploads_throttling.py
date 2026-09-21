@@ -330,3 +330,15 @@ class ThrottlesAndLockoutTests(TestCase):
         self.assertEqual(resp.status_code, 429)
         self.assertIn(b"TOO_MANY_REQUESTS", resp.content)
         self.assertIn(b"Account temporarily locked", resp.content)
+
+    def test_argon2_password_hasher_configured(self):
+        """Verify Argon2PasswordHasher is available and hashes passwords with argon2 algorithm."""
+        from django.contrib.auth.hashers import make_password, identify_hasher
+        from django.test import override_settings
+
+        with override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.Argon2PasswordHasher']):
+            hashed = make_password("SuperSecretPass123!")
+            self.assertTrue(hashed.startswith("argon2"), f"Password hash must use argon2 algorithm, got: {hashed[:10]}")
+            hasher = identify_hasher(hashed)
+            self.assertEqual(hasher.algorithm, "argon2")
+

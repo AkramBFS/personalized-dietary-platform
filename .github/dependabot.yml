@@ -1,0 +1,36 @@
+version: 2
+updates:
+  # Backend Python dependencies (Django)
+  - package-ecosystem: "pip"
+    directory: "/backend/nutriplatform"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # Monorepo root Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # AI Service Python dependencies (FastAPI)
+  - package-ecosystem: "pip"
+    directory: "/ai-service/food_api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # Frontend Node dependencies (Next.js / npm)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # GitHub Actions CI/CD workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10

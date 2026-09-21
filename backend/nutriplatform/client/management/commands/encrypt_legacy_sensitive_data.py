@@ -37,23 +37,19 @@ class Command(BaseCommand):
 
         total_encrypted = 0
 
-        from django.db import connection
-
         for model, field_name, pk_field in targets:
             model_name = model.__name__
             table_name = model._meta.db_table
             self.stdout.write(f"Scanning {model_name}.{field_name} ({table_name})...")
 
-            # Inspect raw DB values directly using cursor so from_db_value is not triggered
-            raw_ids_to_encrypt = []
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    f"SELECT {pk_field}, {field_name} FROM {table_name} "
-                    f"WHERE {field_name} IS NOT NULL AND LENGTH({field_name}) > 0"
-                )
-                for pk_val, raw_str in cursor.fetchall():
-                    if raw_str and not str(raw_str).startswith('v1:'):
-                        raw_ids_to_encrypt.append(pk_val)
+            # Query unencrypted records using pure Django ORM without raw SQL
+            unencrypted_qs = (
+                model.objects
+                .exclude(**{f"{field_name}__startswith": "v1:"})
+                .exclude(**{f"{field_name}__isnull": True})
+                .exclude(**{field_name: ""})
+            )
+            raw_ids_to_encrypt = list(unencrypted_qs.values_list(pk_field, flat=True))
 
             count = len(raw_ids_to_encrypt)
             self.stdout.write(f"  Found {count} unencrypted record(s) in {model_name}.{field_name}")

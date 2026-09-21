@@ -1,0 +1,144 @@
+name: CI & Security Gates
+
+on:
+  push:
+    branches: [main, master, feature/**]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  secret-scan:
+    name: Repository Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast-python:
+    name: Python SAST & Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: Run Bandit SAST (Rule B608 strictly active)
+        run: |
+          bandit -r backend/nutriplatform ai-service/food_api -x "**/venv/**,**/.venv/**,**/tests/**,**/migrations/**" -ll
+
+      - name: Run pip-audit on Backend Dependencies
+        run: |
+          pip-audit -r requirements.txt
+
+      - name: Run pip-audit on AI Service Dependencies
+        run: |
+          pip-audit -r ai-service/food_api/requirements.txt
+
+  frontend-checks:
+    name: Frontend Audits, Lint & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Run npm Audit
+        run: npm audit --audit-level=high
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Vitest Unit & Integration Tests
+        run: npm run test
+
+      - name: Build Next.js Application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_placeholder"
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+          BACKEND_INTERNAL_URL: "http://127.0.0.1:8000"
+
+  backend-tests:
+    name: Django Backend Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django Tests
+        working-directory: backend/nutriplatform
+        env:
+          SECRET_KEY: "ci-secret-key-do-not-use-in-production-1234567890"
+          AI_SERVICE_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          ENCRYPTION_PRIMARY_KEY: "c3Ryb25nLWZlcm5ldC1rZXktZm9yLXRlc3RpbmctMTIzNDU="
+          DEBUG: "True"
+        run: |
+          python manage.py test
+
+  ai-service-tests:
+    name: AI Service Test Suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-service/food_api
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install AI Service Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest httpx
+
+      - name: Run AI Service Tests
+        env:
+          AI_SERVICE_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        run: |
+          python test_ai_service.py
