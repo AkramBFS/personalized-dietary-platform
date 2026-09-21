@@ -3,6 +3,7 @@ from .checkout_views import (
     CheckoutCreateView,
     CheckoutDetailView,
     CheckoutConfirmView,
+    StripeWebhookView,
 )
 
 urlpatterns = [
@@ -10,4 +11,5 @@ urlpatterns = [
     path('session/',                 CheckoutCreateView.as_view(),  name='checkout-session'),
     path('<uuid:checkout_id>/',      CheckoutDetailView.as_view(),  name='checkout-detail'),
     path('<uuid:checkout_id>/confirm/', CheckoutConfirmView.as_view(), name='checkout-confirm'),
+    path('webhook/',                 StripeWebhookView.as_view(),   name='stripe-webhook'),
 ]

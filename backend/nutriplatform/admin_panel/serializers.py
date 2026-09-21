@@ -108,8 +108,9 @@ class PurchaseSubscriptionSerializer(serializers.Serializer):
     PLAN_TYPES = ['monthly', 'yearly']
 
     plan_type          = serializers.ChoiceField(choices=PLAN_TYPES)
-    amount_paid        = serializers.FloatField(min_value=0)
-    transaction_number = serializers.CharField()
+    amount_paid        = serializers.FloatField(min_value=0, required=False)
+    transaction_number = serializers.CharField(min_length=8, max_length=100)
+    payment_intent_id  = serializers.CharField(required=False, allow_blank=True)
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

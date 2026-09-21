@@ -1,9 +1,12 @@
+import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from django.utils import timezone
 from django.db import transaction, IntegrityError
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework.exceptions import ValidationError
 import datetime
 
@@ -11,6 +14,8 @@ from .models import CheckoutSession, Plan, UserPlan, Invoice, Consultation
 from client.models import Client, PremiumSubscription
 from nutritionist.models import Nutritionist, NutritionistAvailability, NutritionistHoliday, NutritionistPatient
 from notifications.utils import notify
+
+logger = logging.getLogger(__name__)
 
 
 PLATFORM_COMMISSION = 0.20
@@ -52,6 +57,12 @@ class CheckoutCreateView(APIView):
         client = get_client(request.user)
         if not client:
             return Response({"status": "error", "message": "Client not found."}, status=404)
+        if client.is_banned:
+            return Response({
+                "status": "error",
+                "message": "Account is suspended.",
+                "code": "ACCOUNT_BANNED"
+            }, status=403)
 
         # ── Resolve item and price ─────────────────────────────────────────────
         metadata       = {}
@@ -219,25 +230,51 @@ class CheckoutConfirmView(APIView):
                 "code":    "SESSION_EXPIRED"
             }, status=410)
 
+        client = get_client(request.user)
+        if not client:
+            return Response({"status": "error", "message": "Client not found."}, status=404)
+
+        if client.is_banned:
+            return Response({
+                "status": "error",
+                "message": "Account is suspended.",
+                "code": "ACCOUNT_BANNED"
+            }, status=403)
+
         transaction_number = request.data.get('transaction_number')
         payment_method_id  = request.data.get('payment_method_id')
         payment_intent_id  = request.data.get('payment_intent_id')
         token              = request.data.get('token')
 
-        if not transaction_number:
-            token_val = payment_method_id or payment_intent_id or token
+        if payment_intent_id:
+            from .stripe_utils import verify_stripe_payment_intent
+            verify_stripe_payment_intent(
+                payment_intent_id=payment_intent_id,
+                expected_amount=session.resolved_price,
+                expected_currency=session.currency or 'usd',
+                expected_user_id=request.user.id,
+                expected_checkout_id=str(session.checkout_id)
+            )
+            transaction_number = payment_intent_id
+        elif not transaction_number:
+            token_val = payment_method_id or token
             if token_val and str(token_val).strip():
                 clean_ref = str(token_val).strip()[:40]
                 transaction_number = f"TXN-STRIPE-{clean_ref}"
             else:
                 return Response({
                     "status":  "error",
-                    "message": "transaction_number or payment_method_id is required."
+                    "message": "transaction_number or payment_intent_id is required."
                 }, status=400)
 
-        client = get_client(request.user)
-        if not client:
-            return Response({"status": "error", "message": "Client not found."}, status=404)
+        # Prevent duplicate processing
+        if Invoice.objects.filter(transaction_number=transaction_number).exists() or \
+           PremiumSubscription.objects.filter(transaction_number=transaction_number).exists():
+            return Response({
+                "status": "error",
+                "message": "This transaction number has already been processed.",
+                "code": "TRANSACTION_ALREADY_USED"
+            }, status=409)
 
         # ── Route internally based on item_type ────────────────────────────────
         # Frontend NEVER sees this logic — it only sends checkout_id
@@ -441,3 +478,58 @@ class CheckoutConfirmView(APIView):
             "plan_type":    plan_type,
             "end_date":     subscription.end_date,
         }
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(APIView):
+    """
+    POST /checkout/webhook/
+    Authoritative Stripe fulfillment webhook handler.
+    Validates cryptographic signature, idempotently fulfills pending purchases.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+        if not sig_header:
+            return Response({"status": "error", "message": "Missing Stripe-Signature header."}, status=400)
+
+        from .stripe_utils import construct_stripe_event
+        try:
+            event = construct_stripe_event(request.body, sig_header)
+        except ValidationError as e:
+            return Response({"status": "error", "message": str(e.detail)}, status=400)
+
+        event_type = event.get('type')
+        if event_type == 'payment_intent.succeeded':
+            intent = event['data']['object']
+            intent_id = intent.get('id')
+            metadata = intent.get('metadata') or {}
+            checkout_id = metadata.get('checkout_id')
+
+            if checkout_id:
+                try:
+                    session = CheckoutSession.objects.get(checkout_id=checkout_id)
+                except CheckoutSession.DoesNotExist:
+                    return Response({"status": "success", "received": True, "detail": "Session not found."})
+
+                if session.status == 'confirmed':
+                    return Response({"status": "success", "received": True, "detail": "Already confirmed."})
+
+                client = get_client(session.user)
+                if client and not client.is_banned:
+                    confirm_view = CheckoutConfirmView()
+                    try:
+                        with transaction.atomic():
+                            if session.item_type == 'MEAL_PLAN':
+                                confirm_view._confirm_plan(session, client, intent_id)
+                            elif session.item_type == 'SUBSCRIPTION':
+                                confirm_view._confirm_subscription(session, client, intent_id)
+                            session.status = 'confirmed'
+                            session.save()
+                    except Exception as e:
+                        logger.error(f"Error fulfilling Stripe webhook for session {checkout_id}: {str(e)}")
+                        return Response({"status": "error", "message": str(e)}, status=500)
+
+        return Response({"status": "success", "received": True})

@@ -1,6 +1,6 @@
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
-from .models import Country, Goal, Specialization
+from .models import Country, Goal, Specialization, SubscriptionTierPricing
 from .serializers import CountrySerializer , GoalSerializer , SpecializationSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -537,6 +537,13 @@ class SubscriptionPurchaseView(APIView):
         except Client.DoesNotExist:
             return Response({"status": "error", "message": "Client not found."}, status=404)
 
+        if client.is_banned:
+            return Response({
+                "status": "error",
+                "message": "Account is suspended.",
+                "code": "ACCOUNT_BANNED"
+            }, status=403)
+
         serializer = PurchaseSubscriptionSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
@@ -545,8 +552,8 @@ class SubscriptionPurchaseView(APIView):
             }, status=400)
 
         plan_type          = serializer.validated_data['plan_type']
-        amount_paid        = serializer.validated_data['amount_paid']
         transaction_number = serializer.validated_data['transaction_number']
+        payment_intent_id  = serializer.validated_data.get('payment_intent_id')
 
         # Check duplicate transaction
         if PremiumSubscription.objects.filter(
@@ -557,8 +564,32 @@ class SubscriptionPurchaseView(APIView):
                 "message": "Transaction number already used.",
             }, status=409)
 
+        # Authoritative Server Pricing (Finding 7)
+        tier_code = 'pro_monthly' if plan_type == 'monthly' else 'pro_yearly'
+        tier = SubscriptionTierPricing.objects.filter(tier_code=tier_code).first()
+        server_price = float(tier.price) if tier else (9.99 if plan_type == 'monthly' else 89.99)
+
+        client_amount = serializer.validated_data.get('amount_paid')
+        if client_amount is not None:
+            if round(float(client_amount), 2) < round(server_price, 2):
+                return Response({
+                    "status": "error",
+                    "message": f"Price tampering detected. Server tier price is {server_price}.",
+                    "code": "PRICE_MISMATCH"
+                }, status=400)
+
+        if payment_intent_id:
+            from marketplace.stripe_utils import verify_stripe_payment_intent
+            verify_stripe_payment_intent(
+                payment_intent_id=payment_intent_id,
+                expected_amount=server_price,
+                expected_currency='usd',
+                expected_user_id=request.user.id
+            )
+
+        amount_paid = server_price
+
         # Calculate end date
-        
         from django.utils import timezone
         start_date = timezone.now()
         if plan_type == 'monthly':

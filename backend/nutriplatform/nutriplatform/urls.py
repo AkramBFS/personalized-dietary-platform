@@ -23,11 +23,11 @@ urlpatterns = [
     path('api/v1/checkout/', include('marketplace.checkout_urls')),
     path('api/v1/chatbot/', include('chatbot.urls')),
     path('api/v1/health/redis/', RedisHealthCheckView.as_view(), name='redis-health-v1'),
-    path('api/health/redis/',    RedisHealthCheckView.as_view(), name='redis-health'),
     path('api/v1/admin/subscriptions/pricing/', AdminSubscriptionPricingView.as_view(), name='admin-subscription-pricing-v1'),
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 
