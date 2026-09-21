@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import User
 from admin_panel.models import Country, Specialization
+from utils.fields import EncryptedTextField
 
 
 class Language(models.Model):
@@ -98,7 +99,7 @@ class NutritionistPatient(models.Model):
 class PatientNote(models.Model):
     nutritionist = models.ForeignKey(Nutritionist, on_delete=models.CASCADE, db_column='nutritionist_id')
     client       = models.ForeignKey('client.Client', on_delete=models.CASCADE, db_column='client_id')
-    note_content = models.TextField()
+    note_content = EncryptedTextField()
     created_at   = models.DateTimeField(auto_now_add=True)
 
     class Meta:

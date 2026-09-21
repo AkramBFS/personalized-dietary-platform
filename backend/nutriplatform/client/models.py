@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import User
 from admin_panel.models import Country, Goal
+from utils.fields import EncryptedTextField
 
 
 class Client(models.Model):
@@ -34,7 +35,7 @@ class Client(models.Model):
     bmi               = models.FloatField(null=True, blank=True)
     bmr               = models.FloatField(null=True, blank=True)
     is_banned         = models.BooleanField(default=False)
-    health_history    = models.TextField(null=True, blank=True)
+    health_history    = EncryptedTextField(null=True, blank=True)
     # add these fields to Client model, after health_history
     target_calories = models.FloatField(null=True, blank=True)
     target_protein  = models.FloatField(null=True, blank=True)
@@ -74,7 +75,7 @@ class DailyProgressMetric(models.Model):
     target_protein          = models.FloatField(null=True, blank=True)
     is_goal_achieved        = models.BooleanField(default=False)
     log_date                = models.DateField(auto_now_add=True)
-    notes                   = models.TextField(null=True, blank=True)
+    notes                   = EncryptedTextField(null=True, blank=True)
 
     class Meta:
         db_table        = 'daily_progress_metrics'

@@ -13,6 +13,7 @@ from .models import Plan, UserPlan, Invoice, Consultation
 from .serializers import (
     PlanListSerializer,
     PlanDetailSerializer,
+    MarketplacePlanPublicSerializer,
     NutritionistDirectorySerializer,
     PurchasePlanSerializer,
     UserPlanSerializer,
@@ -98,7 +99,7 @@ class MarketplacePlanDetailView(APIView):
         except Plan.DoesNotExist:
             return Response({"status": "error", "message": "Plan not found."}, status=404)
 
-        serializer = PlanDetailSerializer(plan)
+        serializer = MarketplacePlanPublicSerializer(plan)
         return Response({"status": "success", "data": serializer.data})
 
 

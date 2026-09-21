@@ -9,6 +9,7 @@ from .models import User
 from client.models import Client
 from nutritionist.models import Nutritionist, NutritionistLanguage, Language
 from admin_panel.models import Country, Goal, Specialization
+from nutriplatform.middleware.rls import set_rls_context
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ class RegisterClientSerializer(serializers.Serializer):
                 password = validated_data['password'],
                 role     = 'client',
             )
+            set_rls_context(user)
 
             # Handle profile photo upload
             photo_url = 'default_avatar.png'
@@ -179,6 +181,7 @@ class RegisterNutritionistSerializer(serializers.Serializer):
                 password = validated_data['password'],
                 role     = 'nutritionist',
             )
+            set_rls_context(user)
 
             # Handle file uploads
             cert_path = default_storage.save(

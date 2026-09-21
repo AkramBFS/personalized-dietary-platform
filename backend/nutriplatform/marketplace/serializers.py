@@ -58,6 +58,56 @@ class PlanDetailSerializer(serializers.ModelSerializer):
         return obj.content_json
 
 
+class MarketplacePlanPublicSerializer(serializers.ModelSerializer):
+    """
+    Finding 5 & 16: Public marketplace serializer.
+    Returns metadata and ONLY Day 1 of content_json as a preview.
+    Days 2..N are omitted to protect intellectual property.
+    Full recipe content requires verified ownership via UserPlanContentView.
+    """
+    nutritionist_username = serializers.CharField(source='creator.user.username', read_only=True)
+    nutritionist_id       = serializers.IntegerField(source='creator.nutritionist_id', read_only=True)
+    specialization_name   = serializers.CharField(source='creator.specialization.name', read_only=True)
+    country_name          = serializers.CharField(source='creator.country.name', read_only=True)
+    content_json          = serializers.SerializerMethodField()
+    is_preview            = serializers.BooleanField(default=True, read_only=True)
+
+    class Meta:
+        model  = Plan
+        fields = [
+            'id', 'title', 'description',
+            'plan_type', 'status',
+            'price', 'duration_days',
+            'free_consultations_per_week',
+            'rating_avg', 'cover_image_url',
+            'content_json', 'is_preview',
+            'nutritionist_id', 'nutritionist_username',
+            'specialization_name', 'country_name',
+            'created_at',
+        ]
+
+    def get_content_json(self, obj):
+        raw = obj.content_json
+        if isinstance(raw, str):
+            import json
+            try:
+                raw = json.loads(raw)
+            except Exception:
+                return []
+
+        if isinstance(raw, list):
+            return raw[:1] if raw else []
+
+        if isinstance(raw, dict):
+            if 'days' in raw and isinstance(raw['days'], list):
+                return {'days': raw['days'][:1], 'preview': True, 'notice': 'Purchase required for days 2+.'}
+            if 'meals' in raw and isinstance(raw['meals'], list):
+                return {'meals': raw['meals'][:1], 'preview': True, 'notice': 'Purchase required for full meal plan.'}
+            return {'preview': True, 'notice': 'Purchase required to unlock full meal plan.'}
+
+        return []
+
+
 # ── Nutritionist Directory ─────────────────────────────────────────────────────
 
 class NutritionistDirectorySerializer(serializers.ModelSerializer):

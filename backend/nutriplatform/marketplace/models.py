@@ -2,6 +2,7 @@ from django.db import models
 from users.models import User
 from client.models import Client
 from nutritionist.models import Nutritionist
+from utils.fields import EncryptedTextField
 import uuid
 
 class Plan(models.Model):
@@ -94,7 +95,7 @@ class Consultation(models.Model):
     appointment_date        = models.DateField()
     start_time              = models.TimeField()
     end_time                = models.TimeField()
-    zoom_link               = models.CharField(max_length=255, null=True, blank=True)
+    zoom_link               = EncryptedTextField(null=True, blank=True)
     status                  = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
     consultation_type       = models.CharField(max_length=30, choices=TYPE_CHOICES, default='advice_only')
     price_paid              = models.FloatField(default=0)
