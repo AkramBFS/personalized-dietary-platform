@@ -13,6 +13,7 @@ from .serializers import (
     LogoutSerializer,
     get_tokens_for_user,
 )
+from .throttles import LoginCompositeThrottle, LoginIPThrottle
 
 
 @method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='post')
@@ -96,9 +97,10 @@ class RegisterNutritionistView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     parser_classes     = [JSONParser, FormParser]
-    @method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True))
+    throttle_classes   = [LoginCompositeThrottle, LoginIPThrottle]
+
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             user   = serializer.validated_data['user']
             tokens = get_tokens_for_user(user)

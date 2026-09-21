@@ -16,6 +16,8 @@ from .models import (
 )
 from .serializers import (
     NutritionistProfileSerializer,
+    NutritionistProfileUpdateSerializer,
+    NutritionistPlanUpdateSerializer,
     AvailabilitySerializer,
     AvailabilityInputSerializer,
     HolidaySerializer,
@@ -28,6 +30,7 @@ from marketplace.models import Consultation
 from marketplace.models import Plan , Invoice
 from .serializers import NutritionistPlanSerializer, CreatePlanSerializer
 from client.models import Client
+from utils.upload_security import validate_and_sanitize_image, MAX_UPLOAD_SIZE_GENERAL
 
 # Create your views here 
 class LanguageListView(ListAPIView):
@@ -65,37 +68,40 @@ class NutritionistProfileView(APIView):
         if not nutritionist:
             return Response({"status": "error", "message": "Profile not found."}, status=404)
 
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        if 'language_ids' in data and isinstance(data['language_ids'], str):
+            try:
+                import json
+                data['language_ids'] = json.loads(data['language_ids'])
+            except (json.JSONDecodeError, ValueError):
+                return Response({"status": "error", "message": "Invalid JSON for language_ids."}, status=400)
+
+        serializer = NutritionistProfileUpdateSerializer(data=data)
+        if not serializer.is_valid():
+            return Response({"status": "error", "errors": serializer.errors}, status=400)
+
         # Handle profile photo upload
         photo = request.FILES.get('profile_photo')
         if photo:
-            path = default_storage.save(
-                f'profiles/nutritionists/{request.user.id}_{photo.name}',
-                photo
+            path = validate_and_sanitize_image(
+                photo,
+                destination_prefix='profiles/nutritionists',
+                max_size_bytes=MAX_UPLOAD_SIZE_GENERAL,
             )
             nutritionist.profile_photo_url = path
 
-        # Update simple fields
-        allowed = ['bio', 'years_experience', 'consultation_price']
-        for field in allowed:
-            if field in request.data:
-                setattr(nutritionist, field, request.data[field])
+        # Update validated fields
+        vdata = serializer.validated_data
+        if 'bio' in vdata:
+            nutritionist.bio = vdata['bio']
+        if 'years_experience' in vdata:
+            nutritionist.years_experience = vdata['years_experience']
+        if 'consultation_price' in vdata:
+            nutritionist.consultation_price = vdata['consultation_price']
 
         # Handle language_ids replacement
-        language_ids = request.data.get('language_ids')
-        if language_ids:
-            # Validate all language IDs exist
-            if isinstance(language_ids, str):
-                import json
-                language_ids = json.loads(language_ids)
-
-            valid_langs = Language.objects.filter(id__in=language_ids)
-            if valid_langs.count() != len(language_ids):
-                return Response({
-                    "status": "error",
-                    "message": "One or more language IDs are invalid."
-                }, status=400)
-
-            # Replace all languages
+        if 'language_ids' in vdata:
+            language_ids = vdata['language_ids']
             NutritionistLanguage.objects.filter(nutritionist=nutritionist).delete()
             NutritionistLanguage.objects.bulk_create([
                 NutritionistLanguage(nutritionist=nutritionist, language_id=lid)
@@ -103,8 +109,8 @@ class NutritionistProfileView(APIView):
             ])
 
         nutritionist.save()
-        serializer = NutritionistProfileSerializer(nutritionist)
-        return Response({"status": "success", "data": serializer.data})
+        resp_serializer = NutritionistProfileSerializer(nutritionist)
+        return Response({"status": "success", "data": resp_serializer.data})
 
 
 # ── Schedule ───────────────────────────────────────────────────────────────────
@@ -408,9 +414,10 @@ class NutritionistPlanListView(APIView):
         cover_image     = request.FILES.get('cover_image')
         cover_image_url = 'default_plan_cover.jpg'
         if cover_image:
-            path = default_storage.save(
-                f'plans/covers/{nutritionist.nutritionist_id}_{cover_image.name}',
-                cover_image
+            path = validate_and_sanitize_image(
+                cover_image,
+                destination_prefix='plans/covers',
+                max_size_bytes=MAX_UPLOAD_SIZE_GENERAL,
             )
             cover_image_url = path
 
@@ -503,34 +510,27 @@ class NutritionistPlanDetailView(APIView):
             }, status=400)
 
         import json
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        if 'content_json' in data and isinstance(data['content_json'], str):
+            try:
+                data['content_json'] = json.loads(data['content_json'])
+            except (json.JSONDecodeError, ValueError):
+                return Response({"status": "error", "message": "Invalid JSON format"}, status=400)
 
-        allowed = [
-            'title', 'description', 'price',
-            'duration_days', 'free_consultations_per_week',
-            'content_json',
-        ]
+        serializer = NutritionistPlanUpdateSerializer(data=data)
+        if not serializer.is_valid():
+            return Response({"status": "error", "errors": serializer.errors}, status=400)
 
-        for field in allowed:
-            if field in request.data:
-                value = request.data[field]
-
-                if field == 'content_json' and isinstance(value, str):
-                    try:
-                        value = json.loads(value)
-                    except json.JSONDecodeError:
-                        return Response({
-                            "status": "error",
-                            "message": "Invalid JSON format"
-                        }, status=400)
-
-                setattr(plan, field, value)
+        for field, value in serializer.validated_data.items():
+            setattr(plan, field, value)
 
         # cover image
         cover_image = request.FILES.get('cover_image')
         if cover_image:
-            path = default_storage.save(
-                f'plans/covers/{nutritionist.nutritionist_id}_{cover_image.name}',
-                cover_image
+            path = validate_and_sanitize_image(
+                cover_image,
+                destination_prefix='plans/covers',
+                max_size_bytes=MAX_UPLOAD_SIZE_GENERAL,
             )
             plan.cover_image_url = path
 

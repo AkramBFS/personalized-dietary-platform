@@ -27,8 +27,12 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CreatePostSerializer(serializers.Serializer):
-    content = serializers.CharField()
+    content = serializers.CharField(min_length=1, max_length=5000)
     image   = serializers.ImageField(required=False)
+
+
+class CreateCommentSerializer(serializers.Serializer):
+    content = serializers.CharField(min_length=1, max_length=2000)
 
 
 class BlogSerializer(serializers.ModelSerializer):

@@ -256,3 +256,31 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'client_username',
             'nutritionist_username',
         ]
+
+
+class NutritionistProfileUpdateSerializer(serializers.Serializer):
+    bio = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    years_experience = serializers.IntegerField(min_value=0, max_value=70, required=False)
+    consultation_price = serializers.FloatField(min_value=0, max_value=10000, required=False)
+    language_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+        allow_empty=True,
+    )
+
+    def validate_language_ids(self, value):
+        if value:
+            valid_count = Language.objects.filter(id__in=value).count()
+            if valid_count != len(set(value)):
+                raise serializers.ValidationError("One or more language IDs are invalid.")
+        return value
+
+
+class NutritionistPlanUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(max_length=5000, required=False, allow_blank=True)
+    price = serializers.FloatField(min_value=0, max_value=100000, required=False)
+    duration_days = serializers.IntegerField(min_value=1, max_value=365, required=False)
+    free_consultations_per_week = serializers.IntegerField(min_value=0, max_value=50, required=False)
+    content_json = serializers.JSONField(required=False)
+

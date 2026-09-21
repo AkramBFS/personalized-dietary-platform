@@ -699,21 +699,19 @@ class AdminInquiryRespondView(APIView):
     def patch(self, request, pk):
         from community.models import FeedbackToAdmin
         from notifications.utils import notify
+        from .serializers import AdminInquiryReplySerializer
 
         try:
             inquiry = FeedbackToAdmin.objects.select_related('user').get(id=pk)
         except FeedbackToAdmin.DoesNotExist:
             return Response({"status": "error", "message": "Inquiry not found."}, status=404)
 
-        admin_response = request.data.get('admin_response')
-        if not admin_response:
-            return Response({
-                "status":  "error",
-                "message": "admin_response is required."
-            }, status=400)
+        serializer = AdminInquiryReplySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"status": "error", "errors": serializer.errors}, status=400)
 
-        inquiry.admin_response = admin_response
-        inquiry.status         = request.data.get('status', 'resolved')
+        inquiry.admin_response = serializer.validated_data['admin_response']
+        inquiry.status         = serializer.validated_data.get('status', 'resolved')
         inquiry.save()
 
         # Notify the client
@@ -814,36 +812,25 @@ class AdminSubscriptionPricingView(APIView):
 
     def put(self, request):
         from .models import SubscriptionTierPricing
-        from .serializers import SubscriptionTierPricingSerializer
-        from decimal import Decimal, InvalidOperation
+        from .serializers import SubscriptionTierPricingSerializer, AdminSubscriptionPricingUpdateSerializer
 
         self._get_or_create_defaults()
-        data = request.data
-        if not isinstance(data, dict):
+        if not isinstance(request.data, dict):
             return Response({"status": "error", "message": "Expected JSON object."}, status=400)
 
-        monthly_price = data.get('monthly')
-        yearly_price = data.get('yearly')
+        serializer = AdminSubscriptionPricingUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"status": "error", "errors": serializer.errors}, status=400)
 
-        if 'pro_monthly' in data:
-            monthly_price = data['pro_monthly']
-        if 'pro_yearly' in data:
-            yearly_price = data['pro_yearly']
+        vdata = serializer.validated_data
+        monthly_price = vdata.get('monthly') or vdata.get('pro_monthly')
+        yearly_price  = vdata.get('yearly') or vdata.get('pro_yearly')
 
-        try:
-            if monthly_price is not None:
-                dec_monthly = Decimal(str(monthly_price))
-                if dec_monthly < 0:
-                    return Response({"status": "error", "message": "Price cannot be negative."}, status=400)
-                SubscriptionTierPricing.objects.filter(billing_cycle='monthly').update(price=dec_monthly)
+        if monthly_price is not None:
+            SubscriptionTierPricing.objects.filter(billing_cycle='monthly').update(price=monthly_price)
 
-            if yearly_price is not None:
-                dec_yearly = Decimal(str(yearly_price))
-                if dec_yearly < 0:
-                    return Response({"status": "error", "message": "Price cannot be negative."}, status=400)
-                SubscriptionTierPricing.objects.filter(billing_cycle='yearly').update(price=dec_yearly)
-        except (InvalidOperation, ValueError, TypeError):
-            return Response({"status": "error", "message": "Invalid price value provided."}, status=400)
+        if yearly_price is not None:
+            SubscriptionTierPricing.objects.filter(billing_cycle='yearly').update(price=yearly_price)
 
         tiers = SubscriptionTierPricing.objects.all().order_by('id')
         serializer = SubscriptionTierPricingSerializer(tiers, many=True)

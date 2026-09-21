@@ -27,6 +27,7 @@ THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'axes',
 ]
 
 LOCAL_APPS = [
@@ -59,7 +60,22 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'nutriplatform.middleware.rls.RLSMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
+
+# ─── Authentication Backends ──────────────────────────────────────────────────
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# ─── Django Axes (Brute Force Protection) ──────────────────────────────────────
+AXES_FAILURE_LIMIT      = 5
+AXES_COOLOFF_TIME       = 0.5  # 30 minutes
+AXES_LOCKOUT_CALLABLE   = 'users.throttles.axes_lockout_response'
+AXES_RESET_ON_SUCCESS   = True
+AXES_CLIENT_IP_CALLABLE = 'users.throttles.get_client_ip'
+
 # ── CORS ───────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',      # Nextjs dev server
@@ -149,8 +165,12 @@ REST_FRAMEWORK = {
 
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 
-
-    
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '30/minute',
+        'user': '120/minute',
+        'login_composite': '5/minute',
+        'login_ip': '20/hour',
+    },
 }
 
 # ─── SimpleJWT ───────────────────────────────────────────────────────────────

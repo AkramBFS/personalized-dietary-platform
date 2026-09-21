@@ -9,9 +9,11 @@ from .models import Post, Comment, Blog
 from .serializers import (
     PostSerializer,
     CreatePostSerializer,
+    CreateCommentSerializer,
     CommentSerializer,
     BlogSerializer,
 )
+from utils.upload_security import validate_and_sanitize_image, MAX_UPLOAD_SIZE_GENERAL
 
 
 # ── Public Posts ───────────────────────────────────────────────────────────────
@@ -46,7 +48,11 @@ class ClientPostCreateView(APIView):
         image     = request.FILES.get('image')
         image_url = None
         if image:
-            path      = default_storage.save(f'posts/{request.user.id}_{image.name}', image)
+            path      = validate_and_sanitize_image(
+                image,
+                destination_prefix='posts',
+                max_size_bytes=MAX_UPLOAD_SIZE_GENERAL,
+            )
             image_url = path
 
         post = Post.objects.create(
@@ -100,14 +106,14 @@ class CommentCreateView(APIView):
         except Post.DoesNotExist:
             return Response({"status": "error", "message": "Post not found."}, status=404)
 
-        content = request.data.get('content')
-        if not content:
-            return Response({"status": "error", "message": "content is required."}, status=400)
+        serializer = CreateCommentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"status": "error", "errors": serializer.errors}, status=400)
 
         comment = Comment.objects.create(
             post    = post,
             user    = request.user,
-            content = content,
+            content = serializer.validated_data['content'],
         )
 
         return Response({

@@ -676,15 +676,18 @@ class AICalorieSubmitView(APIView):
                 "message": "meal_type must be: breakfast, lunch, dinner, or snack."
             }, status=400)
 
-        if image.size > 10 * 1024 * 1024:
-            return Response({"status": "error", "message": "Image must be under 10 MB."}, status=400)
-
-        # Save original image
-        from django.core.files.storage import default_storage
-        image_path = default_storage.save(
-            f'ai_logs/original/{client.client_id}/{image.name}',
-            image
-        )
+        # Validate and sanitize original food image (10MB max limit)
+        from utils.upload_security import validate_and_sanitize_image, MAX_UPLOAD_SIZE_AI
+        from rest_framework.exceptions import ValidationError
+        try:
+            image_path = validate_and_sanitize_image(
+                image,
+                destination_prefix=f'ai_logs/original/{client.client_id}',
+                max_size_bytes=MAX_UPLOAD_SIZE_AI,
+            )
+        except ValidationError as e:
+            detail = e.detail.get('file', str(e.detail)) if isinstance(e.detail, dict) else str(e.detail)
+            return Response({"status": "error", "message": str(detail)}, status=400)
 
         # Create log with processing status
         log = AICalorieLog.objects.create(

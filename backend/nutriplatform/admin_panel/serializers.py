@@ -121,3 +121,15 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'transaction_number',
             'start_date', 'end_date', 'status',
         ]
+
+
+class AdminInquiryReplySerializer(serializers.Serializer):
+    admin_response = serializers.CharField(min_length=1, max_length=5000)
+    status         = serializers.ChoiceField(choices=['open', 'in_progress', 'resolved', 'closed'], default='resolved')
+
+
+class AdminSubscriptionPricingUpdateSerializer(serializers.Serializer):
+    monthly     = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
+    yearly      = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
+    pro_monthly = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
+    pro_yearly  = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
