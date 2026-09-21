@@ -12,10 +12,10 @@ def process_ai_image(image_file) -> dict:
     try:
         image_file.seek(0)
 
-        secret = getattr(settings, 'AI_SERVICE_SECRET_KEY', '')
-        headers = {}
-        if secret:
-            headers['X-Internal-Secret'] = secret
+        secret = getattr(settings, 'AI_SERVICE_SECRET_KEY', None)
+        if not secret:
+            raise RuntimeError("AI_SERVICE_SECRET_KEY is not configured on backend. Refusing unauthenticated AI call.")
+        headers = {'X-Internal-Secret': secret}
 
         response = requests.post(
             f"{AI_SERVICE_URL}/segment?visualize=true",

@@ -168,7 +168,14 @@ CALORIE_NINJAS_KEY = config('CALORIE_NINJAS_KEY')
 
 USE_TZ = True   
 AI_SERVICE_URL = config('AI_SERVICE_URL', default='http://127.0.0.1:8001')
-AI_SERVICE_SECRET_KEY = config('AI_SERVICE_SECRET_KEY', default='nutriplatform-ai-internal-secret-2026')
+AI_SERVICE_SECRET_KEY = config('AI_SERVICE_SECRET_KEY')
+ENCRYPTION_PRIMARY_KEY = config('ENCRYPTION_PRIMARY_KEY', default='')
+ENCRYPTION_FALLBACK_KEYS = config('ENCRYPTION_FALLBACK_KEYS', default='')
+ALLOWED_TURNSTILE_HOSTNAMES = [
+    h.strip() for h in config('ALLOWED_TURNSTILE_HOSTNAMES', default='localhost,127.0.0.1,nutriplatform.com').split(',') if h.strip()
+]
+TURNSTILE_SITE_KEY = config('TURNSTILE_SITE_KEY', default='1x00000000000000000000AA')
+TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='1x0000000000000000000000000000000AA')
 
 SPECTACULAR_SETTINGS = {
     'TITLE':       'NutriPlatform API',

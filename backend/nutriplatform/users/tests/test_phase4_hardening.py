@@ -1,3 +1,4 @@
+import unittest
 from unittest.mock import patch, MagicMock
 from django.test import override_settings
 from django.core.cache import caches
@@ -9,6 +10,16 @@ from users.models import User
 from client.models import Client, AICalorieLog
 from admin_panel.models import Country, Goal, Specialization
 from client.apiNinja import get_nutrition_data
+
+
+def is_redis_available():
+    try:
+        from django_redis import get_redis_connection
+        conn = get_redis_connection("ratelimit")
+        conn.ping()
+        return True
+    except Exception:
+        return False
 
 
 class Phase4HardeningTests(APITestCase):
@@ -71,6 +82,7 @@ class Phase4HardeningTests(APITestCase):
 
     # ── 1. BE-018: Redis Rate Limiting & Health Probe ─────────────────────────
 
+    @unittest.skipUnless(is_redis_available(), "Redis server is not running on 127.0.0.1:6379")
     def test_redis_health_probe(self):
         """GET /api/v1/health/redis/ should confirm Redis connection and ratelimit db."""
         resp = self.client.get("/api/v1/health/redis/")
@@ -79,6 +91,7 @@ class Phase4HardeningTests(APITestCase):
         self.assertEqual(resp.data["redis"], "connected")
         self.assertEqual(resp.data["ratelimit_db"], "active")
 
+    @unittest.skipUnless(is_redis_available(), "Redis server is not running on 127.0.0.1:6379")
     @override_settings(RATELIMIT_ENABLE=True)
     def test_rate_limiting_triggered_after_5_attempts(self):
         """After 5 POST attempts from the same IP, the 6th must receive HTTP 429."""
@@ -99,6 +112,7 @@ class Phase4HardeningTests(APITestCase):
             self.assertEqual(resp.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
             self.assertEqual(resp.data.get("code"), "RATE_LIMITED")
 
+    @unittest.skipUnless(is_redis_available(), "Redis server is not running on 127.0.0.1:6379")
     @override_settings(RATELIMIT_ENABLE=True)
     def test_multi_client_shared_redis_rate_limit_bucket(self):
         """Two separate client/worker contexts hitting the same IP share the Redis rate limit bucket."""

@@ -7,6 +7,7 @@ import base64
 from pathlib import Path
 from urllib.parse import quote
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
@@ -95,7 +96,17 @@ print(f"  Input    : {input_name}")
 for o in session.get_outputs():
     print(f"  Output   : {o.name} {o.shape}")
 
-app = FastAPI(title="FoodInsSeg API", version="2.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    secret = os.getenv("AI_SERVICE_SECRET_KEY", "")
+    if not secret or len(secret.strip()) < 16:
+        raise RuntimeError(
+            "FATAL: AI_SERVICE_SECRET_KEY environment variable is missing or too short (minimum 16 characters required). "
+            "Refusing to start unauthenticated AI service."
+        )
+    yield
+
+app = FastAPI(title="FoodInsSeg API", version="2.0", lifespan=lifespan)
 if (BASE_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 if (BASE_DIR / "templates").exists():
