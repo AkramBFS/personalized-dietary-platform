@@ -40,6 +40,8 @@ def verify_stripe_payment_intent(
 
     try:
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        if hasattr(intent, 'to_dict'):
+            intent = intent.to_dict()
     except stripe.error.StripeError as e:
         logger.error(f"Stripe PaymentIntent retrieval failed for {payment_intent_id}: {str(e)}")
         raise ValidationError(f"Invalid PaymentIntent ID or Stripe error: {str(e)}")
@@ -90,6 +92,8 @@ def construct_stripe_event(payload: bytes, sig_header: str):
         event = stripe.Webhook.construct_event(
             payload, sig_header, webhook_secret
         )
+        if hasattr(event, 'to_dict'):
+            return event.to_dict()
         return event
     except ValueError as e:
         raise ValidationError(f"Invalid webhook payload: {str(e)}")

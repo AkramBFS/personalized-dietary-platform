@@ -37,7 +37,7 @@ class SubscriptionPricingTests(TestCase):
     def test_admin_can_update_subscription_pricing(self):
         self.client.force_authenticate(user=self.admin_user)
         update_payload = {"monthly": 29.99, "yearly": 249.99}
-        response = self.client.put("/api/v1/admin/subscriptions/pricing/", update_payload, format="json")
+        response = self.client.put("/api/v1/lookup/admin/subscriptions/pricing/", update_payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify through client view as well
@@ -49,8 +49,16 @@ class SubscriptionPricingTests(TestCase):
 
     def test_unauthorized_user_cannot_update_pricing(self):
         self.client.force_authenticate(user=self.regular_user)
-        response = self.client.put("/api/v1/admin/subscriptions/pricing/", {"monthly": 5.0}, format="json")
+        response = self.client.put("/api/v1/lookup/admin/subscriptions/pricing/", {"monthly": 5.0}, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_retired_top_level_route_returns_404(self):
+        """Verify the legacy top-level duplicate route has been removed and returns 404."""
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.get("/api/v1/admin/subscriptions/pricing/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response_put = self.client.put("/api/v1/admin/subscriptions/pricing/", {"monthly": 10.0}, format="json")
+        self.assertEqual(response_put.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class BlogCategoryTests(TestCase):

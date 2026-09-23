@@ -163,3 +163,34 @@ class AuthIntegrationTests(APITestCase):
         }, format="json")
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(resp.data.get("code"), "ACCOUNT_REJECTED")
+
+    def test_historical_committed_tokens_rejected_and_blacklisted(self):
+        """Historical leaked tokens discovered in commit 813f054 are confirmed blacklisted and rejected."""
+        historical_refresh_token = (
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+            "eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3ODQyNjUyOCwiaWF0IjoxNzc3ODIxNzI4LCJqdGkiOiI2MGVkYzkxYjIzMmM0M2YyYTc4MTIyOWFhMWFhYjg2OCIsInVzZXJfaWQiOiIxNSJ9."
+            "Eua4pAHyB5qjG5tbjZ8K2YITeM12F3HeYV0ZVKrkNfo"
+        )
+        historical_access_token = (
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+            "eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc3ODI1MzI4LCJpYXQiOjE3Nzc4MjE3MzAsImp0aSI6ImU2ODI0MjMxZGNkZTRjZTg5MzI0ZmU2NmI2OTcyNzgwIiwidXNlcl9pZCI6IjE1In0."
+            "ceG26Mt6ss--qpbbC5po9XlTCJmzCo7g2S7P1WBhZ1E"
+        )
+
+        from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+        self.assertTrue(
+            BlacklistedToken.objects.filter(token__jti="60edc91b232c43f2a781229aa1aab868").exists(),
+            "Historical token JTI must be present in BlacklistedToken."
+        )
+
+        # Refreshing must fail
+        refresh_resp = self.client.post("/api/v1/auth/token/refresh/", {
+            "refresh": historical_refresh_token
+        }, format="json")
+        self.assertEqual(refresh_resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Access with leaked access token must fail
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {historical_access_token}")
+        access_resp = self.client.get("/api/v1/client/profile/")
+        self.assertEqual(access_resp.status_code, status.HTTP_401_UNAUTHORIZED)
+

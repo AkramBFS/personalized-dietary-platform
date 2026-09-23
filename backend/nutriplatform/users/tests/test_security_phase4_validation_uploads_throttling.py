@@ -275,7 +275,7 @@ class UniversalValidationEndpointTests(TestCase):
 
         # Reject negative monthly price
         req = self.factory.put(
-            "/api/v1/admin/subscriptions/pricing/",
+            "/api/v1/lookup/admin/subscriptions/pricing/",
             {"monthly": -10.0},
             format="json"
         )
@@ -285,7 +285,7 @@ class UniversalValidationEndpointTests(TestCase):
 
         # Accept valid pricing update
         req = self.factory.put(
-            "/api/v1/admin/subscriptions/pricing/",
+            "/api/v1/lookup/admin/subscriptions/pricing/",
             {"monthly": "14.99", "yearly": "119.99"},
             format="json"
         )
@@ -341,4 +341,48 @@ class ThrottlesAndLockoutTests(TestCase):
             self.assertTrue(hashed.startswith("argon2"), f"Password hash must use argon2 algorithm, got: {hashed[:10]}")
             hasher = identify_hasher(hashed)
             self.assertEqual(hasher.algorithm, "argon2")
+
+
+class ReverseProxyAndSslSecurityTests(TestCase):
+    """
+    Asserts reverse proxy header handling (SECURE_PROXY_SSL_HEADER) and SSL redirect behavior.
+    Prevents cleartext traffic leakage, spoofed headers, and redirect loops.
+    """
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+
+    def test_secure_proxy_ssl_header_honored(self):
+        """When reverse proxy forwards HTTP_X_FORWARDED_PROTO='https', request.is_secure() returns True."""
+        req_https = self.factory.get("/api/v1/health/redis/", HTTP_X_FORWARDED_PROTO="https")
+        self.assertTrue(req_https.is_secure())
+        self.assertEqual(req_https.scheme, "https")
+
+        req_http = self.factory.get("/api/v1/health/redis/", HTTP_X_FORWARDED_PROTO="http")
+        self.assertFalse(req_http.is_secure())
+        self.assertEqual(req_http.scheme, "http")
+
+    def test_secure_ssl_redirect_redirects_insecure_requests(self):
+        """When SECURE_SSL_REDIRECT=True, insecure HTTP requests are redirected via 301 to HTTPS."""
+        from django.test import override_settings
+
+        with override_settings(
+            SECURE_SSL_REDIRECT=True,
+            SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https'),
+        ):
+            # Insecure request (HTTP) without proxy SSL header
+            response = self.client.get("/api/v1/health/redis/", HTTP_X_FORWARDED_PROTO="http")
+            self.assertEqual(response.status_code, 301)
+            self.assertTrue(response["Location"].startswith("https://"))
+
+            # Secure forwarded request (HTTPS) should proceed without 301 redirect
+            response_ssl = self.client.get("/api/v1/health/redis/", HTTP_X_FORWARDED_PROTO="https")
+            self.assertNotEqual(response_ssl.status_code, 301)
+
+    def test_security_headers_enforced_by_middleware(self):
+        """Verify standard security headers are present in HTTP responses."""
+        response = self.client.get("/api/v1/health/redis/")
+        self.assertEqual(response.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(response.headers.get("X-Frame-Options"), "DENY")
+
 

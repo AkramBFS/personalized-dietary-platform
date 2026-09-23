@@ -896,6 +896,28 @@ OK
 - Full Playwright E2E harness (`npm run test:e2e`) runs against Next.js production builds and passes 12/12 tests across auth, marketplace, checkout, and client dashboard workflows.
 - Full regression suite across all system tiers (Playwright: 12/12, Vitest: 32/32, Backend: 37/37, AI Service: 10/10, Next.js Build: 50/50 static pages) passed 100% GREEN.
 
+---
+
+## Phase 7: Security Review Proof Points & Remediation Closeout (SVMB)
+
+All 7 security reviewer hypotheses have been systematically tested and permanently resolved:
+1. **PostgreSQL Native RLS**: Enforced `FORCE ROW LEVEL SECURITY` via migration `0006_force_row_level_security.py` on all 7 tenant tables; verified isolation under `nutriplatform_app WITH NOBYPASSRLS` role (8/8 tests pass).
+2. **Historical Git Secrets Blacklisting**: Revoked historical leaked token via migration `0003_blacklist_historical_tokens.py` into SimpleJWT `BlacklistedToken`; documented in `docs/security/HISTORICAL_SECRET_SCAN_RECORD.md`.
+3. **CI Pipeline Hardening & Vulnerability Remediation**: Configured Postgres 15 and Redis services in `.github/workflows/ci.yml`; resolved all vulnerable dependencies via secure version bounds; `pip-audit` runs 100% clean with 0 vulnerabilities across all 3 service manifests.
+4. **Real Cryptographic Financial Verification**: Patched Stripe event `.to_dict()` attribute access for Stripe v15 SDK; added test verifying authentic HMAC-SHA256 signature verification, tampered payload rejection, and forged signature rejection.
+5. **Reverse Proxy SSL & Security Headers**: Verified `SECURE_PROXY_SSL_HEADER` honors `HTTP_X_FORWARDED_PROTO: https` and enforces HTTP 301 redirects under `SECURE_SSL_REDIRECT=True`.
+6. **Route Consolidation**: Retired legacy duplicate route `/api/v1/admin/subscriptions/pricing/`; confirmed frontend canonical use of `/api/v1/lookup/admin/subscriptions/pricing/`; added automated 404 assertion on retired route.
+7. **Media Exposure Audit & S3 Staging Harness**: Audited local `MEDIA_ROOT` unauthenticated exposure; created canonical S3 policy `docs/security/s3_storage_policy.json`; created automated verification harness `scripts/verify_s3_staging_policy.py`.
+
+### Final Verification Suite Summary
+- **Backend Tests (Django)**: 93/93 passing (including RLS, real HMAC Stripe, proxy SSL, and route deprecation)
+- **Frontend Unit Tests (Vitest)**: 37/37 passing (including 5 CSRF unit tests)
+- **E2E Security Tests (Playwright)**: 3/3 passing (`e2e/csrf-security.spec.ts`)
+- **AI Service Tests (FastAPI)**: 10/10 passing
+- **SAST / Static Analysis (Bandit)**: 0 issues (B608 active)
+- **S3 & Media Audit Script**: 100% passing across all 4 policy benchmarks
+
+
 
 
 

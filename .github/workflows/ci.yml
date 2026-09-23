@@ -43,9 +43,13 @@ jobs:
         run: |
           bandit -r backend/nutriplatform ai-service/food_api -x "**/venv/**,**/.venv/**,**/tests/**,**/migrations/**" -ll
 
-      - name: Run pip-audit on Backend Dependencies
+      - name: Run pip-audit on Monorepo Root Dependencies
         run: |
           pip-audit -r requirements.txt
+
+      - name: Run pip-audit on Backend Dependencies
+        run: |
+          pip-audit -r backend/nutriplatform/requirements.txt
 
       - name: Run pip-audit on AI Service Dependencies
         run: |
@@ -91,6 +95,29 @@ jobs:
   backend-tests:
     name: Django Backend Test Suite
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: nutriplatform_ci_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -104,15 +131,23 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r backend/nutriplatform/requirements.txt
 
-      - name: Run Django Tests
+      - name: Run Django Migrations and Tests
         working-directory: backend/nutriplatform
         env:
           SECRET_KEY: "ci-secret-key-do-not-use-in-production-1234567890"
           AI_SERVICE_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
           ENCRYPTION_PRIMARY_KEY: "c3Ryb25nLWZlcm5ldC1rZXktZm9yLXRlc3RpbmctMTIzNDU="
           DEBUG: "True"
+          DB_NAME: "nutriplatform_ci_test"
+          DB_USER: "postgres"
+          DB_PASSWORD: "postgrespassword"
+          DB_HOST: "127.0.0.1"
+          DB_PORT: "5432"
+          REDIS_URL: "redis://127.0.0.1:6379"
+          GROQ_API_KEY: "mock-groq-api-key-ci-environment"
+          CALORIE_NINJAS_KEY: "mock-calorie-ninjas-key-ci"
         run: |
           python manage.py test
 

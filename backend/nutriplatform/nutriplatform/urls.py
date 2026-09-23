@@ -4,7 +4,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from client.views import ServiceReviewView
 from utils.health_views import RedisHealthCheckView
-from admin_panel.views import AdminSubscriptionPricingView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
@@ -23,7 +22,6 @@ urlpatterns = [
     path('api/v1/checkout/', include('marketplace.checkout_urls')),
     path('api/v1/chatbot/', include('chatbot.urls')),
     path('api/v1/health/redis/', RedisHealthCheckView.as_view(), name='redis-health-v1'),
-    path('api/v1/admin/subscriptions/pricing/', AdminSubscriptionPricingView.as_view(), name='admin-subscription-pricing-v1'),
 ]
 
 if settings.DEBUG:

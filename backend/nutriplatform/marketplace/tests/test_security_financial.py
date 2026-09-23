@@ -358,3 +358,83 @@ class SecurityFinancialTests(APITestCase):
             # Assert only 1 UserPlan and 1 Invoice created (no double crediting)
             self.assertEqual(UserPlan.objects.filter(client=self.client_profile, plan=self.plan).count(), 1)
             self.assertEqual(Invoice.objects.filter(transaction_number="pi_webhook_success_001").count(), 1)
+
+    def test_real_stripe_webhook_cryptographic_signature_verification(self):
+        """
+        Verify real HMAC-SHA256 signature calculation using Stripe's algorithm without mocking construct_stripe_event.
+        """
+        import time
+        import hmac
+        import hashlib
+
+        webhook_secret = "whsec_test_secret_for_real_hmac_verification_12345"
+        session = CheckoutSession.objects.create(
+            user=self.client_user,
+            item_type="MEAL_PLAN",
+            item_id=self.plan.id,
+            resolved_price=30.00,
+            currency="usd",
+            status="pending",
+            expires_at=timezone.now() + datetime.timedelta(minutes=30)
+        )
+
+        real_payload_dict = {
+            "id": "evt_test_real_crypto_001",
+            "object": "event",
+            "type": "payment_intent.succeeded",
+            "data": {
+                "object": {
+                    "id": "pi_real_crypto_001",
+                    "status": "succeeded",
+                    "amount_received": 3000,
+                    "currency": "usd",
+                    "metadata": {
+                        "checkout_id": str(session.checkout_id),
+                        "user_id": str(self.client_user.id)
+                    }
+                }
+            }
+        }
+        raw_payload = json.dumps(real_payload_dict)
+
+        # 1. Compute authentic Stripe signature: t={timestamp},v1={hmac}
+        timestamp = int(time.time())
+        signed_payload = f"{timestamp}.{raw_payload}".encode("utf-8")
+        computed_sig = hmac.new(
+            webhook_secret.encode("utf-8"),
+            signed_payload,
+            hashlib.sha256
+        ).hexdigest()
+        valid_sig_header = f"t={timestamp},v1={computed_sig}"
+
+        with self.settings(STRIPE_WEBHOOK_SECRET=webhook_secret):
+            # Dispatch with valid cryptographic signature without any mocks
+            resp = self.client.post(
+                "/api/v1/checkout/webhook/",
+                data=raw_payload,
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE=valid_sig_header
+            )
+            self.assertEqual(resp.status_code, status.HTTP_200_OK)
+            self.assertTrue(UserPlan.objects.filter(client=self.client_profile, plan=self.plan).exists())
+
+            # 2. Tampered payload with original signature must be rejected
+            tampered_payload = json.dumps({"id": "evt_tampered"})
+            resp_tampered = self.client.post(
+                "/api/v1/checkout/webhook/",
+                data=tampered_payload,
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE=valid_sig_header
+            )
+            self.assertEqual(resp_tampered.status_code, status.HTTP_400_BAD_REQUEST)
+
+            # 3. Forged signature must be rejected
+            forged_sig_header = f"t={timestamp},v1=deadbeefcafebabe1234567890abcdef"
+            resp_forged = self.client.post(
+                "/api/v1/checkout/webhook/",
+                data=raw_payload,
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE=forged_sig_header
+            )
+            self.assertEqual(resp_forged.status_code, status.HTTP_400_BAD_REQUEST)
+

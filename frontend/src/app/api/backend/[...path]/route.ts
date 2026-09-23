@@ -10,7 +10,7 @@ const getDjangoBaseUrl = () => {
   return url.endsWith("/") ? url : `${url}/`;
 };
 
-function validateCsrf(request: NextRequest): boolean {
+export function validateCsrf(request: NextRequest): boolean {
   const method = request.method.toUpperCase();
   if (["GET", "HEAD", "OPTIONS"].includes(method)) {
     return true;

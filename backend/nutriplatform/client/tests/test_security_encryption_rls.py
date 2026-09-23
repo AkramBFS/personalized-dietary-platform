@@ -2,13 +2,13 @@ import base64
 import os
 from cryptography.fernet import Fernet
 from django.core.management import call_command
-from django.db import connection
+from django.db import connection, transaction
 from django.test import TestCase, override_settings
 from rest_framework.test import APIRequestFactory
 
 from admin_panel.models import Country, Goal, Specialization
 from client.models import Client, DailyProgressMetric
-from marketplace.models import Consultation
+from marketplace.models import Consultation, Plan, UserPlan
 from nutritionist.models import Nutritionist, PatientNote
 from nutriplatform.middleware.rls import (
     RLSJWTAuthentication,
@@ -189,3 +189,132 @@ class SecurityEncryptionAndRLSTests(TestCase):
         req.user = self.user
         resp = middleware(req)
         self.assertEqual(resp, "ok")
+
+    def test_rls_cross_tenant_reads_blocked_under_unprivileged_role(self):
+        """
+        Verify native PostgreSQL Row-Level Security blocks cross-tenant reads
+        under the unprivileged NOBYPASSRLS role 'nutriplatform_app'.
+        """
+        if connection.vendor != 'postgresql':
+            self.skipTest("RLS tests require a PostgreSQL database")
+
+        user_b = User.objects.create_user(
+            username="client_b_rls",
+            email="client_b@test.com",
+            password="SecurePassword123!",
+            role="client",
+        )
+        client_b = Client.objects.create(
+            user=user_b,
+            country=self.country,
+            goal=self.goal,
+            age=25,
+            weight=68.0,
+            height=170.0,
+            gender="female",
+            health_history="Healthy, no chronic illnesses.",
+        )
+
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE nutriplatform_app;")
+
+            # 1. As Client A: only Client A is visible
+            set_rls_context(self.user)
+            clients_a = list(Client.objects.all())
+            self.assertEqual(len(clients_a), 1)
+            self.assertEqual(clients_a[0].client_id, self.client.client_id)
+
+            # 2. As Client B: only Client B is visible
+            set_rls_context(user_b)
+            clients_b = list(Client.objects.all())
+            self.assertEqual(len(clients_b), 1)
+            self.assertEqual(clients_b[0].client_id, client_b.client_id)
+
+            # 3. Unauthenticated / anonymous: 0 clients visible
+            clear_rls_context()
+            clients_anon = list(Client.objects.all())
+            self.assertEqual(len(clients_anon), 0)
+
+            # 4. As Staff Admin: both clients are visible
+            admin_user = User.objects.create_user(
+                username="admin_rls",
+                email="admin_rls@test.com",
+                password="SecurePassword123!",
+                role="high_admin",
+                is_staff=True,
+            )
+            set_rls_context(admin_user)
+            clients_admin = list(Client.objects.all())
+            self.assertGreaterEqual(len(clients_admin), 2)
+            admin_client_ids = {c.client_id for c in clients_admin}
+            self.assertIn(self.client.client_id, admin_client_ids)
+            self.assertIn(client_b.client_id, admin_client_ids)
+
+    def test_rls_user_plans_isolation_under_unprivileged_role(self):
+        """
+        Verify that user_plans rows are isolated per client under 'nutriplatform_app'.
+        """
+        if connection.vendor != 'postgresql':
+            self.skipTest("RLS tests require a PostgreSQL database")
+
+        user_b = User.objects.create_user(
+            username="client_plans_b",
+            email="plans_b@test.com",
+            password="SecurePassword123!",
+            role="client",
+        )
+        client_b = Client.objects.create(
+            user=user_b,
+            country=self.country,
+            goal=self.goal,
+            age=28,
+            weight=70.0,
+            height=172.0,
+            gender="male",
+        )
+
+        plan = Plan.objects.create(
+            creator=self.nutritionist,
+            title="RLS Isolation Plan",
+            description="Testing RLS",
+            plan_type="public-predefined",
+            price=20.00,
+            duration_days=7,
+            status="approved",
+        )
+
+        plan_a = UserPlan.objects.create(
+            client=self.client,
+            plan=plan,
+            current_day_index=0,
+            status='active',
+        )
+        plan_b = UserPlan.objects.create(
+            client=client_b,
+            plan=plan,
+            current_day_index=1,
+            status='active',
+        )
+
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE nutriplatform_app;")
+
+            # Client A queries user_plans: returns only plan_a
+            set_rls_context(self.user)
+            plans_for_a = list(UserPlan.objects.all())
+            self.assertEqual(len(plans_for_a), 1)
+            self.assertEqual(plans_for_a[0].id, plan_a.id)
+
+            # Client B queries user_plans: returns only plan_b
+            set_rls_context(user_b)
+            plans_for_b = list(UserPlan.objects.all())
+            self.assertEqual(len(plans_for_b), 1)
+            self.assertEqual(plans_for_b[0].id, plan_b.id)
+
+            # Anonymous queries user_plans: returns 0 rows
+            clear_rls_context()
+            plans_anon = list(UserPlan.objects.all())
+            self.assertEqual(len(plans_anon), 0)
+

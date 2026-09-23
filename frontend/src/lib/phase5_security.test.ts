@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { NextRequest } from "next/server";
 import { verifyTurnstileToken } from "./turnstile";
 import nextConfig from "../../next.config";
+import { validateCsrf } from "../app/api/backend/[...path]/route";
+
 
 describe("Phase 5: Transport, Session & Bot Hardening", () => {
   beforeEach(() => {
@@ -78,4 +81,65 @@ describe("Phase 5: Transport, Session & Bot Hardening", () => {
       expect(csp).toContain("frame-ancestors 'none'");
     });
   });
+
+  describe("Phase 5B: BFF Anti-CSRF Validation", () => {
+    it("permits safe HTTP methods unconditionally", () => {
+      const getReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", { method: "GET" });
+      expect(validateCsrf(getReq)).toBe(true);
+
+      const headReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", { method: "HEAD" });
+      expect(validateCsrf(headReq)).toBe(true);
+
+      const optReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", { method: "OPTIONS" });
+      expect(validateCsrf(optReq)).toBe(true);
+    });
+
+    it("rejects mutating requests from an untrusted cross-origin domain", () => {
+      const postReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          origin: "https://evil-attacker.com",
+          "x-requested-with": "XMLHttpRequest",
+        },
+      });
+      expect(validateCsrf(postReq)).toBe(false);
+    });
+
+    it("rejects mutating requests with an untrusted referer header", () => {
+      const putReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", {
+        method: "PUT",
+        headers: {
+          host: "localhost:3000",
+          referer: "https://phishing-site.org/malicious-form",
+          "x-requested-with": "XMLHttpRequest",
+        },
+      });
+      expect(validateCsrf(putReq)).toBe(false);
+    });
+
+    it("rejects mutating requests missing the X-Requested-With header even if same-origin", () => {
+      const postReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          origin: "http://localhost:3000",
+        },
+      });
+      expect(validateCsrf(postReq)).toBe(false);
+    });
+
+    it("permits mutating requests when origin matches host and X-Requested-With is present", () => {
+      const postReq = new NextRequest("http://localhost:3000/api/backend/client/profile/", {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          origin: "http://localhost:3000",
+          "x-requested-with": "XMLHttpRequest",
+        },
+      });
+      expect(validateCsrf(postReq)).toBe(true);
+    });
+  });
 });
+

@@ -501,6 +501,9 @@ class StripeWebhookView(APIView):
         except ValidationError as e:
             return Response({"status": "error", "message": str(e.detail)}, status=400)
 
+        if hasattr(event, 'to_dict'):
+            event = event.to_dict()
+
         event_type = event.get('type')
         if event_type == 'payment_intent.succeeded':
             intent = event['data']['object']
