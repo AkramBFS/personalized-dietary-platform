@@ -167,3 +167,8 @@ ai-service/food_api/.kilo/
 /.kilo/
 **/.kilo/
 **/.kilo/**
+
+# Test tokens
+scripts/tokens.json
+tokens.json
+*.tokens.json

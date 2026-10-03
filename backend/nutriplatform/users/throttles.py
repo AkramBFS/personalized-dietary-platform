@@ -37,6 +37,12 @@ class LoginCompositeThrottle(SimpleRateThrottle):
     """
     scope = 'login_composite'
 
+    def allow_request(self, request, view):
+        from django.conf import settings
+        if not getattr(settings, 'RATELIMIT_ENABLE', True):
+            return True
+        return super().allow_request(request, view)
+
     def get_cache_key(self, request, view):
         if request.method.upper() != 'POST':
             return None
@@ -71,6 +77,12 @@ class LoginIPThrottle(SimpleRateThrottle):
     Limits all authentication attempts to 20 per hour per IP.
     """
     scope = 'login_ip'
+
+    def allow_request(self, request, view):
+        from django.conf import settings
+        if not getattr(settings, 'RATELIMIT_ENABLE', True):
+            return True
+        return super().allow_request(request, view)
 
     def get_cache_key(self, request, view):
         if request.method.upper() != 'POST':

@@ -18,7 +18,11 @@ from .views import (
     ClientFeedbackListView,   
     AICalorieSubmitView,     
     AICalorieStatusView,    
-    AICalorieConfirmView, 
+    AICalorieActiveView,
+    AICalorieDiscardView,
+    AICalorieConfirmView,
+    AICalorieOverlayView,
+    AIQueueHealthView,
 )
 from admin_panel.views import ClientSubscriptionPricingView
 
@@ -28,9 +32,19 @@ urlpatterns = [
     path('progress/targets/',            MacroTargetView.as_view(),            name='macro-targets'),
     path('calorie-tracker/manual/',      ManualCalorieLogView.as_view(),       name='manual-log'),
     path('calorie-tracker/logs/',        CalorieLogListView.as_view(),         name='calorie-logs'),
+    
+    # AI Calorie Tracker Endpoints
     path('calorie-tracker/ai/',                       AICalorieSubmitView.as_view(),        name='ai-submit'),
+    path('calorie-tracker/ai/submit/',                AICalorieSubmitView.as_view(),        name='ai-submit-alias'),
+    path('calorie-tracker/ai/active/',                AICalorieActiveView.as_view(),        name='ai-active'),
+    path('calorie-tracker/ai/queue-health/',          AIQueueHealthView.as_view(),          name='ai-queue-health'),
     path('calorie-tracker/ai/<int:log_id>/',          AICalorieStatusView.as_view(),        name='ai-status'),
+    path('calorie-tracker/ai/<int:log_id>/status/',   AICalorieStatusView.as_view(),        name='ai-status-alias'),
     path('calorie-tracker/ai/<int:log_id>/confirm/',  AICalorieConfirmView.as_view(),       name='ai-confirm'),
+    path('calorie-tracker/ai/<int:log_id>/discard/',  AICalorieDiscardView.as_view(),       name='ai-discard'),
+    path('calorie-tracker/ai/<int:log_id>/cancel/',   AICalorieDiscardView.as_view(),       name='ai-cancel'),
+    path('calorie-tracker/ai/<int:log_id>/overlay/',  AICalorieOverlayView.as_view(),       name='ai-overlay'),
+
     path('consultations/',               ClientConsultationListView.as_view(), name='client-consultations'),
     path('consultations/book/',          ConsultationBookView.as_view(),       name='consultation-book'),
     path('user-plans/',                  UserPlanListView.as_view(),           name='user-plans'),
@@ -42,5 +56,4 @@ urlpatterns = [
     path('feedback/list/',               ClientFeedbackListView.as_view(),     name='client-feedback-list'),
     path('reviews/',                     ServiceReviewView.as_view(),          name='client-reviews'),
     path('subscriptions/pricing/',       ClientSubscriptionPricingView.as_view(), name='client-subscription-pricing'),
-
-]
+]

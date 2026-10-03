@@ -30,3 +30,14 @@ class RedisHealthCheckView(APIView):
                 "redis": "unreachable",
                 "message": str(e),
             }, status=503)
+
+
+class LiveHealthCheckView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            "status": "ok",
+            "service": "nutriplatform-backend",
+        }, status=200)
+

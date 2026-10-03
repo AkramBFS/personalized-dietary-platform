@@ -1,0 +1,213 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: nutriplatform_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nutriplatform_db}
+      POSTGRES_USER: ${POSTGRES_USER:-nutriplatform_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nutriplatform_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nutriplatform_user} -d ${POSTGRES_DB:-nutriplatform_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nutriplatform_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: ./backend/nutriplatform
+      dockerfile: Dockerfile
+    container_name: nutriplatform_migrate
+    command: python manage.py migrate --noinput
+    environment:
+      DB_NAME: ${POSTGRES_DB:-nutriplatform_db}
+      DB_USER: ${POSTGRES_USER:-nutriplatform_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-nutriplatform_password}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY:-temporary-migration-secret-key-1234567890}
+      DEBUG: "False"
+      REDIS_URL: redis://redis:6379
+      AI_SERVICE_URL: http://ai-service:8001
+      AI_SERVICE_SECRET_KEY: ${AI_SERVICE_SECRET_KEY:-0123456789abcdef0123456789abcdef}
+      GROQ_API_KEY: ${GROQ_API_KEY:-dummy-groq-key}
+      CALORIE_NINJAS_KEY: ${CALORIE_NINJAS_KEY:-dummy-calorie-ninjas-key}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend_net
+
+  backend:
+    build:
+      context: ./backend/nutriplatform
+      dockerfile: Dockerfile
+    container_name: nutriplatform_backend
+    restart: unless-stopped
+    environment:
+      DB_NAME: ${POSTGRES_DB:-nutriplatform_db}
+      DB_USER: ${POSTGRES_USER:-nutriplatform_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-nutriplatform_password}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY:-change_this_django_secret_key_in_production}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend,frontend}
+      REDIS_URL: redis://redis:6379
+      AI_SERVICE_URL: http://ai-service:8001
+      AI_SERVICE_SECRET_KEY: ${AI_SERVICE_SECRET_KEY:-0123456789abcdef0123456789abcdef}
+      ENCRYPTION_PRIMARY_KEY: ${ENCRYPTION_PRIMARY_KEY:-c3Ryb25nLWZlcm5ldC1rZXktZm9yLXRlc3RpbmctMTIzNDU=}
+      ENCRYPTION_FALLBACK_KEYS: ${ENCRYPTION_FALLBACK_KEYS:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      CALORIE_NINJAS_KEY: ${CALORIE_NINJAS_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-1x0000000000000000000000000000000AA}
+      ALLOWED_TURNSTILE_HOSTNAMES: ${ALLOWED_TURNSTILE_HOSTNAMES:-localhost,127.0.0.1}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+    volumes:
+      - media_data:/app/media
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend_net
+      - internal_ai_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health/live/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ./backend/nutriplatform
+      dockerfile: Dockerfile
+    container_name: nutriplatform_worker
+    restart: unless-stopped
+    command: python manage.py run_ai_worker --concurrency 1
+    environment:
+      DB_NAME: ${POSTGRES_DB:-nutriplatform_db}
+      DB_USER: ${POSTGRES_USER:-nutriplatform_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-nutriplatform_password}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY:-change_this_django_secret_key_in_production}
+      DEBUG: "False"
+      REDIS_URL: redis://redis:6379
+      AI_SERVICE_URL: http://ai-service:8001
+      AI_SERVICE_SECRET_KEY: ${AI_SERVICE_SECRET_KEY:-0123456789abcdef0123456789abcdef}
+      CALORIE_NINJAS_KEY: ${CALORIE_NINJAS_KEY:-}
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend_net
+      - internal_ai_net
+
+  ai-service:
+    build:
+      context: ./ai-service/food_api
+      dockerfile: Dockerfile
+    container_name: nutriplatform_ai_service
+    restart: unless-stopped
+    environment:
+      AI_SERVICE_HOST: "0.0.0.0"
+      AI_SERVICE_PORT: "8001"
+      AI_SERVICE_SECRET_KEY: ${AI_SERVICE_SECRET_KEY:-0123456789abcdef0123456789abcdef}
+      AI_MODEL_PATH: "/app/models/best_foodinsseg.onnx"
+      AI_ONNX_INTRA_THREADS: ${AI_ONNX_INTRA_THREADS:-3}
+      AI_ONNX_INTER_THREADS: ${AI_ONNX_INTER_THREADS:-1}
+      AI_MAX_CONCURRENT_INFERENCES: ${AI_MAX_CONCURRENT_INFERENCES:-1}
+      AI_MAX_WAITING: ${AI_MAX_WAITING:-4}
+      AI_ALLOW_MISSING_MODEL: "false"
+    volumes:
+      - ${AI_MODEL_HOST_PATH:-./ai-service/food_api/best_foodinsseg.onnx}:/app/models/best_foodinsseg.onnx:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 2048M
+    networks:
+      - internal_ai_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000/api/v1/}
+        NEXT_PUBLIC_DJANGO_ORIGIN: ${NEXT_PUBLIC_DJANGO_ORIGIN:-http://127.0.0.1:8000}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
+      container_name: nutriplatform_frontend
+      restart: unless-stopped
+      environment:
+        INTERNAL_DJANGO_URL: http://backend:8000/api/v1/
+        NODE_ENV: production
+      ports:
+        - "3000:3000"
+      depends_on:
+        backend:
+          condition: service_healthy
+      networks:
+        - backend_net
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+        interval: 15s
+        timeout: 5s
+        retries: 5
+
+networks:
+  backend_net:
+    driver: bridge
+  internal_ai_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:

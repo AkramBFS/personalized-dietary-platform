@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from decouple import config
 from datetime import timedelta
 
@@ -70,6 +71,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # ─── Django Axes (Brute Force Protection) ──────────────────────────────────────
+AXES_ENABLED            = not ('test' in sys.argv)
 AXES_FAILURE_LIMIT      = 5
 AXES_COOLOFF_TIME       = 0.5  # 30 minutes
 AXES_LOCKOUT_CALLABLE   = 'users.throttles.axes_lockout_response'
@@ -264,4 +266,36 @@ RATELIMIT_USE_CACHE = 'ratelimit'
 
 import sys
 TESTING = 'test' in sys.argv
-RATELIMIT_ENABLE = not TESTING
+RATELIMIT_ENABLE = not TESTING
+
+# ─── AI Pipeline & Background Queue Configuration ────────────────────────────
+AI_IMAGE_MAX_PIXELS = config('AI_IMAGE_MAX_PIXELS', default=40000000, cast=int)  # 40 Megapixels
+AI_IMAGE_MAX_BYTES = config('AI_IMAGE_MAX_BYTES', default=10 * 1024 * 1024, cast=int)  # 10 MB
+AI_IMAGE_NORMALIZED_MAX_SIDE = config('AI_IMAGE_NORMALIZED_MAX_SIDE', default=2048, cast=int)  # 2048 px
+AI_IMAGE_NORMALIZED_QUALITY = config('AI_IMAGE_NORMALIZED_QUALITY', default=85, cast=int)
+AI_IMAGE_ALLOWED_FORMATS = [
+    fmt.strip().upper() for fmt in config('AI_IMAGE_ALLOWED_FORMATS', default='JPEG,PNG,WEBP').split(',') if fmt.strip()
+]
+
+# Settings-based abuse & queue limits
+AI_ASYNC_PIPELINE = config('AI_ASYNC_PIPELINE', default=True, cast=bool)  # Async background queue vs inline sync fallback
+# One outbound call per attempt: connect + read. The AI service performs the nutrition lookup itself
+# (10s httpx timeout inside the service), so nutrition time is covered by the read timeout, not added on top.
+AI_SERVICE_CONNECT_TIMEOUT = config('AI_SERVICE_CONNECT_TIMEOUT', default=10, cast=int)
+AI_SERVICE_HTTP_TIMEOUT = config('AI_SERVICE_HTTP_TIMEOUT', default=60, cast=int)  # read timeout (seconds)
+# Work the worker does after the AI call returns, within the same lease:
+AI_JOB_OVERLAY_ALLOWANCE_SECONDS = config('AI_JOB_OVERLAY_ALLOWANCE_SECONDS', default=5, cast=int)  # decode + save overlay
+AI_JOB_FINALIZE_ALLOWANCE_SECONDS = config('AI_JOB_FINALIZE_ALLOWANCE_SECONDS', default=5, cast=int)  # storage read + DB finalize
+# Lease must exceed connect + read + overlay + finalize (default 10+60+5+5 = 80s); enforced by system check client.E001.
+AI_JOB_LEASE_TIMEOUT_SECONDS = config('AI_JOB_LEASE_TIMEOUT_SECONDS', default=120, cast=int)
+AI_JOB_MAX_ATTEMPTS = config('AI_JOB_MAX_ATTEMPTS', default=3, cast=int)  # 3 total attempts
+AI_JOB_MAX_AGE_SECONDS = config('AI_JOB_MAX_AGE_SECONDS', default=180, cast=int)  # 180s absolute SLA job deadline
+AI_JOB_BACKOFF_SCHEDULE = [5, 20, 60]  # Backoff in seconds between retry attempts (5s, 20s, 60s)
+# Typical seconds of worker time per queued job; used for the ETA shown to users and for the queue-drain check.
+AI_ETA_SECONDS_PER_JOB = config('AI_ETA_SECONDS_PER_JOB', default=10, cast=int)
+
+AI_QUEUE_NAME = config('AI_QUEUE_NAME', default='nutriplatform:queue:calorie_estimates')
+AI_MAX_DAILY_PER_USER = config('AI_MAX_DAILY_PER_USER', default=30, cast=int)
+AI_MAX_IN_FLIGHT_PER_USER = config('AI_MAX_IN_FLIGHT_PER_USER', default=1, cast=int)
+AI_BURST_PER_MINUTE_PER_USER = config('AI_BURST_PER_MINUTE_PER_USER', default=6, cast=int)
+AI_GLOBAL_QUEUE_CAP = config('AI_GLOBAL_QUEUE_CAP', default=15, cast=int)
