@@ -123,21 +123,51 @@ export interface AICalorieSubmitPayload {
   image: File;
 }
 
-export interface AICalorieLog {
+export type AICalorieJobStatusType =
+  | "queued"
+  | "processing"
+  | "pending_user_review"
+  | "saved"
+  | "failed"
+  | "cancelled"
+  | "discarded"
+  | string;
+
+export interface AICalorieJobResponse {
   log_id: number;
-  status: "processing" | "pending_user_review" | "saved" | "failed" | string;
+  status: AICalorieJobStatusType;
   meal_type: MealType;
-  segmented_image_url?: string | null;
+  queue_position?: number;
+  eta_seconds?: number;
+  poll_after_ms?: number;
   predictions?: AIPrediction[];
-  ai_raw_prediction?: { predictions?: AIPrediction[] } | AIPrediction[] | null;
   nutrition_preview?: AINutritionPreview;
+  overlay_url?: string | null;
+  segmented_image_url?: string | null;
+  ai_raw_prediction?: { predictions?: AIPrediction[] } | AIPrediction[] | null;
+  error_code?: string;
+  error_message?: string;
   logged_at?: string;
+  completed_at?: string | null;
 }
+
+export interface AICalorieCancelResponse {
+  log_id: number;
+  status: "cancelled" | string;
+}
+
+export interface AICalorieDiscardResponse {
+  log_id: number;
+  status: "discarded" | string;
+}
+
+export type AICalorieLog = AICalorieJobResponse;
 
 export interface AICalorieConfirmPayload {
   meal_type: MealType;
   user_final_log: Array<{
-    label: string;
+    label?: string;
+    name?: string;
     mass_grams: number;
   }>;
 }
@@ -334,20 +364,77 @@ export async function postManualCalorieLog(payload: ManualCalorieLogPayload): Pr
   return unwrapResponse(response.data);
 }
 
-export async function postAICalorieLog(payload: AICalorieSubmitPayload): Promise<AICalorieLog> {
+export async function submitAICaloriePhoto(
+  payload: AICalorieSubmitPayload,
+  signal?: AbortSignal,
+): Promise<AICalorieJobResponse> {
   const formData = new FormData();
   formData.append("meal_type", payload.meal_type);
   formData.append("image", payload.image);
 
-  const response = await api.post<ApiEnvelope<AICalorieLog> | AICalorieLog>("/client/calorie-tracker/ai/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await api.post<ApiEnvelope<AICalorieJobResponse> | AICalorieJobResponse>(
+    "/client/calorie-tracker/ai/",
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+      signal,
+    },
+  );
   return unwrapResponse(response.data);
 }
 
-export async function getAICalorieLog(logId: number): Promise<AICalorieLog> {
-  const response = await api.get<ApiEnvelope<AICalorieLog> | AICalorieLog>(`/client/calorie-tracker/ai/${logId}/`);
+export async function getAICalorieActiveJob(
+  signal?: AbortSignal,
+): Promise<AICalorieJobResponse | null> {
+  const response = await api.get<ApiEnvelope<AICalorieJobResponse | null> | AICalorieJobResponse | null>(
+    "/client/calorie-tracker/ai/active/",
+    { signal },
+  );
   return unwrapResponse(response.data);
+}
+
+export async function getAICalorieJobStatus(
+  logId: number,
+  signal?: AbortSignal,
+): Promise<AICalorieJobResponse> {
+  const response = await api.get<ApiEnvelope<AICalorieJobResponse> | AICalorieJobResponse>(
+    `/client/calorie-tracker/ai/${logId}/status/`,
+    { signal },
+  );
+  return unwrapResponse(response.data);
+}
+
+export async function cancelAICalorieJob(
+  logId: number,
+): Promise<AICalorieCancelResponse> {
+  const response = await api.post<ApiEnvelope<AICalorieCancelResponse> | AICalorieCancelResponse>(
+    `/client/calorie-tracker/ai/${logId}/cancel/`,
+    {},
+  );
+  return unwrapResponse(response.data);
+}
+
+export async function discardAICalorieJob(
+  logId: number,
+): Promise<AICalorieDiscardResponse> {
+  const response = await api.post<ApiEnvelope<AICalorieDiscardResponse> | AICalorieDiscardResponse>(
+    `/client/calorie-tracker/ai/${logId}/discard/`,
+    {},
+  );
+  return unwrapResponse(response.data);
+}
+
+export function getAICalorieOverlayUrl(logId: number): string {
+  return `/api/backend/client/calorie-tracker/ai/${logId}/overlay/`;
+}
+
+// Backward-compatible aliases
+export async function postAICalorieLog(payload: AICalorieSubmitPayload): Promise<AICalorieJobResponse> {
+  return submitAICaloriePhoto(payload);
+}
+
+export async function getAICalorieLog(logId: number): Promise<AICalorieJobResponse> {
+  return getAICalorieJobStatus(logId);
 }
 
 export async function confirmAICalorieLog(

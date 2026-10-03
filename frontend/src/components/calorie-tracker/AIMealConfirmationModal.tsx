@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import {
@@ -26,6 +26,8 @@ export interface EditablePrediction {
 interface AIMealConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onDiscard?: () => void;
+  discarding?: boolean;
   segmentedImageUrl: string | null;
   estimatedNutrition: {
     calories: number;
@@ -44,6 +46,8 @@ interface AIMealConfirmationModalProps {
 export default function AIMealConfirmationModal({
   isOpen,
   onClose,
+  onDiscard,
+  discarding = false,
   segmentedImageUrl,
   estimatedNutrition,
   editableItems,
@@ -237,27 +241,47 @@ export default function AIMealConfirmationModal({
           </Button>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-card p-6">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-            disabled={confirmingAi}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={onSave}
-            disabled={confirmingAi}
-          >
-            {confirmingAi ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-4 w-4" />
+        <div className="flex shrink-0 items-center justify-between border-t border-border bg-card p-6">
+          <div>
+            {onDiscard && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onDiscard}
+                disabled={confirmingAi || discarding}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+              >
+                {discarding ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Discard Analysis
+              </Button>
             )}
-            Save Meal to Tracker
-          </Button>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={confirmingAi || discarding}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={onSave}
+              disabled={confirmingAi || discarding}
+            >
+              {confirmingAi ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Save Meal to Tracker
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import imageCompression from "browser-image-compression";
 import { isAxiosError } from "axios";
 import { resolveApiUrl } from "@/lib/api";
 import {
-  AICalorieLog,
   AIPrediction,
   CalorieLog,
   ClientProfile,
@@ -14,15 +12,12 @@ import {
   MEAL_TYPES,
   MealType,
   formatDateParam,
-  getAICalorieLog,
   getCalorieLogs,
   getClientProfile,
   getClientProgress,
   getClientSubscriptionStatus,
   getIngredientName,
-  postAICalorieLog,
   postManualCalorieLog,
-  confirmAICalorieLog,
 } from "@/lib/client";
 import { toast } from "sonner";
 import CalorieDailySummary from "@/components/calorie-tracker/CalorieDailySummary";
@@ -30,6 +25,7 @@ import AIMealConfirmationModal, {
   type EditablePrediction,
 } from "@/components/calorie-tracker/AIMealConfirmationModal";
 import MealLoggingSection from "@/components/calorie-tracker/MealLoggingSection";
+import { useAICalorieTracker } from "@/hooks/useAICalorieTracker";
 
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: "Breakfast",
@@ -38,22 +34,15 @@ const MEAL_LABELS: Record<MealType, string> = {
   snack: "Snack",
 };
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
 function getToday(): string {
   return formatDateParam(new Date());
 }
 
-function extractPredictions(log: AICalorieLog): AIPrediction[] {
-  if (Array.isArray(log.predictions)) return log.predictions;
-  if (Array.isArray(log.ai_raw_prediction)) return log.ai_raw_prediction;
-  if (
-    log.ai_raw_prediction &&
-    Array.isArray(log.ai_raw_prediction.predictions)
-  ) {
-    return log.ai_raw_prediction.predictions;
+function extractPredictions(predictions?: AIPrediction[] | { predictions?: AIPrediction[] } | null): AIPrediction[] {
+  if (!predictions) return [];
+  if (Array.isArray(predictions)) return predictions;
+  if (typeof predictions === "object" && Array.isArray(predictions.predictions)) {
+    return predictions.predictions;
   }
   return [];
 }
@@ -64,14 +53,6 @@ function predictionLabel(prediction: AIPrediction): string {
 
 function predictionMass(prediction: AIPrediction): number {
   return prediction.mass_grams ?? prediction.mass ?? 100;
-}
-
-function errorCode(error: unknown): string | undefined {
-  if (!isAxiosError(error)) return undefined;
-  const data = error.response?.data;
-  return typeof data === "object" && data !== null && "code" in data
-    ? String(data.code)
-    : undefined;
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -149,17 +130,12 @@ export default function CalorieTrackerPage() {
   const [dailyTarget, setDailyTarget] = useState<number | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
-  const [aiFile, setAiFile] = useState<File | null>(null);
-  const [aiPreview, setAiPreview] = useState<string | null>(null);
-  const [segmentedImageUrl, setSegmentedImageUrl] = useState<string | null>(
-    null,
-  );
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiStatusText, setAiStatusText] = useState<string | null>(null);
-  const [aiLogId, setAiLogId] = useState<number | null>(null);
+  // AI Modal and Editable State
+  const [selectedAiFile, setSelectedAiFile] = useState<File | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableItems, setEditableItems] = useState<EditablePrediction[]>([]);
   const [confirmingAi, setConfirmingAi] = useState(false);
+  const [discardingAi, setDiscardingAi] = useState(false);
   const [estimatedNutrition, setEstimatedNutrition] = useState<{
     calories: number;
     protein?: number;
@@ -167,6 +143,7 @@ export default function CalorieTrackerPage() {
     fats?: number;
   } | null>(null);
 
+  // Manual Entry State
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [ingredientName, setIngredientName] = useState("");
   const [ingredientMass, setIngredientMass] = useState("");
@@ -185,11 +162,11 @@ export default function CalorieTrackerPage() {
         getClientProfile().catch(() => null),
       ]);
       setTodayLogs(logs);
-      const todayProgress = progress.find((entry) => entry.log_date === today);
-      setTodayProgress(todayProgress ?? null);
+      const progressEntry = progress.find((entry) => entry.log_date === today);
+      setTodayProgress(progressEntry ?? null);
       setProfile(profileData);
       setDailyTarget(
-        todayProgress?.target_calories ?? profileData?.target_calories ?? null,
+        progressEntry?.target_calories ?? profileData?.target_calories ?? null,
       );
     } catch (loadError) {
       console.error("Failed to load calorie logs", loadError);
@@ -198,6 +175,16 @@ export default function CalorieTrackerPage() {
       setLogsLoading(false);
     }
   }, []);
+
+  const aiTracker = useAICalorieTracker({
+    onSuccess: () => {
+      toast.success("Meal saved to your tracker.");
+      void loadToday();
+    },
+    onError: (msg) => {
+      toast.error(msg);
+    },
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -222,11 +209,73 @@ export default function CalorieTrackerPage() {
     };
   }, [loadToday]);
 
+  // Synchronize AI Review State with Modal
   useEffect(() => {
-    return () => {
-      if (aiPreview) URL.revokeObjectURL(aiPreview);
-    };
-  }, [aiPreview]);
+    if (aiTracker.uiStatus === "review" && aiTracker.job) {
+      const preds = extractPredictions(aiTracker.job.predictions || aiTracker.job.ai_raw_prediction);
+      const grouped = preds.reduce(
+        (acc, pred) => {
+          const label = predictionLabel(pred).toLowerCase().trim();
+          if (!acc[label]) {
+            acc[label] = {
+              originalLabel: predictionLabel(pred),
+              mass_grams: 0,
+              calories: 0,
+              count: 0,
+              confidenceSum: 0,
+              hasCalories: false,
+            };
+          }
+          acc[label].mass_grams += predictionMass(pred);
+          if (pred.calories !== undefined) {
+            acc[label].calories += pred.calories;
+            acc[label].hasCalories = true;
+          }
+          acc[label].count += 1;
+          acc[label].confidenceSum += pred.confidence ?? 0;
+          return acc;
+        },
+        {} as Record<
+          string,
+          {
+            originalLabel: string;
+            mass_grams: number;
+            calories: number;
+            count: number;
+            confidenceSum: number;
+            hasCalories: boolean;
+          }
+        >,
+      );
+
+      setEditableItems(
+        Object.entries(grouped).map(([, data], index) => ({
+          id: `${aiTracker.logId ?? Date.now()}-${index}`,
+          label: data.originalLabel,
+          mass_grams: String(data.mass_grams.toFixed(1)),
+          calories: data.hasCalories ? data.calories : undefined,
+          count: data.count,
+          confidence:
+            data.count > 0
+              ? Number((data.confidenceSum / data.count).toFixed(3))
+              : undefined,
+        })),
+      );
+
+      if (aiTracker.job.nutrition_preview) {
+        setEstimatedNutrition({
+          calories: aiTracker.job.nutrition_preview.total_calories || 0,
+          protein: aiTracker.job.nutrition_preview.total_protein || 0,
+          carbs: aiTracker.job.nutrition_preview.total_carbs || 0,
+          fats: aiTracker.job.nutrition_preview.total_fats || 0,
+        });
+      } else {
+        setEstimatedNutrition(null);
+      }
+
+      setIsModalOpen(true);
+    }
+  }, [aiTracker.uiStatus, aiTracker.job, aiTracker.logId]);
 
   const totalToday = useMemo(
     () =>
@@ -254,7 +303,7 @@ export default function CalorieTrackerPage() {
     [subscriptionStatus],
   );
 
-  const handleAiUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAiUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
@@ -264,153 +313,12 @@ export default function CalorieTrackerPage() {
       return;
     }
 
-    try {
-      const compressedFile = await imageCompression(selectedFile, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
-      if (aiPreview) URL.revokeObjectURL(aiPreview);
-      setAiFile(compressedFile);
-      setAiPreview(URL.createObjectURL(compressedFile));
-      setSegmentedImageUrl(null);
-    } catch (compressionError) {
-      console.error("Image compression error", compressionError);
-      setAiFile(selectedFile);
-      setAiPreview(URL.createObjectURL(selectedFile));
-    }
-  };
-
-  const openReviewModal = (log: AICalorieLog) => {
-    const predictions = extractPredictions(log);
-    setAiLogId(log.log_id);
-    setSegmentedImageUrl(resolveApiUrl(log.segmented_image_url) ?? null);
-
-    const grouped = predictions.reduce(
-      (acc, pred) => {
-        const label = predictionLabel(pred).toLowerCase().trim();
-        if (!acc[label]) {
-          acc[label] = {
-            originalLabel: predictionLabel(pred),
-            mass_grams: 0,
-            calories: 0,
-            count: 0,
-            confidenceSum: 0,
-            hasCalories: false,
-          };
-        }
-        acc[label].mass_grams += predictionMass(pred);
-        if (pred.calories !== undefined) {
-          acc[label].calories += pred.calories;
-          acc[label].hasCalories = true;
-        }
-        acc[label].count += 1;
-        acc[label].confidenceSum += pred.confidence ?? 0;
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          originalLabel: string;
-          mass_grams: number;
-          calories: number;
-          count: number;
-          confidenceSum: number;
-          hasCalories: boolean;
-        }
-      >,
-    );
-
-    setEditableItems(
-      Object.entries(grouped).map(([, data], index) => ({
-        id: `${log.log_id}-${index}`,
-        label: data.originalLabel,
-        mass_grams: String(data.mass_grams.toFixed(1)),
-        calories: data.hasCalories ? data.calories : undefined,
-        count: data.count,
-        confidence:
-          data.count > 0
-            ? Number((data.confidenceSum / data.count).toFixed(3))
-            : undefined,
-      })),
-    );
-
-    if (log.nutrition_preview) {
-      setEstimatedNutrition({
-        calories: log.nutrition_preview.total_calories || 0,
-        protein: log.nutrition_preview.total_protein || 0,
-        carbs: log.nutrition_preview.total_carbs || 0,
-        fats: log.nutrition_preview.total_fats || 0,
-      });
-    } else {
-      setEstimatedNutrition(null);
-    }
-    setIsModalOpen(true);
+    setSelectedAiFile(selectedFile);
   };
 
   const submitAiAnalysis = async () => {
-    if (!aiFile) return;
-
-    setAiLoading(true);
-    setAiStatusText("AI is analyzing your meal...");
-
-    try {
-      let log = await postAICalorieLog({ meal_type: mealType, image: aiFile });
-
-      for (
-        let attempt = 0;
-        attempt < 30 && log.status === "processing";
-        attempt += 1
-      ) {
-        setAiStatusText("AI is still analyzing your meal...");
-        await delay(3000);
-        log = await getAICalorieLog(log.log_id);
-      }
-
-      if (log.status === "pending_user_review") {
-        openReviewModal(log);
-      } else if (log.status === "failed") {
-        toast.error(
-          "AI analysis failed. Please try another image or use manual entry.",
-        );
-      } else if (log.status === "processing") {
-        toast.error(
-          "AI analysis is taking longer than expected. Please try again shortly.",
-        );
-      } else {
-        toast.error("AI returned an unexpected result. Please try again.");
-      }
-    } catch (submitError) {
-      console.error("AI analysis failed", submitError);
-      if (isAxiosError(submitError) && submitError.response?.status === 403) {
-        setSubscriptionStatus((prev) =>
-          prev
-            ? {
-                ...prev,
-                is_premium: false,
-                subscription: prev.subscription
-                  ? { ...prev.subscription, status: "expired" }
-                  : null,
-              }
-            : { is_premium: false, subscription: null },
-        );
-        toast.error(
-          errorCode(submitError) === "NOT_PREMIUM"
-            ? "This feature requires a premium subscription."
-            : "This feature is only available to premium clients.",
-        );
-      } else {
-        toast.error(
-          errorMessage(
-            submitError,
-            "Failed to analyze image. Please try again.",
-          ),
-        );
-      }
-    } finally {
-      setAiLoading(false);
-      setAiStatusText(null);
-    }
+    if (!selectedAiFile) return;
+    await aiTracker.submitPhoto(selectedAiFile, mealType);
   };
 
   const recalculateTotals = (items: EditablePrediction[]) => {
@@ -471,7 +379,7 @@ export default function CalorieTrackerPage() {
   };
 
   const handleSaveMeal = async () => {
-    if (!aiLogId) return;
+    if (!aiTracker.logId) return;
 
     const userFinalLog = editableItems
       .map((item) => ({
@@ -490,18 +398,11 @@ export default function CalorieTrackerPage() {
 
     setConfirmingAi(true);
     try {
-      await confirmAICalorieLog(aiLogId, {
-        meal_type: mealType,
-        user_final_log: userFinalLog,
-      });
+      await aiTracker.confirmJob(userFinalLog);
       setIsModalOpen(false);
-      setAiLogId(null);
-      setAiFile(null);
-      setAiPreview(null);
-      setSegmentedImageUrl(null);
+      setSelectedAiFile(null);
       setEditableItems([]);
-      toast.success("Meal saved to your tracker.");
-      await loadToday();
+      setEstimatedNutrition(null);
     } catch (confirmError) {
       console.error("Failed to confirm AI meal", confirmError);
       toast.error(
@@ -513,6 +414,26 @@ export default function CalorieTrackerPage() {
     } finally {
       setConfirmingAi(false);
     }
+  };
+
+  const handleDiscardMeal = async () => {
+    setDiscardingAi(true);
+    try {
+      await aiTracker.discardJob();
+      setIsModalOpen(false);
+      setSelectedAiFile(null);
+      setEditableItems([]);
+      setEstimatedNutrition(null);
+      toast.info("AI meal analysis discarded.");
+    } catch (discardErr) {
+      console.warn("Discard error:", discardErr);
+    } finally {
+      setDiscardingAi(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
   };
 
   const addManualIngredient = () => {
@@ -559,12 +480,20 @@ export default function CalorieTrackerPage() {
     }
   };
 
+  const handleSwitchToManual = () => {
+    setActiveTab("manual");
+    setMealType(aiTracker.mealType);
+    aiTracker.reset();
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <AIMealConfirmationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        segmentedImageUrl={segmentedImageUrl}
+        onClose={handleCloseModal}
+        onDiscard={handleDiscardMeal}
+        discarding={discardingAi}
+        segmentedImageUrl={aiTracker.overlayUrl ? resolveApiUrl(aiTracker.overlayUrl) ?? aiTracker.overlayUrl : null}
         estimatedNutrition={estimatedNutrition}
         editableItems={editableItems}
         onItemChange={handleItemChange}
@@ -614,15 +543,30 @@ export default function CalorieTrackerPage() {
             subscriptionLoading={subscriptionLoading}
             isSubscriptionActive={isSubscriptionActive}
             mealType={mealType}
-            setMealType={setMealType}
+            setMealType={(val) => {
+              setMealType(val);
+              aiTracker.setMealType(val);
+            }}
             mealTypes={MEAL_TYPES}
             mealLabels={MEAL_LABELS}
-            aiPreview={aiPreview}
-            aiFile={aiFile}
-            aiLoading={aiLoading}
-            aiStatusText={aiStatusText}
+            aiPreview={aiTracker.previewUrl}
+            aiFile={selectedAiFile}
+            aiStatus={aiTracker.uiStatus}
+            aiLoading={aiTracker.isSubmitting || aiTracker.isPolling}
+            queuePosition={aiTracker.queuePosition}
+            etaSeconds={aiTracker.etaSeconds}
+            elapsedSeconds={aiTracker.elapsedSeconds}
+            queueDelayWarning={aiTracker.queueDelayWarning}
+            aiErrorMessage={aiTracker.errorMessage}
+            suggestManual={aiTracker.suggestManual}
             handleAiUpload={handleAiUpload}
             submitAiAnalysis={submitAiAnalysis}
+            onCancelAiJob={aiTracker.cancelJob}
+            onResetAi={() => {
+              setSelectedAiFile(null);
+              aiTracker.reset();
+            }}
+            onSwitchToManual={handleSwitchToManual}
             manualSubmitting={manualSubmitting}
             ingredientInput={ingredientName}
             setIngredientInput={setIngredientName}
