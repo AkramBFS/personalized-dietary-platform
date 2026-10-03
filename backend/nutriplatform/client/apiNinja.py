@@ -26,11 +26,26 @@ def get_nutrition_data(ingredients: list) -> dict:
             raise ValueError("mass_grams must be strictly positive")
 
     # Consolidate food names into a single batch query (BE-016)
+    from django.core.cache import cache
     valid_items = [item for item in ingredients if item.get('name')]
-    batch_query = ", ".join([f"100g {item['name'].strip()}" for item in valid_items])
+
+    cached_profiles = {}
+    uncached_items = []
+    for item in valid_items:
+        clean = item['name'].strip().lower()
+        cached = None
+        try:
+            cached = cache.get(f"nutr_profile:{clean}")
+        except Exception:
+            cached = None
+        if cached:
+            cached_profiles[clean] = cached
+        else:
+            uncached_items.append(clean)
 
     results = []
-    if batch_query:
+    if uncached_items:
+        batch_query = ", ".join([f"100g {name}" for name in set(uncached_items)])
         try:
             response = requests.get(
                 CALORIE_NINJAS_URL,
@@ -40,12 +55,20 @@ def get_nutrition_data(ingredients: list) -> dict:
             )
             response.raise_for_status()
             results = response.json().get('items', [])
+            for res_item in results:
+                res_name = str(res_item.get('name', '')).strip().lower()
+                try:
+                    cache.set(f"nutr_profile:{res_name}", res_item, timeout=86400)
+                except Exception:
+                    pass
         except requests.exceptions.Timeout:
             raise Exception("CalorieNinjas timed out for batch query.")
         except requests.exceptions.ConnectionError:
             raise Exception("Could not reach CalorieNinjas API.")
         except requests.exceptions.HTTPError as e:
             raise Exception(f"CalorieNinjas error: {str(e)}")
+
+    all_results = list(results) + list(cached_profiles.values())
 
     total_calories = 0.0
     total_protein  = 0.0
@@ -60,14 +83,14 @@ def get_nutrition_data(ingredients: list) -> dict:
 
         # Find matching item from results
         matched_item = None
-        for item in results:
+        for item in all_results:
             item_name = str(item.get('name', '')).strip().lower()
             if item_name == clean_name:
                 matched_item = item
                 break
 
         if not matched_item:
-            for item in results:
+            for item in all_results:
                 item_name = str(item.get('name', '')).strip().lower()
                 if item_name and (item_name in clean_name or clean_name in item_name):
                     matched_item = item
