@@ -8,11 +8,16 @@ This document details the architectural decisions, database contracts, RLS isola
 
 The database enforces multi-tenant Row-Level Security (RLS) on PostgreSQL across all sensitive tables, including `ai_calorie_logs`.
 
-### 1.1 Session Variables
+### 1.1 Session Variables & The `is_staff` Staff Super-Alias Reality
 The PostgreSQL session variables configured in `RLSMiddleware` and `set_rls_context()` are:
 - `app.current_user_id`: Integer string of the authenticated user's ID (`User.id`), or `''` when unauthenticated.
 - `app.is_staff`: `'true'` if user is staff/admin/superuser or during elevated system worker execution, else `'false'`.
 - `app.is_system_worker`: `'true'` when executing background worker or internal maintenance operations, else `'false'`.
+
+> [!IMPORTANT]
+> **Operational Contract Correction**: Database policy probing confirmed that **zero RLS policies** in PostgreSQL evaluate `app.is_system_worker` directly. Every policy across all 7 RLS tables (`ai_calorie_logs`, `clients`, `consultations`, `daily_progress_metrics`, `invoices`, `patient_notes`, `user_plans`) checks `current_setting('app.is_staff', true) = 'true'`.
+> When `set_rls_context(is_system_worker=True)` is called, it explicitly sets `app.is_staff = 'true'`. It functions as a **full staff super-alias** across every tenant table in the system.
+> **Worker Cross-Tenant Scope**: The background worker daemon (`run_ai_worker`) still has and requires **full cross-tenant access** via `set_rls_context(is_system_worker=True)` to discover queued jobs, recover stale leases across all tenants, and enforce SLA deadlines.
 
 ### 1.2 Policy Definition on `ai_calorie_logs`
 ```sql
@@ -45,23 +50,16 @@ WITH CHECK (
 | **Stale Recovery & Requeue** (`recover_stale_leases`) | `SELECT ... WHERE status = 'processing' AND claimed_at < threshold`<br>`UPDATE ai_calorie_logs SET status = 'queued', lease_token = NULL, retry_count = retry_count + 1` | System Worker Context:<br>`app.current_user_id = ''`<br>`app.is_staff = 'true'`<br>`app.is_system_worker = 'true'` | `current_setting('app.is_staff', true) = 'true'` (Cross-tenant lease reclamation) |
 | **SLA Deadline Expiration** (`recover_stale_leases`) | `SELECT ... WHERE status IN ('queued', 'processing') AND logged_at < deadline`<br>`UPDATE ai_calorie_logs SET status = 'failed', error_code = 'AI_INFERENCE_TIMEOUT'` | System Worker Context:<br>`app.current_user_id = ''`<br>`app.is_staff = 'true'`<br>`app.is_system_worker = 'true'` | `current_setting('app.is_staff', true) = 'true'` (Cross-tenant SLA deadline enforcement) |
 | **Complete Job Finalize** (`complete_job`) | `UPDATE ai_calorie_logs SET status = 'pending_user_review', raw_prediction = ..., total_calories = ... WHERE id = %s AND lease_token = %s` | **Job Owner Context**:<br>`app.current_user_id = <client.user.id>`<br>`app.is_staff = 'false'`<br>`app.is_system_worker = 'false'` | `EXISTS (SELECT 1 FROM clients c WHERE c.client_id = ai_calorie_logs.client_id AND c.user_id = current_setting('app.current_user_id', true)::integer)` (Strict tenant isolation) |
-| **Elevated Global Queue Cap** (`submit`) | `SELECT COUNT(*) FROM ai_calorie_logs WHERE status IN ('queued', 'processing')` | System Worker Context (in `try...finally`):<br>`app.is_system_worker = 'true'` | `current_setting('app.is_staff', true) = 'true'` |
-| **Elevated Queue Position** (`status`) | `SELECT COUNT(*) FROM ai_calorie_logs WHERE status = 'queued' AND logged_at <= current_job.logged_at` | System Worker Context (in `try...finally`):<br>`app.is_system_worker = 'true'` | `current_setting('app.is_staff', true) = 'true'` |
-| **Elevated Deadline Fallback** (`status`) | `UPDATE ai_calorie_logs SET status = 'failed' WHERE id = %s AND status IN ('queued', 'processing')` | System Worker Context (in `try...finally`):<br>`app.is_system_worker = 'true'` | `current_setting('app.is_staff', true) = 'true'` |
-| **Staff Queue Health** (`queue-health`) | `SELECT status, COUNT(*) FROM ai_calorie_logs GROUP BY status` | System Worker Context (in `try...finally`):<br>`app.is_system_worker = 'true'` | `current_setting('app.is_staff', true) = 'true'` |
+| **Global Queue Cap** (`submit`) | (Planned for Release 4: `get_ai_queue_cap_metrics()`) | Currently Web Tier Elevation (`is_system_worker=True`) | `current_setting('app.is_staff', true) = 'true'` |
+| **Queue Position** (`status`) | (Planned for Release 4: `get_ai_queue_position()`) | Currently Web Tier Elevation (`is_system_worker=True`) | `current_setting('app.is_staff', true) = 'true'` |
+| **Deadline Fallback** (`status`) | (Planned for Release 4: `evaluate_ai_job_deadline()`) | Currently Web Tier Elevation (`is_system_worker=True`) | `current_setting('app.is_staff', true) = 'true'` |
+| **Staff Queue Health** (`queue-health`) | (Planned for Release 4: `get_ai_queue_health()`) | Currently Authenticated Staff Context | `current_setting('app.is_staff', true) = 'true'` |
 
-### 1.4 Web Tier Elevation Points & Security Risks
-The web tier in [`backend/nutriplatform/client/views.py`](file:///c:/Users/akram/thesis_project/personalized-dietary-platform/backend/nutriplatform/client/views.py) temporarily elevates to `is_system_worker=True` in four specific locations:
-1. `AICalorieSubmitView._check_queue_cap()` (line ~788): queries global in-flight counts to enforce `AI_GLOBAL_QUEUE_CAP`.
-2. `AICalorieStatusView._compute_queue_position()` (line ~876): queries platform-wide queue position to compute ETA.
-3. `AICalorieStatusView.get()` (line ~937): executes deadline fallback update if an in-flight job exceeded 180s on read.
-4. `AIQueueHealthView.get()` (line ~1214): aggregates queue breakdown metrics for authenticated staff administrators.
-
-> [!WARNING]
-> **RLS Preservation Risk**: These elevations bypass per-tenant filtering using `try...finally` blocks to restore `request.user`. The upcoming **RLS Workstream** must preserve these elevation blocks and include explicit regression tests ensuring session contexts never leak across pooled database connections.
+### 1.4 Web Tier Elevation Elimination (Planned for Release 4)
+The 4 web-tier elevation points in `client/views.py` currently elevate to `is_system_worker=True` (which sets `app.is_staff='true'`) inside `try...finally` blocks. This migration to 4 narrow `SECURITY DEFINER` functions is **planned for Release 4, not yet executed**. In production today, the background worker and these 4 web endpoints retain cross-tenant access via the staff alias. In Release 4, web endpoints will lose this elevation completely.
 
 ### 1.5 Test Database Non-Superuser Role
-PostgreSQL superusers bypass RLS policies unconditionally (`BYPASSRLS`). Automated security tests (`test_security_encryption_rls.py`) switch database sessions to the unprivileged role `nutriplatform_app` (`SET LOCAL ROLE nutriplatform_app;`) to strictly verify that cross-tenant access is rejected by PostgreSQL.
+PostgreSQL superusers bypass RLS policies unconditionally (`BYPASSRLS`). Automated security tests switch database sessions to the unprivileged role `nutriplatform_app` (`SET ROLE nutriplatform_app;`) to strictly verify that cross-tenant access is rejected by PostgreSQL.
 
 ---
 
