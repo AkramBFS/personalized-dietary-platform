@@ -41,10 +41,14 @@ def clear_rls_context():
     if connection.vendor != 'postgresql':
         return
 
-    with connection.cursor() as cursor:
-        cursor.execute("RESET app.current_user_id;")
-        cursor.execute("RESET app.is_staff;")
-        cursor.execute("RESET app.is_system_worker;")
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("RESET app.current_user_id;")
+            cursor.execute("RESET app.is_staff;")
+            cursor.execute("RESET app.is_system_worker;")
+    except Exception as e:
+        logger.warning(f"[RLS] Failed to reset RLS session context ({e}); closing connection to prevent credential leakage.")
+        connection.close()
 
 
 class RLSMiddleware:

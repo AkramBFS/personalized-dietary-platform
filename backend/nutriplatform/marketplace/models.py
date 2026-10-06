@@ -79,11 +79,15 @@ class PlanRating(models.Model):
 
 class Consultation(models.Model):
     STATUS_CHOICES = [
-        ('scheduled', 'Scheduled'),
-        ('notified',  'Notified'),
-        ('finished',  'Finished'),
-        ('cancelled', 'Cancelled'),
+        ('pending_payment', 'Pending Payment'),
+        ('scheduled',       'Scheduled'),
+        ('notified',        'Notified'),
+        ('finished',        'Finished'),
+        ('cancelled',       'Cancelled'),
     ]
+    REAL_STATUSES = ('scheduled', 'notified', 'finished')
+    ACTIVE_SLOT_STATUSES = ('scheduled', 'notified', 'pending_payment')
+
     TYPE_CHOICES = [
         ('advice_only',         'Advice Only'),
         ('plan_included',       'Plan Included'),
@@ -109,7 +113,7 @@ class Consultation(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['nutritionist', 'appointment_date', 'start_time'],
-                condition=models.Q(status__in=['scheduled', 'notified']),
+                condition=models.Q(status__in=['scheduled', 'notified', 'pending_payment']),
                 name='unique_active_consultation_slot'
             )
         ]
@@ -120,12 +124,21 @@ class Invoice(models.Model):
         ('plan',                 'Plan'),
         ('consultation_advice',  'Consultation Advice'),
         ('consultation_custom',  'Consultation Custom'),
+        ('subscription',         'Subscription'),
+    ]
+    STATUS_CHOICES = [
+        ('paid',                'Paid'),
+        ('partially_refunded',  'Partially Refunded'),
+        ('refunded',            'Refunded'),
+        ('disputed',            'Disputed'),
     ]
 
     client             = models.ForeignKey(Client, on_delete=models.CASCADE, db_column='client_id')
     nutritionist       = models.ForeignKey(Nutritionist, on_delete=models.CASCADE, db_column='nutritionist_id')
     transaction_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
     total_paid         = models.FloatField(null=True, blank=True)
+    refunded_amount    = models.FloatField(default=0.0)
+    status             = models.CharField(max_length=25, choices=STATUS_CHOICES, default='paid')
     commission_rate    = models.FloatField(null=True, blank=True)
     net_earnings       = models.FloatField(null=True, blank=True)
     item_type          = models.CharField(max_length=30, choices=ITEM_TYPE_CHOICES, null=True, blank=True)
@@ -179,6 +192,7 @@ class CheckoutSession(models.Model):
     currency        = models.CharField(max_length=10, default='USD')
     status          = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     expires_at      = models.DateTimeField()
+    payment_intent_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     metadata        = models.JSONField(null=True, blank=True)
     created_at      = models.DateTimeField(auto_now_add=True)
 
@@ -198,3 +212,12 @@ class CheckoutSession(models.Model):
 
     def is_valid(self):
         return self.status == 'pending' and not self.is_expired()
+
+
+class StripeEventLog(models.Model):
+    event_id   = models.CharField(max_length=255, primary_key=True)
+    event_type = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stripe_event_logs'
