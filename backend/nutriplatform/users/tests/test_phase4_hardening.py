@@ -174,6 +174,8 @@ class Phase4HardeningTests(APITestCase):
     @patch("requests.get")
     def test_calorieninjas_single_batch_http_request(self, mock_get):
         """Multiple ingredients should be batched into a single CalorieNinjas GET request."""
+        from django.core.cache import cache
+        cache.clear()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {

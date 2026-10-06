@@ -1,8 +1,10 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.test import override_settings
 from django.utils import timezone
 import datetime
 import uuid
+from unittest.mock import patch, MagicMock
 
 from users.models import User
 from client.models import Client
@@ -11,6 +13,7 @@ from admin_panel.models import Country, Goal, Specialization
 from marketplace.models import Plan, UserPlan, Invoice, CheckoutSession, Consultation
 
 
+@override_settings(STRIPE_SECRET_KEY="sk_test_mock_secret")
 class CheckoutIntegrationTests(APITestCase):
 
     def setUp(self):
@@ -63,6 +66,14 @@ class CheckoutIntegrationTests(APITestCase):
             content_json=[{"day": 1, "meals": []}],
         )
 
+        self.stripe_create_patcher = patch("stripe.PaymentIntent.create")
+        self.mock_stripe_create = self.stripe_create_patcher.start()
+        self.mock_stripe_create.return_value = type("MockIntent", (), {
+            "id": "pi_mock_created_123",
+            "client_secret": "pi_mock_created_123_secret"
+        })()
+        self.addCleanup(self.stripe_create_patcher.stop)
+
     def authenticate_client(self):
         login_resp = self.client.post("/api/v1/auth/login/", {
             "email": "client@test.com",
@@ -91,7 +102,8 @@ class CheckoutIntegrationTests(APITestCase):
         self.assertEqual(session.resolved_price, 29.99)
         self.assertEqual(session.status, "pending")
 
-    def test_plan_checkout_confirmation_success(self):
+    @patch("stripe.PaymentIntent.retrieve")
+    def test_plan_checkout_confirmation_success(self, mock_retrieve):
         self.authenticate_client()
 
         # Create session
@@ -102,9 +114,20 @@ class CheckoutIntegrationTests(APITestCase):
         self.assertEqual(create_resp.status_code, status.HTTP_201_CREATED)
         checkout_id = create_resp.data["data"]["checkout_id"]
 
+        mock_retrieve.return_value = {
+            "id": "pi_plan_success_001",
+            "status": "succeeded",
+            "amount_received": 2999,
+            "currency": "usd",
+            "metadata": {
+                "user_id": str(self.client_user.id),
+                "checkout_id": checkout_id
+            }
+        }
+
         # Confirm session
         confirm_resp = self.client.post(f"/api/v1/checkout/{checkout_id}/confirm/", {
-            "transaction_number": f"TXN-TEST-{uuid.uuid4().hex[:8]}",
+            "payment_intent_id": "pi_plan_success_001",
         }, format="json")
 
         self.assertEqual(confirm_resp.status_code, status.HTTP_201_CREATED)
@@ -117,9 +140,16 @@ class CheckoutIntegrationTests(APITestCase):
     def test_consultation_checkout_session_creation(self):
         self.authenticate_client()
 
+        slot_data = {
+            "appointment_date": "2026-10-15",
+            "start_time": "10:00:00",
+            "end_time": "11:00:00",
+            "consultation_type": "advice_only",
+        }
         response = self.client.post("/api/v1/checkout/create/", {
             "item_type": "CONSULTATION",
             "item_id": self.nutritionist_profile.nutritionist_id,
+            "metadata": slot_data,
         }, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -133,23 +163,16 @@ class CheckoutIntegrationTests(APITestCase):
     def test_legacy_plan_purchase_baseline(self):
         self.authenticate_client()
 
-        # Attempt price tampering on legacy endpoint: plan is 29.99, client tries to pay 0.01
-        tampered_resp = self.client.post(f"/api/v1/marketplace/plans/{self.plan.id}/purchase/", {
-            "amount_paid": 0.01,
-            "transaction_number": "TXN-TAMPER-001",
-        }, format="json")
-        self.assertEqual(tampered_resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(tampered_resp.data.get("code"), "PRICE_TAMPERING_DETECTED")
-
-        # Legitimate purchase matching exact plan price succeeds
-        valid_resp = self.client.post(f"/api/v1/marketplace/plans/{self.plan.id}/purchase/", {
+        # Legacy purchase endpoint is deprecated and disabled with HTTP 410 Gone
+        resp = self.client.post(f"/api/v1/marketplace/plans/{self.plan.id}/purchase/", {
             "amount_paid": 29.99,
             "transaction_number": "TXN-VALID-001",
         }, format="json")
-        self.assertEqual(valid_resp.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(UserPlan.objects.filter(client=self.client_profile, plan=self.plan).exists())
+        self.assertEqual(resp.status_code, status.HTTP_410_GONE)
+        self.assertEqual(resp.data.get("code"), "ENDPOINT_DEPRECATED")
 
-    def test_stripe_payment_intent_creation(self):
+    @patch("stripe.PaymentIntent.retrieve")
+    def test_stripe_payment_intent_creation(self, mock_retrieve):
         self.authenticate_client()
 
         create_resp = self.client.post("/api/v1/checkout/create/", {
@@ -159,9 +182,20 @@ class CheckoutIntegrationTests(APITestCase):
         self.assertEqual(create_resp.status_code, status.HTTP_201_CREATED)
         checkout_id = create_resp.data["data"]["checkout_id"]
 
-        # Client submits Stripe token / payment method ID
+        mock_retrieve.return_value = {
+            "id": "pi_card_visa_test_token",
+            "status": "succeeded",
+            "amount_received": 2999,
+            "currency": "usd",
+            "metadata": {
+                "user_id": str(self.client_user.id),
+                "checkout_id": checkout_id
+            }
+        }
+
+        # Client submits verified PaymentIntent ID
         confirm_resp = self.client.post(f"/api/v1/checkout/{checkout_id}/confirm/", {
-            "payment_method_id": "pm_card_visa_test_token",
+            "payment_intent_id": "pi_card_visa_test_token",
         }, format="json")
 
         self.assertEqual(confirm_resp.status_code, status.HTTP_201_CREATED)
@@ -179,15 +213,16 @@ class CheckoutIntegrationTests(APITestCase):
             "consultation_type": "advice_only",
         }, format="json")
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(resp.data.get("code"), "CHECKOUT_REQUIRED")
+        self.assertEqual(resp.status_code, status.HTTP_410_GONE)
+        self.assertEqual(resp.data.get("code"), "ENDPOINT_DEPRECATED")
         self.assertFalse(Consultation.objects.filter(client=self.client_profile).exists())
 
-    def test_concurrent_slot_booking_race_condition(self):
+    @patch("stripe.PaymentIntent.retrieve")
+    def test_concurrent_slot_booking_race_condition(self, mock_retrieve):
         """
         BE-008: When two clients attempt to book the exact same consultation slot,
-        the first confirmation succeeds and the second is rejected with HTTP 409 Conflict
-        and code SLOT_ALREADY_BOOKED.
+        the first checkout hold succeeds and the concurrent attempt is rejected
+        with HTTP 409 Conflict.
         """
         self.authenticate_client()
 
@@ -215,7 +250,7 @@ class CheckoutIntegrationTests(APITestCase):
             "consultation_type": "advice_only",
         }
 
-        # Client 1 creates checkout session
+        # Client 1 creates checkout session and acquires atomic slot hold
         resp1 = self.client.post("/api/v1/checkout/create/", {
             "item_type": "CONSULTATION",
             "item_id": self.nutritionist_profile.nutritionist_id,
@@ -224,7 +259,7 @@ class CheckoutIntegrationTests(APITestCase):
         self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
         checkout_id_1 = resp1.data["data"]["checkout_id"]
 
-        # Client 2 logs in and creates checkout session for the same slot
+        # Client 2 logs in and attempts to create checkout session for the same held slot
         login2 = self.client.post("/api/v1/auth/login/", {
             "email": "client2_slot@test.com",
             "password": "TestPassword123!",
@@ -237,27 +272,25 @@ class CheckoutIntegrationTests(APITestCase):
             "item_id": self.nutritionist_profile.nutritionist_id,
             "metadata": slot_data,
         }, format="json")
-        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
-        checkout_id_2 = resp2.data["data"]["checkout_id"]
+        self.assertEqual(resp2.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(resp2.data.get("code"), "SLOT_ALREADY_BOOKED")
 
-        # Client 1 confirms first
+        # Client 1 confirms booking
         self.authenticate_client()
+        mock_retrieve.return_value = {
+            "id": "pi_slot_001",
+            "status": "succeeded",
+            "amount_received": 5000,
+            "currency": "usd",
+            "metadata": {"user_id": str(self.client_user.id), "checkout_id": checkout_id_1}
+        }
         confirm1 = self.client.post(f"/api/v1/checkout/{checkout_id_1}/confirm/", {
-            "transaction_number": "TXN-SLOT-001",
+            "payment_intent_id": "pi_slot_001",
             **slot_data,
         }, format="json")
         self.assertEqual(confirm1.status_code, status.HTTP_201_CREATED)
 
-        # Client 2 attempts to confirm same slot -> must fail with HTTP 409
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token2}")
-        confirm2 = self.client.post(f"/api/v1/checkout/{checkout_id_2}/confirm/", {
-            "transaction_number": "TXN-SLOT-002",
-            **slot_data,
-        }, format="json")
-        self.assertEqual(confirm2.status_code, status.HTTP_409_CONFLICT)
-        self.assertEqual(confirm2.data.get("code"), "SLOT_ALREADY_BOOKED")
-
-        # Verify only one consultation was booked for this slot
+        # Verify only one consultation exists and belongs to client 1
         consultations = Consultation.objects.filter(
             nutritionist=self.nutritionist_profile,
             appointment_date="2026-11-20",
@@ -265,6 +298,7 @@ class CheckoutIntegrationTests(APITestCase):
         )
         self.assertEqual(consultations.count(), 1)
         self.assertEqual(consultations.first().client, self.client_profile)
+        self.assertEqual(consultations.first().status, "scheduled")
 
     def test_service_review_duplicate_rejected(self):
         """
@@ -308,4 +342,84 @@ class CheckoutIntegrationTests(APITestCase):
         # Rating remains 5.0
         self.nutritionist_profile.refresh_from_db()
         self.assertEqual(self.nutritionist_profile.rating, 5.0)
+
+    @patch("stripe.PaymentIntent.create")
+    @patch("stripe.PaymentIntent.retrieve")
+    def test_retried_create_after_timeout_reuses_idempotency_key(self, mock_retrieve, mock_create):
+        """
+        A retried create request for a usable intent reuses the same intent/idempotency key.
+        Only when an intent is canceled/failed or terms change does attempt_count increment.
+        """
+        self.authenticate_client()
+
+        # 1. Initial creation
+        intent_1 = MagicMock(
+            id="pi_retry_001",
+            client_secret="pi_retry_001_secret",
+            status="requires_payment_method",
+            amount=2999,
+            currency="usd",
+            last_payment_error=None
+        )
+        mock_create.return_value = intent_1
+        mock_retrieve.return_value = intent_1
+
+        resp1 = self.client.post("/api/v1/checkout/create/", {
+            "item_type": "MEAL_PLAN",
+            "item_id": self.plan.id,
+        }, format="json")
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        checkout_id = resp1.data["data"]["checkout_id"]
+        session = CheckoutSession.objects.get(checkout_id=checkout_id)
+
+        self.assertEqual(session.metadata.get("attempt_count"), 1)
+        self.assertEqual(mock_create.call_count, 1)
+        idempotency_key_1 = mock_create.call_args[1]["idempotency_key"]
+        self.assertTrue(idempotency_key_1.endswith("_1"))
+
+        # 2. Retrying create while intent is still usable (e.g. client timed out and retries)
+        resp2 = self.client.post("/api/v1/checkout/create/", {
+            "item_type": "MEAL_PLAN",
+            "item_id": self.plan.id,
+        }, format="json")
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+        session.refresh_from_db()
+
+        # create() was NOT called again; attempt_count remains 1
+        self.assertEqual(mock_create.call_count, 1)
+        self.assertEqual(session.metadata.get("attempt_count"), 1)
+
+        # 3. Existing intent becomes canceled/unusable
+        intent_failed = MagicMock(
+            id="pi_retry_001",
+            client_secret="pi_retry_001_secret",
+            status="canceled",
+            amount=2999,
+            currency="usd",
+            last_payment_error="Payment cancelled"
+        )
+        intent_2 = MagicMock(
+            id="pi_retry_002",
+            client_secret="pi_retry_002_secret",
+            status="requires_payment_method",
+            amount=2999,
+            currency="usd",
+            last_payment_error=None
+        )
+        mock_retrieve.return_value = intent_failed
+        mock_create.return_value = intent_2
+
+        resp3 = self.client.post("/api/v1/checkout/create/", {
+            "item_type": "MEAL_PLAN",
+            "item_id": self.plan.id,
+        }, format="json")
+        self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
+        session.refresh_from_db()
+
+        # Now create() was called a second time with incremented attempt_count (_2)
+        self.assertEqual(mock_create.call_count, 2)
+        self.assertEqual(session.metadata.get("attempt_count"), 2)
+        idempotency_key_2 = mock_create.call_args[1]["idempotency_key"]
+        self.assertTrue(idempotency_key_2.endswith("_2"))
+
 
