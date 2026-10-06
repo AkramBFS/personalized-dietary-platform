@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import Plan, UserPlan, Invoice, Consultation, ServiceReview, PlanRating, PlanModerationLog
+from .models import (
+    Plan, UserPlan, Invoice, Consultation, ServiceReview, PlanRating, PlanModerationLog, CheckoutSession
+)
+
+
+@admin.register(CheckoutSession)
+class CheckoutSessionAdmin(admin.ModelAdmin):
+    list_display = ['checkout_id', 'user', 'item_type', 'item_id', 'resolved_price', 'currency', 'status', 'payment_intent_id', 'created_at', 'expires_at']
+    list_filter = ['status', 'item_type', 'created_at']
+    search_fields = ['checkout_id', 'user__username', 'user__email', 'payment_intent_id']
+    readonly_fields = ['checkout_id', 'created_at', 'expires_at']
 
 
 @admin.register(Plan)

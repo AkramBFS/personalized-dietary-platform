@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 
-from django.db import transaction
+from django.db import connection, models, transaction
 from django.utils import timezone
 
 import datetime
@@ -109,109 +109,12 @@ class PlanPurchaseView(APIView):
     permission_classes = [IsAuthenticated, IsClient]
 
     def post(self, request, pk):
-        # Get client
-        try:
-            client = Client.objects.get(user=request.user)
-        except Client.DoesNotExist:
-            return Response({"status": "error", "message": "Client not found."}, status=404)
-
-        # Get plan
-        try:
-            plan = Plan.objects.get(id=pk, status='approved')
-        except Plan.DoesNotExist:
-            return Response({
-                "status":  "error",
-                "message": "Plan not found or not approved.",
-                "code":    "PLAN_NOT_APPROVED"
-            }, status=404)
-
-        # Check already purchased
-        if UserPlan.objects.filter(client=client, plan=plan).exists():
-            return Response({
-                "status":  "error",
-                "message": "You have already purchased this plan.",
-                "code":    "ALREADY_PURCHASED"
-            }, status=409)
-
-        # Validate payment fields
-        serializer = PurchasePlanSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({
-                "status": "error",
-                "message": "Validation failed",
-                "errors": serializer.errors
-            }, status=400)
-
-        # Explicit server-side price verification (CROSS-001)
-        client_amount = request.data.get('amount_paid')
-        if client_amount is not None:
-            from decimal import Decimal
-            plan_price_dec = Decimal(str(plan.price or 0.0))
-            client_amount_dec = Decimal(str(client_amount))
-            if client_amount_dec != plan_price_dec:
-                return Response({
-                    "status": "error",
-                    "message": "Price tampering detected. Submitted price does not match plan price.",
-                    "code": "PRICE_TAMPERING_DETECTED"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Server is sole authority on price
-        amount_paid = plan.price or 0.0
-        import uuid
-        transaction_number = (
-            serializer.validated_data.get('transaction_number')
-            or f"TXN-PLAN-{uuid.uuid4().hex[:10].upper()}"
-        )
-
-        with transaction.atomic():
-            # 1 — Create UserPlan
-            user_plan = UserPlan.objects.create(
-                client            = client,
-                plan              = plan,
-                current_day_index = 0,
-                status            = 'active',
-            )
-
-            # 2 — Create Invoice
-            commission_rate = PLATFORM_COMMISSION
-            net_earnings    = round(amount_paid * (1 - commission_rate), 2)
-
-            Invoice.objects.create(
-                client             = client,
-                nutritionist       = plan.creator,
-                transaction_number = transaction_number,
-                total_paid         = amount_paid,
-                commission_rate    = commission_rate,
-                net_earnings       = net_earnings,
-                item_type          = 'plan',
-            )
-
-            # 3 — Add to NutritionistPatients if not already there
-            NutritionistPatient.objects.get_or_create(
-                nutritionist = plan.creator,
-                client       = client,
-                defaults     = {'patient_type': 'from_custom_plan'}
-            )
-            from notifications.utils import notify
-
-            notify(
-                recipient   = plan.creator.user,
-                sender      = request.user,
-                title       = 'New Plan Purchase',
-                message     = f'A client purchased your plan: {plan.title}.',
-                target_type = 'plan',
-                target_id   = plan.id,
-            )
-
-        serializer_out = UserPlanSerializer(user_plan)
         return Response({
-            "status": "success",
-            "data": {
-                "user_plan":        serializer_out.data,
-                "transaction_number": transaction_number,
-                "net_earnings":     net_earnings,
-            }
-        }, status=201)
+            "status": "error",
+            "message": "Direct plan purchase is deprecated. Please initiate checkout at /api/v1/checkout/create/.",
+            "code": "ENDPOINT_DEPRECATED"
+        }, status=status.HTTP_410_GONE)
+
 
 
 # ── Nutritionist Directory ─────────────────────────────────────────────────────
@@ -333,13 +236,24 @@ class NutritionistAvailabilityCheckView(APIView):
                 }
             })
 
-        # Get already booked consultations on this date
-        booked = Consultation.objects.filter(
-            nutritionist     = nutritionist,
-            appointment_date = target_date,
-        ).exclude(status='cancelled').values_list('start_time', 'end_time')
-
-        booked_slots = [(s, e) for s, e in booked]
+        # Get already booked consultations on this date (via SECURITY DEFINER DB function)
+        if connection.vendor == 'postgresql':
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT start_time, end_time FROM get_nutritionist_booked_slots(%s, %s);",
+                    [nutritionist.pk, target_date]
+                )
+                booked_slots = cursor.fetchall()
+        else:
+            fifteen_mins_ago = timezone.now() - datetime.timedelta(minutes=15)
+            booked = Consultation.objects.filter(
+                nutritionist=nutritionist,
+                appointment_date=target_date,
+            ).filter(
+                models.Q(status__in=['scheduled', 'notified', 'finished']) |
+                models.Q(status='pending_payment', created_at__gte=fifteen_mins_ago)
+            ).values_list('start_time', 'end_time')
+            booked_slots = list(booked)
 
         # Compute free slots
         free_slots = []

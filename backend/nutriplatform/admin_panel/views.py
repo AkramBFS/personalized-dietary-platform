@@ -529,98 +529,15 @@ class SubscriptionStatusView(APIView):
 
 
 class SubscriptionPurchaseView(APIView):
-    permission_classes = [IsAuthenticated, IsClient]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        try:
-            client = Client.objects.get(user=request.user)
-        except Client.DoesNotExist:
-            return Response({"status": "error", "message": "Client not found."}, status=404)
-
-        if client.is_banned:
-            return Response({
-                "status": "error",
-                "message": "Account is suspended.",
-                "code": "ACCOUNT_BANNED"
-            }, status=403)
-
-        serializer = PurchaseSubscriptionSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({
-                "status": "error",
-                "errors": serializer.errors
-            }, status=400)
-
-        plan_type          = serializer.validated_data['plan_type']
-        transaction_number = serializer.validated_data['transaction_number']
-        payment_intent_id  = serializer.validated_data.get('payment_intent_id')
-
-        # Check duplicate transaction
-        if PremiumSubscription.objects.filter(
-            transaction_number=transaction_number
-        ).exists():
-            return Response({
-                "status":  "error",
-                "message": "Transaction number already used.",
-            }, status=409)
-
-        # Authoritative Server Pricing (Finding 7)
-        tier_code = 'pro_monthly' if plan_type == 'monthly' else 'pro_yearly'
-        tier = SubscriptionTierPricing.objects.filter(tier_code=tier_code).first()
-        server_price = float(tier.price) if tier else (9.99 if plan_type == 'monthly' else 89.99)
-
-        client_amount = serializer.validated_data.get('amount_paid')
-        if client_amount is not None:
-            if round(float(client_amount), 2) < round(server_price, 2):
-                return Response({
-                    "status": "error",
-                    "message": f"Price tampering detected. Server tier price is {server_price}.",
-                    "code": "PRICE_MISMATCH"
-                }, status=400)
-
-        if payment_intent_id:
-            from marketplace.stripe_utils import verify_stripe_payment_intent
-            verify_stripe_payment_intent(
-                payment_intent_id=payment_intent_id,
-                expected_amount=server_price,
-                expected_currency='usd',
-                expected_user_id=request.user.id
-            )
-
-        amount_paid = server_price
-
-        # Calculate end date
-        from django.utils import timezone
-        start_date = timezone.now()
-        if plan_type == 'monthly':
-            end_date = timezone.now() + datetime.timedelta(days=30)
-        else:
-            end_date = timezone.now() + datetime.timedelta(days=365)
-
-        # Expire any existing active subscriptions
-        PremiumSubscription.objects.filter(
-            client=client, status='active'
-        ).update(status='expired')
-
-        # Create new subscription
-        subscription = PremiumSubscription.objects.create(
-            client             = client,
-            plan_type          = plan_type,
-            amount_paid        = amount_paid,
-            transaction_number = transaction_number,
-            start_date         = start_date,
-            end_date           = end_date,
-            status             = 'active',
-        )
-
-        # Update client is_premium flag
-        client.is_premium = True
-        client.save()
-
         return Response({
-            "status": "success",
-            "data":   SubscriptionSerializer(subscription).data
-        }, status=201)
+            "status": "error",
+            "message": "This endpoint is deprecated and disabled. Use the /api/marketplace/checkout/ flow.",
+            "code": "ENDPOINT_DEPRECATED"
+        }, status=status.HTTP_410_GONE)
+
 
 # In admin_panel/views.py — ADD this import at the top:
 from nutritionist.models import Language

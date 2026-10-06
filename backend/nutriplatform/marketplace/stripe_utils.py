@@ -20,20 +20,36 @@ def verify_stripe_payment_intent(
     3. Currency must match expected currency (default 'usd')
     4. Metadata user_id and checkout_id must match when present
     """
+    payments_mode = getattr(settings, 'PAYMENTS_MODE', 'stripe')
+    is_testing = getattr(settings, 'TESTING', False)
+    is_test_token = (
+        payment_intent_id.startswith('pi_mock_succeeded_')
+        or payment_intent_id.startswith('pi_test_succeeded_')
+        or payment_intent_id.startswith('pi_test_')
+        or payment_intent_id.startswith('pi_mock_')
+    )
+
+    # 1. Test tokens must be accepted only when TESTING or PAYMENTS_MODE=fake, never in production
+    if is_test_token and not (is_testing or payments_mode == 'fake'):
+        raise ValidationError("Test payment tokens are not accepted in production mode.")
+
+    # 2. In test/fake mode, accept synthetic test tokens directly
+    if (is_testing or payments_mode == 'fake') and is_test_token:
+        if payments_mode == 'fake' and not getattr(settings, 'DEBUG', False) and not is_testing:
+            raise ValidationError("PAYMENTS_MODE=fake is forbidden when DEBUG is False.")
+        return {
+            "id": payment_intent_id,
+            "status": "succeeded",
+            "amount_received": int(round(expected_amount * 100)),
+            "currency": expected_currency.lower(),
+            "metadata": {
+                "user_id": str(expected_user_id) if expected_user_id else "",
+                "checkout_id": str(expected_checkout_id) if expected_checkout_id else ""
+            }
+        }
+
     stripe_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
     if not stripe_key:
-        # In mock / sandbox testing when no Stripe secret key is configured:
-        if payment_intent_id.startswith('pi_mock_succeeded_') or payment_intent_id.startswith('pi_test_succeeded_'):
-            return {
-                "id": payment_intent_id,
-                "status": "succeeded",
-                "amount_received": int(round(expected_amount * 100)),
-                "currency": expected_currency.lower(),
-                "metadata": {
-                    "user_id": str(expected_user_id) if expected_user_id else "",
-                    "checkout_id": str(expected_checkout_id) if expected_checkout_id else ""
-                }
-            }
         raise ValidationError("Stripe payments are not configured on this server.")
 
     stripe.api_key = stripe_key
@@ -69,12 +85,12 @@ def verify_stripe_payment_intent(
     metadata = intent.get("metadata") or {}
     if expected_user_id is not None:
         intent_user_id = metadata.get("user_id")
-        if intent_user_id and str(intent_user_id) != str(expected_user_id):
+        if not intent_user_id or str(intent_user_id) != str(expected_user_id):
             raise ValidationError("PaymentIntent user does not match authenticated user.")
 
     if expected_checkout_id is not None:
         intent_checkout_id = metadata.get("checkout_id")
-        if intent_checkout_id and str(intent_checkout_id) != str(expected_checkout_id):
+        if not intent_checkout_id or str(intent_checkout_id) != str(expected_checkout_id):
             raise ValidationError("PaymentIntent checkout session mismatch.")
 
     return intent

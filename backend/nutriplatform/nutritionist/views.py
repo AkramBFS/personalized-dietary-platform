@@ -258,7 +258,7 @@ class NutritionistConsultationListView(APIView):
 
         consultations = Consultation.objects.filter(
             nutritionist=nutritionist
-        ).select_related('client__user')
+        ).exclude(status='pending_payment').select_related('client__user')
 
         # Optional filters
         status_filter = request.query_params.get('status')

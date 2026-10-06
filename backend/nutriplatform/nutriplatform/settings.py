@@ -224,6 +224,11 @@ TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='1x000000000000000
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+PAYMENTS_MODE = config('PAYMENTS_MODE', default='stripe')
+
+if PAYMENTS_MODE == 'fake' and not DEBUG:
+    raise RuntimeError("PAYMENTS_MODE=fake is strictly forbidden when DEBUG is False.")
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE':       'NutriPlatform API',

@@ -45,7 +45,7 @@ def get_nutrition_data(ingredients: list) -> dict:
 
     results = []
     if uncached_items:
-        batch_query = ", ".join([f"100g {name}" for name in set(uncached_items)])
+        batch_query = ", ".join([f"100g {name}" for name in sorted(set(uncached_items))])
         try:
             response = requests.get(
                 CALORIE_NINJAS_URL,

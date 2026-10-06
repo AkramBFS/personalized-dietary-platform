@@ -234,7 +234,7 @@ class ClientConsultationListView(APIView):
 
         consultations = Consultation.objects.filter(
             client=client
-        ).select_related(
+        ).exclude(status='pending_payment').select_related(
             'nutritionist__user'
         ).order_by('-created_at')
 
@@ -243,16 +243,14 @@ class ClientConsultationListView(APIView):
 
 
 class ConsultationBookView(APIView):
-    permission_classes = [IsAuthenticated, IsClient]
-
-    PLATFORM_COMMISSION = 0.20
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         return Response({
             "status": "error",
-            "message": "Direct booking is deprecated. Please initiate booking through /api/marketplace/checkout/session/.",
-            "code": "CHECKOUT_REQUIRED"
-        }, status=status.HTTP_400_BAD_REQUEST)
+            "message": "This endpoint is deprecated and disabled. Use the /api/marketplace/checkout/ flow.",
+            "code": "ENDPOINT_DEPRECATED"
+        }, status=status.HTTP_410_GONE)
 
 
 
