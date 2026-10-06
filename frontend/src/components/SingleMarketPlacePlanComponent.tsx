@@ -193,12 +193,12 @@ export default function SingleMarketPlacePlanComponent({ slug }: PlanProps) {
         "Failed to create marketplace checkout session",
         checkoutIssue,
       );
-      router.push(
-        buildPaymentUrl({
-          type: "marketplace-plan",
-          planId: plan.id,
-        }),
+      setCheckoutError(
+        checkoutIssue instanceof Error
+          ? checkoutIssue.message
+          : "Failed to initialize checkout. Please try again.",
       );
+      setIsStartingCheckout(false);
     }
   };
 

@@ -63,12 +63,10 @@ export default function SubscriptionPlans() {
       router.push(buildPaymentUrl(session.checkout_id));
     } catch (checkoutIssue) {
       console.error("Failed to create subscription checkout session", checkoutIssue);
-      router.push(
-        buildPaymentUrl({
-          type: "subscription",
-          planType,
-          amount: prices[planType],
-        }),
+      setCheckoutError(
+        checkoutIssue instanceof Error
+          ? checkoutIssue.message
+          : "Failed to initialize subscription checkout. Please try again.",
       );
     }
   };

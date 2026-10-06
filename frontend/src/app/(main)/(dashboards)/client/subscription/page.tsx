@@ -132,15 +132,9 @@ export default function SubscriptionPage() {
     } catch (err) {
       console.error("Checkout creation failed", err);
       toast.error(
-        "Checkout session was unavailable, so we switched to the standard payment flow.",
-      );
-      setShowPaymentModal(false);
-      router.push(
-        buildPaymentUrl({
-          type: "subscription",
-          planType: selectedPlan,
-          amount: prices[selectedPlan],
-        }),
+        err instanceof Error
+          ? err.message
+          : "Failed to create checkout session. Please try again.",
       );
     } finally {
       setIsProcessing(false);

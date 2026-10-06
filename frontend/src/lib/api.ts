@@ -214,10 +214,15 @@ export interface CheckoutSessionCreateResult {
 }
 
 export interface CheckoutSessionSummary {
+  checkout_id?: string;
+  client_secret?: string | null;
+  publishable_key?: string;
   type: "MEAL_PLAN" | "CONSULTATION" | "SUBSCRIPTION";
   type_label: string;
   price: number;
   currency: string;
+  expires_at?: string;
+  status?: string;
   details: Record<string, unknown>;
 }
 

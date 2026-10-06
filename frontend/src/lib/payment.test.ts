@@ -3,9 +3,7 @@ import {
   buildPaymentUrl,
   parseCheckoutId,
   parsePaymentContext,
-  generateTransactionNumber,
   formatPaymentAmount,
-  getSubscriptionAmount,
 } from "./payment";
 
 describe("payment utility", () => {
@@ -69,13 +67,5 @@ describe("payment utility", () => {
     expect(formatPaymentAmount(29.99)).toBe("$29.99");
     expect(formatPaymentAmount(0)).toBe("$0.00");
     expect(formatPaymentAmount(100)).toBe("$100.00");
-  });
-
-  it("generates transaction numbers with required prefix and random component", () => {
-    const txn = generateTransactionNumber("MEAL_PLAN");
-    expect(txn.startsWith("MEALPLAN-")).toBe(true);
-    const parts = txn.split("-");
-    expect(parts.length).toBe(3);
-    expect(Number(parts[1])).toBeGreaterThan(0);
   });
 });

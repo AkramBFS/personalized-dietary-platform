@@ -97,11 +97,6 @@ export function getSubscriptionAmount(planType: SubscriptionPlanType): number {
   return cachedSubscriptionPrices[planType] ?? DEFAULT_SUBSCRIPTION_PRICES[planType];
 }
 
-export function generateTransactionNumber(prefix: string): string {
-  const normalizedPrefix = prefix.replace(/[^a-z]/gi, "").toUpperCase();
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `${normalizedPrefix}-${Date.now()}-${random}`;
-}
 
 export function getSubscriptionCheckoutItemId(planType: SubscriptionPlanType): 1 | 2 {
   return planType === "monthly" ? 1 : 2;
