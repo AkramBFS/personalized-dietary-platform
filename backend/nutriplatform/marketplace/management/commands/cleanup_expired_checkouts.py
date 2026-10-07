@@ -52,6 +52,12 @@ class Command(BaseCommand):
                         )
                         self.stdout.write(f"Fulfilled recently succeeded checkout {session.checkout_id}.")
                         continue
+                    elif getattr(intent, 'status', '') == 'processing':
+                        # Intent is currently processing; leave session pending and do not cancel
+                        self.stdout.write(
+                            f"PaymentIntent {session.payment_intent_id} is processing; leaving session {session.checkout_id} pending."
+                        )
+                        continue
                     elif intent.status in ('requires_payment_method', 'requires_confirmation', 'requires_action'):
                         stripe.PaymentIntent.cancel(session.payment_intent_id)
                         cancelled_pi_count += 1

@@ -422,4 +422,106 @@ class CheckoutIntegrationTests(APITestCase):
         idempotency_key_2 = mock_create.call_args[1]["idempotency_key"]
         self.assertTrue(idempotency_key_2.endswith("_2"))
 
+    @patch("stripe.PaymentIntent.cancel")
+    @patch("stripe.PaymentIntent.retrieve")
+    def test_cleanup_expired_checkouts_fulfills_succeeded_leaves_processing_and_cancels_abandoned(
+        self, mock_retrieve, mock_cancel
+    ):
+        """
+        cleanup_expired_checkouts management command:
+        - Retrieves PaymentIntent before taking action.
+        - Fulfills if PaymentIntent succeeded.
+        - Leaves session pending if PaymentIntent is currently processing.
+        - Cancels PaymentIntent on Stripe and expires session if abandoned.
+        - Cancels stale consultation holds (>15m old).
+        """
+        from django.core.management import call_command
+
+        now = timezone.now()
+        past = now - datetime.timedelta(hours=2)
+
+        # 1. Succeeded session (abandoned checkout record but user completed payment in Stripe)
+        succeeded_session = CheckoutSession.objects.create(
+            user=self.client_user,
+            item_type='MEAL_PLAN',
+            item_id=self.plan.id,
+            resolved_price=self.plan.price,
+            currency='USD',
+            status='pending',
+            expires_at=past,
+            payment_intent_id='pi_clean_succeeded_123',
+        )
+
+        # 2. Processing session (e.g. async payment method like ACH / SEPA still settling)
+        processing_session = CheckoutSession.objects.create(
+            user=self.client_user,
+            item_type='MEAL_PLAN',
+            item_id=self.plan.id,
+            resolved_price=self.plan.price,
+            currency='USD',
+            status='pending',
+            expires_at=past,
+            payment_intent_id='pi_clean_processing_123',
+        )
+
+        # 3. Abandoned session (client dropped off during card entry)
+        abandoned_session = CheckoutSession.objects.create(
+            user=self.client_user,
+            item_type='MEAL_PLAN',
+            item_id=self.plan.id,
+            resolved_price=self.plan.price,
+            currency='USD',
+            status='pending',
+            expires_at=past,
+            payment_intent_id='pi_clean_abandoned_123',
+        )
+
+        # 4. Stale consultation hold (> 15 min old)
+        stale_hold = Consultation.objects.create(
+            client=self.client_profile,
+            nutritionist=self.nutritionist_profile,
+            appointment_date=datetime.date.today() + datetime.timedelta(days=7),
+            start_time="09:00:00",
+            end_time="10:00:00",
+            status="pending_payment",
+            price_paid=50.0,
+            consultation_type="advice_only",
+        )
+        Consultation.objects.filter(id=stale_hold.id).update(
+            created_at=now - datetime.timedelta(minutes=20)
+        )
+
+        def side_effect_retrieve(pi_id):
+            if pi_id == 'pi_clean_succeeded_123':
+                return MagicMock(id=pi_id, status='succeeded')
+            elif pi_id == 'pi_clean_processing_123':
+                return MagicMock(id=pi_id, status='processing')
+            elif pi_id == 'pi_clean_abandoned_123':
+                return MagicMock(id=pi_id, status='requires_payment_method')
+            raise ValueError(f"Unknown pi_id {pi_id}")
+
+        mock_retrieve.side_effect = side_effect_retrieve
+
+        call_command('cleanup_expired_checkouts')
+
+        # Assertions:
+        # Succeeded session was fulfilled into confirmed
+        succeeded_session.refresh_from_db()
+        self.assertEqual(succeeded_session.status, 'confirmed')
+        self.assertTrue(UserPlan.objects.filter(client=self.client_profile, plan=self.plan).exists())
+
+        # Processing session was untouched (left pending)
+        processing_session.refresh_from_db()
+        self.assertEqual(processing_session.status, 'pending')
+
+        # Abandoned session was expired and cancelled on Stripe
+        abandoned_session.refresh_from_db()
+        self.assertEqual(abandoned_session.status, 'expired')
+        mock_cancel.assert_called_once_with('pi_clean_abandoned_123')
+
+        # Stale hold was cancelled
+        stale_hold.refresh_from_db()
+        self.assertEqual(stale_hold.status, 'cancelled')
+
+
 
