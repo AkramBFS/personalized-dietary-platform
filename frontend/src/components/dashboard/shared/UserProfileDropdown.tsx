@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,8 @@ interface UserProfileDropdownProps {
 
 export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
@@ -121,36 +123,39 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-border" />
 
-        {/* Theme Toggle */}
-        <DropdownMenuItem
-          className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
-          onClick={() => {
-            if (resolvedTheme === "light") setTheme("dark");
-            else if (resolvedTheme === "dark") setTheme("special");
-            else setTheme("light");
-          }}
-        >
-          {mounted && resolvedTheme === "light" && (
-            <>
-              <Moon className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span>Dark Mode</span>
-            </>
-          )}
-          {mounted && resolvedTheme === "dark" && (
-            <>
-              <Palette className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span>Special Mode</span>
-            </>
-          )}
-          {mounted && resolvedTheme === "special" && (
-            <>
-              <Sun className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span>Light Mode</span>
-            </>
-          )}
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator className="bg-border" />
+        {/* Theme Toggle (Hidden on landing page) */}
+        {!isLanding && (
+          <>
+            <DropdownMenuItem
+              className="cursor-pointer hover:bg-accent text-foreground hover:text-primary transition-colors py-2.5 group"
+              onClick={() => {
+                if (resolvedTheme === "light") setTheme("dark");
+                else if (resolvedTheme === "dark") setTheme("special");
+                else setTheme("light");
+              }}
+            >
+              {mounted && resolvedTheme === "light" && (
+                <>
+                  <Moon className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+              {mounted && resolvedTheme === "dark" && (
+                <>
+                  <Palette className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span>Special Mode</span>
+                </>
+              )}
+              {mounted && resolvedTheme === "special" && (
+                <>
+                  <Sun className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span>Light Mode</span>
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border" />
+          </>
+        )}
         <DropdownMenuItem
           asChild
           className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 py-2.5"
