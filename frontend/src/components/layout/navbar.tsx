@@ -501,7 +501,7 @@ export const HeroHeader = ({ isLanding = false }: { isLanding?: boolean }) => {
               <div className="py-6">
                 {profileIdentity ? (
                   <div className="space-y-4">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">
                       Account
                     </p>
                     <div className="flex items-center gap-4 px-1 pb-4">

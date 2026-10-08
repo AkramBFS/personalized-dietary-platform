@@ -119,7 +119,7 @@ export default function SubscriptionCards() {
               </div>
 
               <div className="mb-8 pb-6 border-b border-border">
-                <div className="text-3xl font-[Syne] font-bold text-foreground">
+                <div className="text-3xl font-[Syne] font-bold text-foreground tabular-nums">
                   ${prices.yearly}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
@@ -194,7 +194,7 @@ export default function SubscriptionCards() {
               </div>
 
               <div className="mb-8 pb-6 border-b border-border">
-                <div className="text-3xl font-[Syne] font-bold text-foreground">
+                <div className="text-3xl font-[Syne] font-bold text-foreground tabular-nums">
                   ${prices.monthly}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
