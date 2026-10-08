@@ -34,7 +34,6 @@ import {
   CalculatorIcon,
   UserGroupIcon,
   SparklesIcon,
-  CalendarIcon,
   BookOpenIcon,
   UsersIcon,
   InformationCircleIcon,
@@ -74,13 +73,31 @@ const mainNav = [
   { name: "About", href: "/about", icon: InformationCircleIcon },
 ];
 
-export const HeroHeader = () => {
+export const HeroHeader = ({ isLanding = false }: { isLanding?: boolean }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [profileIdentity, setProfileIdentity] =
     useState<CurrentProfileIdentity | null>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const headerTopRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (!isLanding || !headerTopRef.current) return;
+      gsap.to(headerTopRef.current, {
+        yPercent: -100,
+        autoAlpha: 0,
+        scrollTrigger: {
+          trigger: document.body,
+          start: "top top",
+          end: "200px top",
+          scrub: 0.5,
+        },
+      });
+    },
+    { scope: headerTopRef, dependencies: [isLanding] },
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -150,10 +167,127 @@ export const HeroHeader = () => {
   );
 
   return (
-    <header
-      ref={headerRef}
-      className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
-    >
+    <>
+      {/* STATE A: INITIAL EPHEMERAL HEADER (Landing page only, scrubs out over 200px) */}
+      {isLanding && (
+        <header
+          ref={headerTopRef}
+          className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
+        >
+          <nav className="w-full flex justify-center pointer-events-none">
+            <div className="pointer-events-auto transition-all duration-500 ease-in-out backdrop-blur-md flex items-center w-full rounded-none px-6 py-3 border border-transparent bg-transparent">
+              <div className="mx-auto w-full max-w-7xl">
+                <div className="flex items-center justify-between">
+                  {/* LOGO */}
+                  <div className="flex lg:flex-1">
+                    <Link href="/" className="flex items-center space-x-3">
+                      <Logo />
+                    </Link>
+                  </div>
+
+                  {/* MOBILE MENU BUTTON */}
+                  <div className="flex lg:hidden">
+                    <button
+                      type="button"
+                      onClick={() => setMobileMenuOpen(true)}
+                      className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-foreground hover:text-emerald-300 focus:outline-none"
+                    >
+                      <Bars3Icon className="size-7" />
+                    </button>
+                  </div>
+
+                  {/* DESKTOP NAV */}
+                  <PopoverGroup className="hidden lg:flex lg:gap-x-8 lg:items-center">
+                    <Popover className="relative">
+                      <PopoverButton className="flex items-center gap-x-1 text-sm font-medium uppercase tracking-[0.025em] text-foreground hover:text-emerald-300 transition-colors outline-none focus:outline-none focus:ring-0">
+                        Services
+                        <ChevronDownIcon className="size-4 transition-transform group-data-[open]:rotate-180" />
+                      </PopoverButton>
+
+                      <PopoverPanel
+                        transition
+                        className="absolute -left-8 top-full z-10 mt-3 w-screen max-w-md rounded-3xl bg-card/95 backdrop-blur-md border border-border shadow-2xl transition"
+                      >
+                        <div className="p-3">
+                          {services.map((item) => (
+                            <div
+                              key={item.name}
+                              className="flex items-center gap-x-6 rounded-2xl p-4 hover:bg-accent transition"
+                            >
+                              <div className="flex size-11 items-center justify-center rounded-lg bg-secondary">
+                                <item.icon className="size-6 text-foreground" />
+                              </div>
+                              <div>
+                                <Link
+                                  href={item.href}
+                                  className="font-semibold text-foreground"
+                                >
+                                  {item.name}
+                                </Link>
+                                <p className="text-sm text-muted-foreground">
+                                  {item.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverPanel>
+                    </Popover>
+
+                    {mainNav.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className="text-sm font-medium uppercase tracking-[0.025em] text-foreground hover:text-emerald-300 transition-colors"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </PopoverGroup>
+
+                  {/* RIGHT SIDE ACTIONS */}
+                  <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+                    {profileIdentity ? (
+                      <UserProfileDropdown
+                        user={{
+                          username: profileIdentity.username,
+                          email: profileIdentity.email,
+                          avatarUrl: profileIdentity.avatarUrl,
+                        }}
+                        role={profileIdentity.role}
+                      />
+                    ) : (
+                      <>
+                        <Button
+                          key="login-btn-top"
+                          variant="ghost"
+                          className="animate-in fade-in zoom-in duration-300 text-foreground hover:text-emerald-300"
+                          asChild
+                        >
+                          <Link href="/login">Login</Link>
+                        </Button>
+                        <Button
+                          key="signup-btn-top"
+                          asChild
+                          className="animate-in fade-in zoom-in duration-300 shadow-sm bg-button-primary text-button-primary-foreground hover:bg-button-primary/90"
+                        >
+                          <Link href="/register">Sign Up</Link>
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </nav>
+        </header>
+      )}
+
+      {/* STATE B: PERSISTENT FLOATING GLASS PILL */}
+      <header
+        ref={headerRef}
+        className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
+      >
       <nav className="w-full flex justify-center pointer-events-none">
         <div
           className={cn(
@@ -432,5 +566,6 @@ export const HeroHeader = () => {
         </DialogPanel>
       </Dialog>
     </header>
+    </>
   );
 };
