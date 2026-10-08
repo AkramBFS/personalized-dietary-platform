@@ -112,10 +112,56 @@ export default function ContentSection() {
   const panel1Ref = useRef<HTMLDivElement>(null);
   const panel2Ref = useRef<HTMLDivElement>(null);
   const panel3Ref = useRef<HTMLDivElement>(null);
+  const panel3DimRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useGSAP(
     () => {
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // Arrival tween for Panel 1 (before pinning)
+        gsap.fromTo(
+          panel1Ref.current,
+          { yPercent: 8, opacity: 0 },
+          {
+            yPercent: 0,
+            opacity: 1,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: containerRef.current,
+              start: "top 80%",
+              end: "top top",
+              scrub: 1,
+            },
+          },
+        );
+
+        // Panel 3 Dim on approach of pricing section
+        const pricingEl = document.getElementById("pricing");
+        if (pricingEl && panel3DimRef.current) {
+          gsap.fromTo(
+            panel3DimRef.current,
+            { opacity: 0 },
+            {
+              opacity: 0.4,
+              ease: "none",
+              scrollTrigger: {
+                trigger: pricingEl,
+                start: "top bottom",
+                end: "top top",
+                scrub: true,
+              },
+            },
+          );
+        }
+      });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set(panel1Ref.current, { yPercent: 0, opacity: 1 });
+        if (panel3DimRef.current) gsap.set(panel3DimRef.current, { opacity: 0 });
+      });
+
       gsap.set(panel2Ref.current, { xPercent: 100 });
       gsap.set(panel3Ref.current, { xPercent: 100 });
 
@@ -318,6 +364,13 @@ export default function ContentSection() {
           })}
         </div>
       </div>
+
+      {/* Panel 3 Exit Dim Overlay */}
+      <div
+        ref={panel3DimRef}
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full bg-canvas-deep opacity-0 pointer-events-none z-30"
+      />
     </section>
   );
 }

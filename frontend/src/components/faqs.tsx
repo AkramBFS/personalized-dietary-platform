@@ -104,7 +104,7 @@ export default function FAQsThree() {
               <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl mb-6">
                 Got questions? <br />
                 <span className="text-muted-foreground">
-                  We've got answers.
+                  We&apos;ve got answers.
                 </span>
               </h2>
 
@@ -175,6 +175,13 @@ export default function FAQsThree() {
           </motion.div>
         </div>
       </div>
+
+      {/* FAQ Dim Overlay triggered by CTA approach */}
+      <div
+        id="faq-dim-overlay"
+        aria-hidden="true"
+        className="absolute inset-0 bg-canvas-deep opacity-0 pointer-events-none z-20"
+      />
     </section>
   );
 }
