@@ -168,8 +168,9 @@ export default function ContentSection() {
 
   return (
     <section
+      id="services"
       ref={containerRef}
-      className="relative z-20 -mt-[100vh] h-screen w-full bg-background overflow-hidden text-foreground font-syne"
+      className="relative z-20 h-screen w-full bg-background overflow-hidden text-foreground font-syne"
     >
       {/* =========================================
           SCREEN 1: SERVICES
