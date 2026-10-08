@@ -105,13 +105,13 @@
   --destructive-foreground: #ffffff;
 
   /* LIGHT MODE BUTTONS */
-  --button-primary: #059669;
+  --button-primary: #047857;
   --button-primary-foreground: #ffffff;
   --button-secondary: #f3f4f6;
   --button-secondary-foreground: #4b5563;
   --button-accent: #ecfdf5;
-  --button-accent-foreground: #10b981;
-  --button-destructive: #f87171;
+  --button-accent-foreground: #047857;
+  --button-destructive: #dc2626;
   --button-destructive-foreground: #ffffff;
 
   /* MACRO COLORS - LIGHT */
@@ -130,7 +130,7 @@
   /* gray-100 */
   --input: #e5e7eb;
   /* gray-200 */
-  --ring: #3DDC97;
+  --ring: #059669;
 
   --shadow-brand-val: 0 4px 12px 0 rgba(97, 221, 163, 0.15);
   --sidebar-background: #ffffff;
