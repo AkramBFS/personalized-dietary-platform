@@ -118,7 +118,8 @@ dist
 **/.vitepress/dist
 # Django
 db.sqlite3
-media/
+backend/nutriplatform/media/
+!frontend/src/app/api/backend/media/
 
 # vitepress cache directory
 **/.vitepress/cache
