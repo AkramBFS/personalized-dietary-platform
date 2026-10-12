@@ -29,6 +29,7 @@ import {
   getNutritionistDetail,
   type PendingNutritionist,
 } from "@/lib/admin";
+import { resolveApiUrl } from "@/lib/api";
 
 export default function AdminApprovalsPage() {
   const [records, setRecords] = useState<PendingNutritionist[]>([]);
@@ -106,7 +107,6 @@ export default function AdminApprovalsPage() {
     }
   };
 
-  const BACKEND_URL = "http://localhost:8000";
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
@@ -293,11 +293,7 @@ export default function AdminApprovalsPage() {
                             Certification Document:
                           </span>
                           <a
-                            href={
-                              selected.cert_image_url.startsWith("http")
-                                ? selected.cert_image_url
-                                : `${BACKEND_URL}/media/${selected.cert_image_url.replace(/^\/+/, "")}`
-                            }
+                            href={resolveApiUrl(selected.cert_image_url)}
                             target="_blank"
                             rel="noreferrer"
                             className="text-sm text-primary underline block truncate hover:text-primary/80"

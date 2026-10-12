@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getCookie, withAuthHeader } from "./auth";
+import { withAuthHeader } from "./auth";
 
 const isBrowser = typeof window !== "undefined";
 const rawUrl = isBrowser
@@ -22,15 +22,35 @@ export function unwrapResponse<T>(payload: ApiEnvelope<T> | T): T {
 
 export function resolveApiUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  if (/^(blob:|data:|https?:\/\/)/i.test(url)) return url;
+  if (/^(blob:|data:)/i.test(url)) return url;
 
-  const backendOrigin = process.env.NEXT_PUBLIC_DJANGO_ORIGIN || "http://127.0.0.1:8000";
-  let normalizedPath = url.replace(/^\/+/, "");
-  if (!normalizedPath.startsWith("media/")) {
-    normalizedPath = `media/${normalizedPath}`;
+  if (url.startsWith("/api/backend/media/")) {
+    return url;
   }
 
-  return `${backendOrigin}/${normalizedPath}`;
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      if (
+        (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost") &&
+        parsed.pathname.includes("/media/")
+      ) {
+        const mediaIndex = parsed.pathname.indexOf("/media/");
+        const rel = parsed.pathname.substring(mediaIndex + "/media/".length);
+        return `/api/backend/media/${rel.replace(/^\/+/, "")}`;
+      }
+    } catch {
+      // ignore
+    }
+    return url;
+  }
+
+  let normalizedPath = url.replace(/^\/+/, "");
+  if (normalizedPath.startsWith("media/")) {
+    normalizedPath = normalizedPath.slice("media/".length);
+  }
+
+  return `/api/backend/media/${normalizedPath}`;
 }
 
 const api = axios.create({
