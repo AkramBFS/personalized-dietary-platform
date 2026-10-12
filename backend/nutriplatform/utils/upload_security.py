@@ -1,6 +1,8 @@
 import io
-import os
+import logging
+import re
 import uuid
+from dataclasses import dataclass
 from typing import Tuple, Dict, Any, Optional
 from PIL import Image, ImageOps, UnidentifiedImageError
 from django.conf import settings
@@ -8,9 +10,22 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from rest_framework.exceptions import ValidationError
 
+logger = logging.getLogger(__name__)
+
 MAX_UPLOAD_SIZE_GENERAL = 5 * 1024 * 1024   # 5 MB
 MAX_UPLOAD_SIZE_AI = 10 * 1024 * 1024       # 10 MB
+MAX_UPLOAD_SIZE_CERT = 10 * 1024 * 1024     # 10 MB (certification PDF or image)
 
+# Formats accepted from users. Detection is by Pillow's decoder (content), never by
+# file name or client-declared content type.
+DEFAULT_ALLOWED_FORMATS = ('JPEG', 'PNG', 'WEBP')
+# GIF is accepted only by the legacy re-encode/audit tooling (converted to PNG).
+LEGACY_ALLOWED_FORMATS = DEFAULT_ALLOWED_FORMATS + ('GIF',)
+
+_OUTPUT_FORMAT = {'JPEG': 'JPEG', 'PNG': 'PNG', 'WEBP': 'WEBP', 'GIF': 'PNG'}
+_OUTPUT_EXT = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp'}
+
+# Retained for callers that import it; the sanitizer itself no longer uses it.
 ALLOWED_MIME_TYPES = {
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
@@ -18,11 +33,15 @@ ALLOWED_MIME_TYPES = {
     'image/webp': 'webp',
 }
 
-MAGIC_SIGNATURES = {
-    'jpg': [b'\xff\xd8\xff'],
-    'png': [b'\x89PNG\r\n\x1a\n'],
-    'webp': [b'RIFF'],  # and 'WEBP' at offset 8
-}
+
+def _pixel_cap() -> int:
+    """One pixel ceiling for all image ingestion, shared with the AI normalizer."""
+    return int(getattr(settings, 'AI_IMAGE_MAX_PIXELS', 40_000_000))
+
+
+def _max_side() -> int:
+    return int(getattr(settings, 'UPLOAD_IMAGE_MAX_SIDE', 2048))
+
 
 
 def validate_request_content_length(request, max_bytes: Optional[int] = None) -> None:
@@ -44,84 +63,256 @@ def validate_request_content_length(request, max_bytes: Optional[int] = None) ->
             pass
 
 
+@dataclass(frozen=True)
+class SanitizedImage:
+    data: bytes
+    ext: str
+    format: str
+    width: int
+    height: int
+    source_format: str
+
+
+def _reject(field: str, message: str):
+    raise ValidationError({field: message})
+
+
+def sanitize_image_bytes(
+    raw: bytes,
+    *,
+    allowed_formats: tuple = DEFAULT_ALLOWED_FORMATS,
+    max_pixels: Optional[int] = None,
+    max_side: Optional[int] = None,
+    field: str = 'file',
+) -> SanitizedImage:
+    """
+    Decode untrusted image bytes and rebuild a brand-new, metadata-free image.
+
+    Re-encoding is the defence; no signature scanning is performed. Steps:
+      1. Pillow decodes only the allowed formats (``formats=`` restricts the decoders).
+      2. Dimensions are read from the header and checked against the pixel cap
+         BEFORE any pixel data is decoded. ``Image.MAX_IMAGE_PIXELS`` is never touched.
+      3. First frame only (animated GIF/WebP flattened).
+      4. ``exif_transpose`` applies the orientation, then every piece of metadata
+         (EXIF/GPS, XMP, ICC, text chunks) is dropped by copying raw pixels into a fresh image.
+      5. Downscale to ``max_side`` and re-encode. GIF is converted to PNG.
+    """
+    max_pixels = int(max_pixels or _pixel_cap())
+    max_side = int(max_side or _max_side())
+    allowed = tuple(f.upper() for f in allowed_formats)
+
+    if not raw:
+        _reject(field, 'Uploaded image file is empty.')
+
+    try:
+        img = Image.open(io.BytesIO(raw), formats=list(allowed))
+    except Exception:
+        # Covers unidentified formats (SVG/HTML/PDF/...), Pillow's own bomb guard, truncated headers.
+        _reject(field, 'Invalid or unsupported image. Only JPEG, PNG, and WebP images are accepted.')
+
+    try:
+        source_format = (img.format or '').upper()
+        width, height = img.size
+        if width < 1 or height < 1 or (width * height) > max_pixels:
+            _reject(field, f'Image dimensions exceed the allowed limit of {max_pixels} pixels.')
+
+        if source_format == 'JPEG':
+            # Let libjpeg decode at reduced scale when the source is far larger than we keep.
+            img.draft(None, (max_side, max_side))
+
+        img.seek(0)
+        img.load()
+        img = ImageOps.exif_transpose(img)
+
+        if max(img.size) > max_side:
+            img.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+
+        out_format = _OUTPUT_FORMAT[source_format]
+        has_alpha = img.mode in ('RGBA', 'LA', 'PA') or (img.mode == 'P' and 'transparency' in img.info)
+        if out_format == 'JPEG':
+            target_mode = img.mode if img.mode in ('RGB', 'L') else 'RGB'
+        else:
+            target_mode = 'RGBA' if has_alpha else (img.mode if img.mode in ('RGB', 'L') else 'RGB')
+        if img.mode != target_mode:
+            img = img.convert(target_mode)
+
+        # Fresh image from raw pixels: nothing from the original container survives.
+        clean = Image.frombytes(img.mode, img.size, img.tobytes())
+        save_kwargs = {'JPEG': {'quality': 85, 'optimize': True},
+                       'PNG': {'optimize': True},
+                       'WEBP': {'quality': 85}}[out_format]
+        buf = io.BytesIO()
+        clean.save(buf, format=out_format, **save_kwargs)
+        return SanitizedImage(
+            data=buf.getvalue(),
+            ext=_OUTPUT_EXT[out_format],
+            format=out_format,
+            width=clean.width,
+            height=clean.height,
+            source_format=source_format,
+        )
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.warning('Image sanitization failed: %s', type(exc).__name__)
+        _reject(field, 'The image could not be processed. It may be corrupted.')
+    finally:
+        try:
+            img.close()
+        except Exception:
+            pass
+
+
+def _read_bounded(uploaded_file, max_size_bytes: int, field: str) -> bytes:
+    """Read an upload while enforcing the byte cap on the actual stream, not the declared size."""
+    if not uploaded_file:
+        _reject(field, 'No file uploaded.')
+    declared = getattr(uploaded_file, 'size', None)
+    if declared is not None and declared > max_size_bytes:
+        _reject(field, f'File size exceeds maximum allowed limit of {max_size_bytes // (1024 * 1024)} MB.')
+    if hasattr(uploaded_file, 'seek'):
+        uploaded_file.seek(0)
+    raw = uploaded_file.read(max_size_bytes + 1)
+    if len(raw) > max_size_bytes:
+        _reject(field, f'File size exceeds maximum allowed limit of {max_size_bytes // (1024 * 1024)} MB.')
+    return raw
+
+
+def _safe_prefix(destination_prefix: str) -> str:
+    clean = destination_prefix.strip('/').replace('\\', '/')
+    if not clean or '..' in clean.split('/') or clean.startswith('/'):
+        raise ValueError(f'Unsafe destination prefix: {destination_prefix!r}')
+    return clean
+
+
+def store_bytes(data: bytes, destination_prefix: str, ext: str) -> str:
+    """Persist already-sanitized bytes under a server-chosen random filename. Returns the storage path."""
+    prefix = _safe_prefix(destination_prefix)
+    return default_storage.save(f"{prefix}/{uuid.uuid4().hex}.{ext}", ContentFile(data))
+
+
+def sanitize_image_upload(
+    uploaded_file,
+    max_size_bytes: int = MAX_UPLOAD_SIZE_GENERAL,
+    allowed_formats: tuple = DEFAULT_ALLOWED_FORMATS,
+    field: str = 'file',
+) -> SanitizedImage:
+    """Validate + rebuild an uploaded image in memory without writing anything to storage."""
+    raw = _read_bounded(uploaded_file, max_size_bytes, field)
+    return sanitize_image_bytes(raw, allowed_formats=allowed_formats, field=field)
+
+
 def validate_and_sanitize_image(
     uploaded_file,
     destination_prefix: str,
     max_size_bytes: int = MAX_UPLOAD_SIZE_GENERAL,
-    allowed_formats: tuple = ('JPEG', 'PNG', 'WEBP'),
+    allowed_formats: tuple = DEFAULT_ALLOWED_FORMATS,
 ) -> str:
     """
-    Validates and sanitizes an uploaded image file:
-    1. Enforces file size limits (5MB general / 10MB AI vision).
-    2. Enforces MIME type & magic byte signature. Rejects SVG, scripts, and executables.
-    3. Performs Pillow Image.verify() for structural integrity.
-    4. Strips EXIF/metadata and re-encodes image into safe in-memory buffer.
-    5. Saves using safe UUIDv4 filename into default_storage.
-    Returns relative storage path.
+    Sanitize an uploaded image (see ``sanitize_image_bytes``) and store it under
+    ``<destination_prefix>/<uuid4hex>.<ext>``. The client filename is never used.
+    Returns the relative storage path.
     """
-    if not uploaded_file:
-        raise ValidationError({"file": "No file uploaded."})
+    result = sanitize_image_upload(uploaded_file, max_size_bytes, allowed_formats)
+    return store_bytes(result.data, destination_prefix, result.ext)
 
-    # 1. Size check
-    if uploaded_file.size > max_size_bytes:
-        max_mb = max_size_bytes // (1024 * 1024)
-        raise ValidationError({"file": f"File size exceeds maximum allowed limit of {max_mb} MB."})
 
-    # 2. Reject SVG or executable extensions explicitly
-    orig_name = getattr(uploaded_file, 'name', '') or ''
-    ext = os.path.splitext(orig_name)[1].lower().lstrip('.')
-    if ext in ['svg', 'exe', 'bat', 'sh', 'py', 'php', 'html', 'htm', 'js']:
-        raise ValidationError({"file": f"File type .{ext} is not permitted for upload."})
+# ── Certifications (PDF or image) ──────────────────────────────────────────────
 
-    # 3. Magic bytes validation
-    uploaded_file.seek(0)
-    header = uploaded_file.read(32)
-    uploaded_file.seek(0)
+PDF_MAX_PAGES = 20
+_PDF_HEADER = re.compile(rb'^%PDF-(1\.[0-7]|2\.0)')
+# Raw-token scan (second layer; the structural walk below is the primary one).
+_PDF_ACTIVE_TOKENS = re.compile(
+    rb'/(JavaScript|JS|Launch|EmbeddedFile|RichMedia|XFA|SubmitForm|ImportData)(?![A-Za-z0-9])'
+)
+_PDF_NAME_HEX_ESCAPE = re.compile(rb'/[^\s/<>\[\]()%]*#[0-9A-Fa-f]{2}')
+_PDF_DANGEROUS_ACTIONS = {'/JavaScript', '/Launch', '/SubmitForm', '/ImportData', '/GoToR', '/GoToE', '/Rendition'}
+_PDF_DANGEROUS_ANNOTS = {'/RichMedia', '/Screen', '/Movie', '/Sound', '/3D', '/FileAttachment'}
 
-    detected_format = None
-    if header.startswith(b'\xff\xd8\xff'):
-        detected_format = 'JPEG'
-    elif header.startswith(b'\x89PNG\r\n\x1a\n'):
-        detected_format = 'PNG'
-    elif header.startswith(b'RIFF') and len(header) >= 12 and header[8:12] == b'WEBP':
-        detected_format = 'WEBP'
-    else:
-        raise ValidationError({"file": "Invalid image format. Only JPEG, PNG, and WebP are accepted."})
 
-    if detected_format not in allowed_formats:
-        raise ValidationError({"file": f"Image format {detected_format} is not allowed."})
+def _scan_pdf_best_effort(raw: bytes, field: str) -> None:
+    """
+    BEST-EFFORT screening of a PDF. This does NOT make a PDF safe: the file is stored
+    byte-for-byte, parser differentials between pypdf and a viewer remain possible, and no
+    antivirus engine is involved. The real controls are delivery-side (private storage,
+    owner/staff-only download, attachment disposition, nosniff, sandbox CSP).
 
-    # 4. Pillow integrity verification
+    Checks: header at offset 0 (%PDF-1.0..1.7 / 2.0, no leading junk), '%%EOF' in the last
+    1 KiB, parseable by pypdf, not encrypted, 1..PDF_MAX_PAGES pages, no document-level
+    /OpenAction action dict, /AA, /Names JavaScript or EmbeddedFiles, /AcroForm XFA, no page-level
+    /AA, no annotation with a Launch/JavaScript/SubmitForm/ImportData/GoToR/GoToE/Rendition action or a
+    RichMedia/Screen/Movie/Sound/3D/FileAttachment subtype, plus a raw-byte scan for the same
+    active-content names and any #xx-escaped name (used to hide the others).
+    """
+    if not _PDF_HEADER.match(raw):
+        _reject(field, 'Invalid PDF header.')
+    if b'%%EOF' not in raw[-1024:]:
+        _reject(field, 'Invalid or truncated PDF.')
+    if _PDF_ACTIVE_TOKENS.search(raw) or _PDF_NAME_HEX_ESCAPE.search(raw):
+        _reject(field, 'PDF contains active or obfuscated content and was rejected.')
+
     try:
-        with Image.open(uploaded_file) as img:
-            img.verify()
-    except Exception as e:
-        raise ValidationError({"file": f"Corrupted or invalid image file: {str(e)}"})
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(raw), strict=False)
+        if reader.is_encrypted:
+            _reject(field, 'Encrypted PDFs are not accepted.')
+        pages = list(reader.pages[: PDF_MAX_PAGES + 1])
+        if not 1 <= len(pages) <= PDF_MAX_PAGES:
+            _reject(field, f'PDF must contain between 1 and {PDF_MAX_PAGES} pages.')
 
-    # 5. Re-encode image to strip EXIF and metadata payloads
-    uploaded_file.seek(0)
-    try:
-        with Image.open(uploaded_file) as img:
-            output_buffer = io.BytesIO()
-            save_format = detected_format
+        root = reader.trailer['/Root']
+        open_action = root.get('/OpenAction')
+        if open_action is not None and hasattr(open_action, 'get_object'):
+            open_action = open_action.get_object()
+        if hasattr(open_action, 'get') and not isinstance(open_action, list):
+            _reject(field, 'PDF contains an automatic action and was rejected.')
+        if '/AA' in root:
+            _reject(field, 'PDF contains automatic actions and was rejected.')
+        names = root.get('/Names')
+        if names is not None:
+            names = names.get_object()
+            if '/JavaScript' in names or '/EmbeddedFiles' in names:
+                _reject(field, 'PDF contains scripts or attachments and was rejected.')
+        acro = root.get('/AcroForm')
+        if acro is not None and '/XFA' in acro.get_object():
+            _reject(field, 'PDF contains XFA forms and was rejected.')
 
-            # Convert RGBA/Palette images to RGB when saving as JPEG
-            if save_format == 'JPEG' and img.mode in ('RGBA', 'P', 'LA'):
-                img = img.convert('RGB')
+        for page in pages:
+            if '/AA' in page:
+                _reject(field, 'PDF contains automatic actions and was rejected.')
+            for annot_ref in page.get('/Annots') or []:
+                annot = annot_ref.get_object()
+                if str(annot.get('/Subtype')) in _PDF_DANGEROUS_ANNOTS:
+                    _reject(field, 'PDF contains embedded media and was rejected.')
+                action = annot.get('/A')
+                if action is not None and str(action.get_object().get('/S')) in _PDF_DANGEROUS_ACTIONS:
+                    _reject(field, 'PDF contains active actions and was rejected.')
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.warning('PDF screening failed to parse: %s', type(exc).__name__)
+        _reject(field, 'The PDF could not be read. It may be corrupted.')
 
-            img.save(output_buffer, format=save_format)
-            output_buffer.seek(0)
-    except Exception as e:
-        raise ValidationError({"file": f"Failed to process and re-encode image: {str(e)}"})
 
-    # 6. Generate UUID4 safe filename and persist
-    safe_ext = 'jpg' if save_format == 'JPEG' else save_format.lower()
-    unique_filename = f"{uuid.uuid4().hex}.{safe_ext}"
-    clean_prefix = destination_prefix.strip('/').replace('\\', '/')
-    destination_path = f"{clean_prefix}/{unique_filename}"
+def sanitize_certification_upload(uploaded_file) -> Tuple[bytes, str]:
+    """
+    Validate a certification document in memory (nothing is written). Returns (bytes, extension).
+    PDF: best-effort screened, bytes unchanged. Image (JPEG/PNG/WebP): fully re-encoded.
+    """
+    raw = _read_bounded(uploaded_file, MAX_UPLOAD_SIZE_CERT, 'cert_image')
+    if raw.startswith(b'%PDF-'):
+        _scan_pdf_best_effort(raw, 'cert_image')
+        return raw, 'pdf'
+    result = sanitize_image_bytes(raw, field='cert_image')
+    return result.data, result.ext
 
-    saved_path = default_storage.save(destination_path, ContentFile(output_buffer.getvalue()))
-    return saved_path
+
+def validate_and_sanitize_certification(uploaded_file, destination_prefix: str = 'certifications') -> str:
+    """Sanitize a certification (PDF or image) and store it under a random server-chosen name."""
+    data, ext = sanitize_certification_upload(uploaded_file)
+    return store_bytes(data, destination_prefix, ext)
+
+
 
 
 def validate_and_normalize_meal_image(uploaded_file) -> Tuple[ContentFile, Dict[str, Any]]:
@@ -164,8 +355,8 @@ def validate_and_normalize_meal_image(uploaded_file) -> Tuple[ContentFile, Dict[
     if len(raw_bytes) == 0:
         raise ValidationError({"file": "Uploaded image file is empty."})
 
-    # 2. Pillow bounded inspection
-    Image.MAX_IMAGE_PIXELS = max_pixels
+    # 2. Pillow bounded inspection. The pixel cap is enforced explicitly from the header below;
+    #    Pillow's process-global Image.MAX_IMAGE_PIXELS is deliberately left untouched.
     try:
         with Image.open(io.BytesIO(raw_bytes)) as img:
             orig_format = (img.format or "").upper()
