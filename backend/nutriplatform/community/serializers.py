@@ -23,7 +23,7 @@ class PostSerializer(serializers.ModelSerializer):
             'status', 'is_approved',
             'created_at', 'comments',
         ]
-        read_only_fields = ['id', 'status', 'is_approved', 'created_at']
+        read_only_fields = ['id', 'status', 'is_approved', 'created_at', 'image_url']
 
 
 class CreatePostSerializer(serializers.Serializer):

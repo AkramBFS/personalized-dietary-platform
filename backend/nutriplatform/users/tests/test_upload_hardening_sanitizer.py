@@ -230,3 +230,5 @@ class ImageSanitizerHardeningTests(_TempMediaMixin, SimpleTestCase):
         raw = base[:2] + b'\xff\xe1' + struct.pack('>H', len(xmp) + 2) + xmp + base[2:]
         result = sanitize_image_bytes(raw)
         self.assertEqual(result.format, 'JPEG')
+        self.assertNotIn(b'http://ns.adobe.com/xap/1.0/', result.data)
+        self.assertNotIn(b'<?xpacket', result.data)

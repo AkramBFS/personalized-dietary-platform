@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
-from django.conf.urls.static import static
 from client.views import ServiceReviewView
 from utils.health_views import RedisHealthCheckView, LiveHealthCheckView
+from utils.media_views import AuthoritativeMediaServeView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
@@ -23,10 +23,8 @@ urlpatterns = [
     path('api/v1/chatbot/', include('chatbot.urls')),
     path('api/v1/health/live/',  LiveHealthCheckView.as_view(),  name='live-health-v1'),
     path('api/v1/health/redis/', RedisHealthCheckView.as_view(), name='redis-health-v1'),
+    path('media/<path:file_path>', AuthoritativeMediaServeView.as_view(), name='media-serve'),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 

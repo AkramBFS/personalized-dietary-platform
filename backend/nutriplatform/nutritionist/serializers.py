@@ -82,6 +82,7 @@ class NutritionistProfileSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'nutritionist_id', 'rating',
             'approval_status', 'rejection_reason', 'cert_image_url',
+            'profile_photo_url',
         ]
 
     def get_languages(self, obj):
@@ -161,7 +162,7 @@ class NutritionistPlanSerializer(serializers.ModelSerializer):
             'rating_avg', 'created_at',
             'target_client',
         ]
-        read_only_fields = ['id', 'status', 'rating_avg', 'created_at']
+        read_only_fields = ['id', 'status', 'rating_avg', 'created_at', 'cover_image_url']
 
 
 

@@ -82,12 +82,24 @@ class ClientProfileView(APIView):
                 detail = exc.detail.get('profile_photo') if isinstance(exc.detail, dict) else exc.detail
                 return Response({'status': 'error', 'errors': {'profile_photo': [str(detail)]}}, status=400)
 
+        old_path = client.profile_photo_url
         new_path = None
+        default_assets = {'default_avatar.png', 'default_nutri.png', 'default_plan_cover.jpg'}
+
         try:
             with transaction.atomic():
                 if sanitized:
                     new_path = store_bytes(sanitized.data, 'profiles/clients', sanitized.ext)
                     serializer.save(profile_photo_url=new_path)
+
+                    if old_path and old_path not in default_assets and old_path != new_path:
+                        def _cleanup_old_avatar(target_path=old_path):
+                            if not Client.objects.filter(profile_photo_url=target_path).exists():
+                                try:
+                                    default_storage.delete(target_path)
+                                except Exception:
+                                    pass
+                        transaction.on_commit(_cleanup_old_avatar)
                 else:
                     serializer.save()
         except Exception:
