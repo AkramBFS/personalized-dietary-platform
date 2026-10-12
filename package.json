@@ -1,0 +1,15 @@
+{
+  "name": "personalized-dietary-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personalized Dietary Assessment Platform - Monorepo Launcher",
+  "scripts": {
+    "predev": "node scripts/preflight.js",
+    "dev": "concurrently -k --prefix \"[{name}]\" --names \"AI,API,WORKER,WEB\" -c \"cyan,green,yellow,magenta\" \"cd ai-service/food_api && python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload\" \"cd backend/nutriplatform && python manage.py runserver 127.0.0.1:8000\" \"cd backend/nutriplatform && python manage.py run_ai_worker\" \"cd frontend && npm run dev\"",
+    "start": "npm run dev",
+    "stop:redis": "docker stop nutriplatform_dev_redis"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
