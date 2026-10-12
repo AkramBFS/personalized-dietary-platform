@@ -107,3 +107,45 @@ The rollout must follow this exact sequence:
    - GitHub Actions CI runner uses PostgreSQL 15, whereas Docker Compose and production environments use PostgreSQL 17. CI runners should be standardized on PostgreSQL 17.
 9. **JWT Blacklisting Table Cleanup**:
    - `OutstandingToken` and `BlacklistedToken` tables grow indefinitely without a periodic cron job running `flushexpiredtokens`.
+
+---
+
+## 5. Media Serving & Upload Security (Release 2)
+
+### 5.1 Authoritative 4-Tier Media Classification
+All media requests are routed exclusively through Django's `AuthoritativeMediaServeView` mounted at `media/<path:file_path>`. The legacy `static(settings.MEDIA_URL)` helper has been completely removed across both `DEBUG=True` and `DEBUG=False`.
+
+| Tier | Path Prefix / Asset | Access Control Policy | Content Disposition | Header & Security Enforcements |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | `certifications/*` | **Staff Only** (`user.is_staff` or superuser). Anonymous and non-staff receive 401/403. | `attachment; filename="certification.<ext>"` (Forces download, prevents browser execution) | `X-Content-Type-Options: nosniff`<br>`Content-Security-Policy: default-src 'none'; sandbox` |
+| **Tier 2** | `profiles/clients/*` | **Owner, Assigned Nutritionist, or Staff**.<br>- Owner: `Client.user == request.user`<br>- Assigned: `NutritionistPatient` active relationship<br>- Staff: `user.is_staff`<br>Other users receive 403. | `inline` | `X-Content-Type-Options: nosniff`<br>`Content-Security-Policy: default-src 'none'; sandbox` |
+| **Tier 3** | `profiles/nutritionists/*`, `plans/covers/*`, `posts/*`, defaults | **Authenticated Users** (or public for exact default placeholders: `default_avatar.png`, `default_nutri.png`, `default_plan_cover.jpg`). Anonymous requests for tenant assets receive 401. | `inline` | `X-Content-Type-Options: nosniff`<br>`Content-Security-Policy: default-src 'none'; sandbox` |
+| **Tier 4** | `ai_logs/*` | **Hard Blocked**. Returns HTTP 404 unconditionally, even if the file exists on disk, in both `DEBUG=True` and `DEBUG=False`. | N/A | Never served via HTTP. Internal worker access only. |
+
+### 5.2 RLS Independence & Explicit-Check Contract
+1. **RLS Independence**: Today, Django runs under the PostgreSQL superuser (`postgres`), which unconditionally bypasses RLS (`BYPASSRLS`). The avatar check must never rely on RLS alone. Authorization in `AuthoritativeMediaServeView` performs explicit Python/ORM joins:
+   - Client ownership: `Client.objects.filter(user=request.user, profile_photo_url=clean_path).exists()`
+   - Assigned nutritionist: `NutritionistPatient.objects.filter(nutritionist__user=request.user, client__profile_photo_url=clean_path).exists()`
+2. **Restricted Role Compatibility**: When testing or executing under `SET ROLE nutriplatform_app`, the view initializes RLS context via `set_rls_context(request.user)` so tenant queries execute safely under PostgreSQL RLS.
+3. **Prohibition of Web Elevation**: Web-tier serving code must **never** set `app.is_staff = 'true'` or `app.is_system_worker = 'true'`.
+4. **Preservation Guarantee for RLS Workstream**: The RLS workstream must preserve the `nutritionist_patients` visibility for assigned nutritionists when switching connection pools to `nutriplatform_app`.
+
+### 5.3 Frontend Media Proxying Architecture
+- **Route Handler**: Next.js App Router implements `/api/backend/media/[...path]` in `frontend/src/app/api/backend/media/[...path]/route.ts`.
+- **HttpOnly Cookie Forwarding**: Browsers cannot access `access_token` via JavaScript for `<img>` tags or `<a href>` links. Same-origin proxying ensures the browser includes the HttpOnly session cookie on every media request. The route handler forwards it as `Authorization: Bearer <token>` to upstream Django.
+- **Automatic Token Refresh**: If upstream returns 401, the route handler exchanges `refresh_token` for a fresh `access_token`, updates the client session cookie, and retries the upstream request.
+- **Universal Resolution**: `resolveApiUrl(url)` in `frontend/src/lib/api.ts` maps relative media paths and localhost backend URLs to `/api/backend/media/...` in both browser and SSR contexts.
+
+### 5.4 Deployment Order & Rollback Strategy
+1. **Pre-Deployment Audit**:
+   - Run `python manage.py audit_and_sanitize_media --dry-run` to inspect all media files and generate an inventory of valid vs non-conforming files.
+2. **Production Media Sanitization (`--apply`)**:
+   - Run `python manage.py audit_and_sanitize_media --apply`.
+   - Rejects are moved to an out-of-tree quarantine directory (`../media_quarantine_<timestamp>`).
+   - A JSON mapping file (`quarantine_mapping_<timestamp>.json`) records `original_path`, `new_path`, and hashes.
+   - Rollback is instantaneous by executing an out-of-tree script copying original files back from quarantine using the mapping file.
+3. **Deploy Code & Configuration**:
+   - Deploy backend code removing `static(settings.MEDIA_URL)` and mounting `AuthoritativeMediaServeView`.
+   - Deploy Next.js frontend with `/api/backend/media/[...path]` route handler and updated `resolveApiUrl`.
+4. **Release 3 Note (Throttling Scope)**:
+   - In Release 3 (Rate Limiting & Throttling), `/media/<path:file_path>` must be assigned a dedicated DRF throttle scope (`media_serving`) to prevent volumetric download abuse or slowloris file reads.
