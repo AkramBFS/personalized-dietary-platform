@@ -32,7 +32,7 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'activity_level',  
             'diet', 
         ]
-        read_only_fields = ['client_id', 'bmi', 'bmr', 'gender']
+        read_only_fields = ['client_id', 'bmi', 'bmr', 'gender', 'profile_photo_url']
 
 
 class MacroTargetSerializer(serializers.ModelSerializer):

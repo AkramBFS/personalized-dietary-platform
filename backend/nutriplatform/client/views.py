@@ -39,6 +39,9 @@ from marketplace.models import ServiceReview, PlanRating
 from community.models import FeedbackToAdmin
 from users.permissions import IsPremiumClient
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from django.core.files.storage import default_storage
+from utils.upload_security import MAX_UPLOAD_SIZE_GENERAL, sanitize_image_upload, store_bytes
 from django.utils import timezone
 
 
@@ -68,9 +71,32 @@ class ClientProfileView(APIView):
         if not serializer.is_valid():
             return Response({'status': 'error', 'errors': serializer.errors}, status=400)
 
-        
+        # Avatar upload: sanitized in memory first, so an invalid file rejects the whole request
+        # and nothing is written. The URL is never accepted from the client (read-only field).
+        photo = request.FILES.get('profile_photo') or request.FILES.get('avatar')
+        sanitized = None
+        if photo:
+            try:
+                sanitized = sanitize_image_upload(photo, MAX_UPLOAD_SIZE_GENERAL, field='profile_photo')
+            except DRFValidationError as exc:
+                detail = exc.detail.get('profile_photo') if isinstance(exc.detail, dict) else exc.detail
+                return Response({'status': 'error', 'errors': {'profile_photo': [str(detail)]}}, status=400)
 
-        serializer.save()
+        new_path = None
+        try:
+            with transaction.atomic():
+                if sanitized:
+                    new_path = store_bytes(sanitized.data, 'profiles/clients', sanitized.ext)
+                    serializer.save(profile_photo_url=new_path)
+                else:
+                    serializer.save()
+        except Exception:
+            if new_path:
+                try:
+                    default_storage.delete(new_path)
+                except Exception:
+                    pass
+            raise
         return Response({'status': 'success', 'data': serializer.data})
 
 

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.db import transaction
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -10,6 +11,11 @@ from client.models import Client
 from nutritionist.models import Nutritionist, NutritionistLanguage, Language
 from admin_panel.models import Country, Goal, Specialization
 from nutriplatform.middleware.rls import set_rls_context
+from utils.upload_security import (
+    sanitize_certification_upload,
+    sanitize_image_upload,
+    store_bytes,
+)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -20,6 +26,25 @@ def get_tokens_for_user(user):
         'access':  str(refresh.access_token),
         'refresh': str(refresh),
     }
+
+
+def _upload_error_message(exc: DRFValidationError) -> str:
+    """Flatten the sanitizer's {field: message} error into a plain message for a serializer field."""
+    detail = exc.detail
+    if isinstance(detail, dict):
+        detail = next(iter(detail.values()))
+    if isinstance(detail, (list, tuple)):
+        detail = detail[0]
+    return str(detail)
+
+
+def _delete_stored(paths):
+    """Best-effort removal of files written during a registration that then failed."""
+    for path in paths:
+        try:
+            default_storage.delete(path)
+        except Exception:
+            pass
 
 
 # ── Client Registration ────────────────────────────────────────────────────────
@@ -38,7 +63,7 @@ class RegisterClientSerializer(serializers.Serializer):
     country_id     = serializers.IntegerField()
     goal_id        = serializers.IntegerField()
     health_history = serializers.CharField(required=False, allow_blank=True)
-    profile_photo  = serializers.ImageField(required=False)
+    profile_photo  = serializers.FileField(required=False)
     activity_level = serializers.ChoiceField(
         choices=['sedentary', 'moderate', 'very_active'],
         required=False,
@@ -74,46 +99,54 @@ class RegisterClientSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid goal.")
         return value
 
+    def validate_profile_photo(self, value):
+        try:
+            return sanitize_image_upload(value, field='profile_photo')   # SanitizedImage; nothing written yet
+        except DRFValidationError as exc:
+            raise serializers.ValidationError(_upload_error_message(exc))
+
     def create(self, validated_data):
-        # Extract file separately
+        # Already sanitized in validate_profile_photo
         profile_photo = validated_data.pop('profile_photo', None)
 
-        with transaction.atomic():
-            # Create User
-            user = User.objects.create_user(
-                username = validated_data['username'],
-                email    = validated_data['email'],
-                password = validated_data['password'],
-                role     = 'client',
-            )
-            set_rls_context(user)
-
-            # Handle profile photo upload
-            photo_url = 'default_avatar.png'
-            if profile_photo:
-                path = default_storage.save(
-                    f'profiles/clients/{user.id}_{profile_photo.name}',
-                    profile_photo
+        stored_paths = []
+        try:
+            with transaction.atomic():
+                # Create User
+                user = User.objects.create_user(
+                    username = validated_data['username'],
+                    email    = validated_data['email'],
+                    password = validated_data['password'],
+                    role     = 'client',
                 )
-                photo_url = path
+                set_rls_context(user)
 
-            # Create Client profile
-            client = Client.objects.create(
-                user              = user,
-                age               = validated_data['age'],
-                weight            = validated_data['weight'],
-                height            = validated_data['height'],
-                gender            = validated_data['gender'],
-                country_id        = validated_data['country_id'],
-                goal_id           = validated_data['goal_id'],
-                health_history    = validated_data.get('health_history', ''),
-                profile_photo_url = photo_url,
-                activity_level    = validated_data.get('activity_level', None), 
-                diet              = validated_data.get('diet', None),           
-                # BMI and BMR are auto-calculated in Client.save()
-            )
+                # Persist the sanitized avatar under a server-chosen random name
+                photo_url = 'default_avatar.png'
+                if profile_photo:
+                    photo_url = store_bytes(profile_photo.data, 'profiles/clients', profile_photo.ext)
+                    stored_paths.append(photo_url)
 
-            return user, client
+                # Create Client profile
+                client = Client.objects.create(
+                    user              = user,
+                    age               = validated_data['age'],
+                    weight            = validated_data['weight'],
+                    height            = validated_data['height'],
+                    gender            = validated_data['gender'],
+                    country_id        = validated_data['country_id'],
+                    goal_id           = validated_data['goal_id'],
+                    health_history    = validated_data.get('health_history', ''),
+                    profile_photo_url = photo_url,
+                    activity_level    = validated_data.get('activity_level', None),
+                    diet              = validated_data.get('diet', None),
+                    # BMI and BMR are auto-calculated in Client.save()
+                )
+
+                return user, client
+        except Exception:
+            _delete_stored(stored_paths)
+            raise
 
 
 # ── Nutritionist Registration ──────────────────────────────────────────────────
@@ -131,12 +164,12 @@ class RegisterNutritionistSerializer(serializers.Serializer):
     consultation_price = serializers.FloatField(min_value=0)
     bio                = serializers.CharField(required=False, allow_blank=True)
     certification_ref  = serializers.CharField()
-    cert_image         = serializers.ImageField()
+    cert_image         = serializers.FileField()
     language_ids       = serializers.ListField(
                             child=serializers.IntegerField(),
                             min_length=1
                          )
-    profile_photo      = serializers.ImageField(required=False)
+    profile_photo      = serializers.FileField(required=False)
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
@@ -168,56 +201,68 @@ class RegisterNutritionistSerializer(serializers.Serializer):
             raise serializers.ValidationError("One or more language IDs are invalid.")
         return value
 
+    def validate_cert_image(self, value):
+        try:
+            return sanitize_certification_upload(value)          # -> (bytes, ext); nothing written yet
+        except DRFValidationError as exc:
+            raise serializers.ValidationError(_upload_error_message(exc))
+
+    def validate_profile_photo(self, value):
+        try:
+            return sanitize_image_upload(value, field='profile_photo')
+        except DRFValidationError as exc:
+            raise serializers.ValidationError(_upload_error_message(exc))
+
     def create(self, validated_data):
-        cert_image    = validated_data.pop('cert_image')
+        cert_data, cert_ext = validated_data.pop('cert_image')
         profile_photo = validated_data.pop('profile_photo', None)
         language_ids  = validated_data.pop('language_ids')
 
-        with transaction.atomic():
-            # Create User
-            user = User.objects.create_user(
-                username = validated_data['username'],
-                email    = validated_data['email'],
-                password = validated_data['password'],
-                role     = 'nutritionist',
-            )
-            set_rls_context(user)
-
-            # Handle file uploads
-            cert_path = default_storage.save(
-                f'certifications/{user.id}_{cert_image.name}',
-                cert_image
-            )
-            photo_url = 'default_nutri.png'
-            if profile_photo:
-                path = default_storage.save(
-                    f'profiles/nutritionists/{user.id}_{profile_photo.name}',
-                    profile_photo
+        stored_paths = []
+        try:
+            with transaction.atomic():
+                # Create User
+                user = User.objects.create_user(
+                    username = validated_data['username'],
+                    email    = validated_data['email'],
+                    password = validated_data['password'],
+                    role     = 'nutritionist',
                 )
-                photo_url = path
+                set_rls_context(user)
 
-            # Create Nutritionist profile
-            nutritionist = Nutritionist.objects.create(
-                user               = user,
-                country_id         = validated_data['country_id'],
-                specialization_id  = validated_data['specialization_id'],
-                years_experience   = validated_data['years_experience'],
-                consultation_price = validated_data['consultation_price'],
-                bio                = validated_data.get('bio', ''),
-                certification_ref  = validated_data['certification_ref'],
-                cert_image_url     = cert_path,
-                approval_status    = 'pending',
-                profile_photo_url  = photo_url,
-            )
+                # Persist already-sanitized files under server-chosen random names
+                cert_path = store_bytes(cert_data, 'certifications', cert_ext)
+                stored_paths.append(cert_path)
+                photo_url = 'default_nutri.png'
+                if profile_photo:
+                    photo_url = store_bytes(profile_photo.data, 'profiles/nutritionists', profile_photo.ext)
+                    stored_paths.append(photo_url)
 
-            # Add languages (ManyToMany via junction table)
-            for lang_id in language_ids:
-                NutritionistLanguage.objects.create(
-                    nutritionist=nutritionist,
-                    language_id=lang_id
+                # Create Nutritionist profile
+                nutritionist = Nutritionist.objects.create(
+                    user               = user,
+                    country_id         = validated_data['country_id'],
+                    specialization_id  = validated_data['specialization_id'],
+                    years_experience   = validated_data['years_experience'],
+                    consultation_price = validated_data['consultation_price'],
+                    bio                = validated_data.get('bio', ''),
+                    certification_ref  = validated_data['certification_ref'],
+                    cert_image_url     = cert_path,
+                    approval_status    = 'pending',
+                    profile_photo_url  = photo_url,
                 )
 
-            return user, nutritionist
+                # Add languages (ManyToMany via junction table)
+                for lang_id in language_ids:
+                    NutritionistLanguage.objects.create(
+                        nutritionist=nutritionist,
+                        language_id=lang_id
+                    )
+
+                return user, nutritionist
+        except Exception:
+            _delete_stored(stored_paths)
+            raise
 
 
 # ── Login ──────────────────────────────────────────────────────────────────────
