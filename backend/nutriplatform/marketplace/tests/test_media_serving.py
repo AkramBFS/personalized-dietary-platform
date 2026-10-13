@@ -154,6 +154,20 @@ class AuthoritativeMediaServeViewTests(TestCase):
         self.api.force_authenticate(user=self.user_client1)
         resp = self.api.get('/media/plans/covers/custom_plan.jpg')
         self.assertEqual(resp.status_code, 200)
+        self.assertIn('private', resp['Cache-Control'])
+        self.assertEqual(resp['Content-Disposition'], 'inline')
+
+    def test_custom_plan_cover_allowed_for_assigned_nutritionist(self):
+        self.api.force_authenticate(user=self.user_nutri1)
+        resp = self.api.get('/media/plans/covers/custom_plan.jpg')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('private', resp['Cache-Control'])
+
+    def test_custom_plan_cover_allowed_for_staff(self):
+        self.api.force_authenticate(user=self.user_staff)
+        resp = self.api.get('/media/plans/covers/custom_plan.jpg')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('private', resp['Cache-Control'])
 
     def test_custom_plan_cover_forbidden_for_other_client(self):
         self.api.force_authenticate(user=self.user_client2)
@@ -169,6 +183,8 @@ class AuthoritativeMediaServeViewTests(TestCase):
         self.api.force_authenticate(user=self.user_client2)
         resp = self.api.get('/media/posts/post1.jpg')
         self.assertEqual(resp.status_code, 200)
+        self.assertIn('private', resp['Cache-Control'])
+        self.assertEqual(resp['Content-Disposition'], 'inline')
 
     # ── Tier 6: Certifications ────────────────────────────────────────────────
     def test_certification_requires_auth(self):
@@ -181,12 +197,15 @@ class AuthoritativeMediaServeViewTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp['Content-Type'], 'application/pdf')
         self.assertEqual(resp['Content-Disposition'], 'attachment; filename="certification.pdf"')
+        self.assertIn('private', resp['Cache-Control'])
 
     def test_certification_served_as_attachment_to_staff(self):
         self.api.force_authenticate(user=self.user_staff)
         resp = self.api.get('/media/certifications/nutri1_cert.pdf')
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
         self.assertEqual(resp['Content-Disposition'], 'attachment; filename="certification.pdf"')
+        self.assertIn('private', resp['Cache-Control'])
 
     def test_certification_forbidden_to_other_nutritionist_and_client(self):
         self.api.force_authenticate(user=self.user_nutri2)
@@ -213,12 +232,40 @@ class AuthoritativeMediaServeViewTests(TestCase):
         traversals = [
             '/media/..%2f..%2fetc/passwd',
             '/media/%2e%2e/%2e%2e/file.jpg',
+            '/media/%5c..%5cfile.jpg',
             '/media/profiles/nutritionists/..\\..\\c1_avatar.jpg',
             '/media/profiles/nutritionists/test%00.jpg',
+            '/media/C:/Windows/System32/cmd.exe',
+            '/media///etc/passwd',
         ]
         for path in traversals:
             resp = self.api.get(path)
             self.assertIn(resp.status_code, (400, 404), f"Path {path} did not reject with 400/404")
+
+    def test_symlink_rejection(self):
+        outside_file = Path(tempfile.gettempdir()) / 'outside_secret.jpg'
+        outside_file.write_bytes(b'secret')
+        symlink_path = self.media_path / 'profiles' / 'nutritionists' / 'symlink_nutri.jpg'
+        try:
+            os.symlink(outside_file, symlink_path)
+            resp = self.api.get('/media/profiles/nutritionists/symlink_nutri.jpg')
+            self.assertEqual(resp.status_code, 400)
+        except OSError:
+            # On Windows without SeCreateSymbolicLinkPrivilege, symlink creation may raise OSError
+            pass
+        finally:
+            if symlink_path.is_symlink() or symlink_path.exists():
+                symlink_path.unlink(missing_ok=True)
+            outside_file.unlink(missing_ok=True)
+
+    def test_unsupported_extensions_rejected(self):
+        bad_files = ['bad.exe', 'script.sh', 'index.php', 'vector.svg', 'page.html']
+        for bf in bad_files:
+            target = self.media_path / bf
+            target.write_bytes(b'fake content')
+            resp = self.api.get(f'/media/{bf}')
+            self.assertEqual(resp.status_code, 404, f"Extension {bf} was not rejected with 404")
+            target.unlink(missing_ok=True)
 
     # ── Restricted Role Verification under nutriplatform_app ─────────────────
     def test_media_serve_under_restricted_role(self):
@@ -228,7 +275,7 @@ class AuthoritativeMediaServeViewTests(TestCase):
         with connection.cursor() as cursor:
             try:
                 cursor.execute("SET ROLE nutriplatform_app;")
-                # Test avatar check for owner
+                # Test avatar check for owner -> 200
                 self.api.force_authenticate(user=self.user_client1)
                 cursor.execute("SET LOCAL app.current_user_id = %s;", [str(self.user_client1.id)])
                 cursor.execute("SET LOCAL app.is_staff = 'false';")
@@ -241,5 +288,21 @@ class AuthoritativeMediaServeViewTests(TestCase):
                 cursor.execute("SET LOCAL app.is_staff = 'false';")
                 resp = self.api.get('/media/profiles/clients/c1_avatar.jpg')
                 self.assertEqual(resp.status_code, 403)
+
+                # Test certification check for owner -> 200
+                self.api.force_authenticate(user=self.user_nutri1)
+                cursor.execute("SET LOCAL app.current_user_id = %s;", [str(self.user_nutri1.id)])
+                cursor.execute("SET LOCAL app.is_staff = 'false';")
+                resp = self.api.get('/media/certifications/nutri1_cert.pdf')
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(resp['Content-Disposition'], 'attachment; filename="certification.pdf"')
+
+                # Test certification check for other nutritionist 2 -> 403
+                self.api.force_authenticate(user=self.user_nutri2)
+                cursor.execute("SET LOCAL app.current_user_id = %s;", [str(self.user_nutri2.id)])
+                cursor.execute("SET LOCAL app.is_staff = 'false';")
+                resp = self.api.get('/media/certifications/nutri1_cert.pdf')
+                self.assertEqual(resp.status_code, 403)
             finally:
                 cursor.execute("RESET ROLE;")
+

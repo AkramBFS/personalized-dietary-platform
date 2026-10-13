@@ -3,13 +3,16 @@ import re
 import uuid
 import shutil
 import io
+import hashlib
+import json
+import datetime
 from pathlib import Path
 from PIL import Image, ImageOps
 import pypdf
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction, connection
 
 from client.models import Client, AICalorieLog
 from nutritionist.models import Nutritionist
@@ -263,22 +266,47 @@ class Command(BaseCommand):
             return
 
         self.stdout.write(self.style.NOTICE("\n--- EXECUTING SANITIZATION & MIGRATION (--apply) ---"))
-        corrupted_dir = media_root / 'corrupted'
-        corrupted_dir.mkdir(parents=True, exist_ok=True)
+        now_ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_dir = media_root.parent / f"media_backup_{now_ts}"
+        quarantine_dir = media_root.parent / f"media_quarantine_{now_ts}"
+        mapping_file = media_root.parent / f"media_migration_mapping_{now_ts}.json"
 
-        # Move corrupt files to media/corrupted/
+        quarantine_dir.mkdir(parents=True, exist_ok=True)
+        backup_dir.mkdir(parents=True, exist_ok=True)
+
+        mapping_data = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "media_root": str(media_root),
+            "backup_dir": str(backup_dir),
+            "quarantine_dir": str(quarantine_dir),
+            "migrations": [],
+            "quarantined": [],
+        }
+
+        # 1. Move corrupt files to out-of-tree quarantine
         for c in corrupt_files:
             src = media_root / c['rel_path']
-            dest = corrupted_dir / Path(c['rel_path']).name
-            self.stdout.write(f"Moving corrupt file: {c['rel_path']} -> corrupted/{dest.name}")
+            dest = quarantine_dir / Path(c['rel_path']).name
+            self.stdout.write(f"Moving corrupt file: {c['rel_path']} -> quarantine/{dest.name}")
             shutil.move(str(src), str(dest))
+            mapping_data["quarantined"].append({
+                "rel_path": c['rel_path'],
+                "quarantine_path": str(dest),
+                "error": c['error'],
+            })
 
-        # Re-encode and migrate non-UUID DB files
+        # 2. Re-encode, convert GIFs, and migrate non-UUID DB files
         migrated_count = 0
         with transaction.atomic():
+            # Transaction-local staff elevation so migrations succeed under SET ROLE nutriplatform_app
+            if connection.vendor == 'postgresql':
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL app.is_staff = 'true';")
+
             for rec in db_records:
                 clean_url = rec['clean_url']
-                if clean_url in DEFAULT_ASSETS:
+                # Skip default assets and ai_logs
+                if clean_url in DEFAULT_ASSETS or clean_url.startswith('ai_logs/'):
                     continue
                 old_path = media_root / clean_url
                 if not old_path.exists():
@@ -286,42 +314,67 @@ class Command(BaseCommand):
 
                 fname = Path(clean_url).name
                 if is_uuid_filename(fname):
-                    # Already UUID
                     continue
 
                 prefix = Path(clean_url).parent.as_posix()
                 ext = old_path.suffix.lower()
 
+                # Read raw bytes and backup to out-of-tree backup folder
+                raw_bytes = old_path.read_bytes()
+                orig_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+                backup_target = backup_dir / clean_url
+                backup_target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(str(old_path), str(backup_target))
+
                 # Process file
+                action = 'reencode'
                 if ext == '.pdf':
                     new_filename = f"{uuid.uuid4().hex}.pdf"
                     new_relpath = f"{prefix}/{new_filename}" if prefix != '.' else new_filename
                     new_path = media_root / new_relpath
                     new_path.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(str(old_path), str(new_path))
-                    old_path.unlink()
+                    new_bytes = raw_bytes
+                    action = 'rename_uuid_pdf'
                 else:
-                    # Sanitize and re-encode image (strip EXIF)
+                    # Sanitize and re-encode image (convert GIF to PNG, strip EXIF/XMP)
                     try:
-                        with Image.open(old_path) as img:
+                        with Image.open(io.BytesIO(raw_bytes)) as img:
+                            img.seek(0)
+                            is_gif = (ext == '.gif' or (img.format or '').upper() == 'GIF')
+                            if is_gif:
+                                img = img.convert('RGBA') if img.mode in ('RGBA', 'LA', 'P') else img.convert('RGB')
+                                target_format = 'PNG'
+                                target_ext = '.png'
+                                action = 'convert_gif_to_png'
+                            else:
+                                target_format = 'PNG' if ext == '.png' else 'JPEG'
+                                target_ext = '.png' if target_format == 'PNG' else '.jpg'
+                                target_mode = 'RGB' if target_format == 'JPEG' else (img.mode if img.mode in ('RGB', 'RGBA', 'L') else 'RGB')
+                                img = img.convert(target_mode)
+                                action = 'reencode_strip_exif'
+
                             img = ImageOps.exif_transpose(img)
-                            target_format = 'PNG' if ext == '.png' or img.format == 'GIF' else 'JPEG'
-                            target_ext = '.png' if target_format == 'PNG' else '.jpg'
-                            if target_format == 'JPEG' and img.mode in ('RGBA', 'LA', 'P'):
-                                img = img.convert('RGB')
+                            clean = Image.frombytes(img.mode, img.size, img.tobytes())
+
                             new_filename = f"{uuid.uuid4().hex}{target_ext}"
                             new_relpath = f"{prefix}/{new_filename}" if prefix != '.' else new_filename
                             new_path = media_root / new_relpath
                             new_path.parent.mkdir(parents=True, exist_ok=True)
-                            
+
                             buf = io.BytesIO()
-                            img.save(buf, format=target_format, quality=85, optimize=True)
+                            save_kwargs = {'quality': 85, 'optimize': True} if target_format == 'JPEG' else {'optimize': True}
+                            clean.save(buf, format=target_format, **save_kwargs)
+                            new_bytes = buf.getvalue()
                             with open(new_path, 'wb') as out_f:
-                                out_f.write(buf.getvalue())
-                        old_path.unlink()
+                                out_f.write(new_bytes)
                     except Exception as err:
                         self.stdout.write(self.style.ERROR(f"Failed to sanitize {clean_url}: {err}"))
                         continue
+
+                new_hash = hashlib.sha256(new_bytes).hexdigest()
+                old_path.unlink()
 
                 # Update DB record
                 model_cls = {
@@ -331,9 +384,25 @@ class Command(BaseCommand):
                     'Post': Post,
                     'AICalorieLog': AICalorieLog,
                 }[rec['model']]
-                
+
                 model_cls.objects.filter(pk=rec['id']).update(**{rec['field']: new_relpath})
                 migrated_count += 1
-                self.stdout.write(f"Migrated {clean_url} -> {new_relpath} (Model {rec['model']} ID {rec['id']})")
 
+                mapping_data["migrations"].append({
+                    "model": rec['model'],
+                    "field": rec['field'],
+                    "id": rec['id'],
+                    "old_relpath": clean_url,
+                    "new_relpath": new_relpath,
+                    "original_sha256": orig_hash,
+                    "new_sha256": new_hash,
+                    "action": action,
+                    "backup_path": str(backup_target),
+                })
+                self.stdout.write(f"Migrated {clean_url} -> {new_relpath} [{action}] (Model {rec['model']} ID {rec['id']})")
+
+        # Save mapping file outside MEDIA_ROOT
+        mapping_file.write_text(json.dumps(mapping_data, indent=2), encoding='utf-8')
         self.stdout.write(self.style.SUCCESS(f"\n[APPLY COMPLETE] Migrated {migrated_count} files and updated DB records."))
+        self.stdout.write(self.style.SUCCESS(f"Backup folder: {backup_dir}"))
+        self.stdout.write(self.style.SUCCESS(f"Mapping file:  {mapping_file}"))

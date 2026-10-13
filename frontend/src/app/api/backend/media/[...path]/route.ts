@@ -64,7 +64,7 @@ async function handleMediaProxyRequest(
       method,
       headers,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { status: "error", message: "Media backend unavailable." },
       { status: 502 }

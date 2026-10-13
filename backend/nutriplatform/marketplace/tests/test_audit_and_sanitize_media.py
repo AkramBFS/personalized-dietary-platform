@@ -40,6 +40,11 @@ class AuditAndSanitizeMediaCommandTests(TestCase):
         with Image.new('RGB', (100, 100), color='green') as img:
             img.save(cert_img_path, 'PNG')
 
+        # Create legacy GIF certification
+        gif_cert_path = self.media_path / 'certifications' / '2_legacy.gif'
+        with Image.new('RGB', (100, 100), color='red') as img:
+            img.save(gif_cert_path, 'GIF')
+
         # Create DB records
         self.client_obj = Client.objects.create(
             user=self.user_client,
@@ -49,6 +54,11 @@ class AuditAndSanitizeMediaCommandTests(TestCase):
             user=self.user_nutri,
             cert_image_url='certifications/1_my_cert.png',
             profile_photo_url='default_nutri.png'
+        )
+        self.user_gif = User.objects.create_user(username="audit_gif", email="g@audit.com", password="pw", role="nutritionist")
+        self.nutri_gif = Nutritionist.objects.create(
+            user=self.user_gif,
+            cert_image_url='certifications/2_legacy.gif',
         )
         # Missing file in DB
         self.plan_obj = Plan.objects.create(
@@ -100,7 +110,54 @@ class AuditAndSanitizeMediaCommandTests(TestCase):
             self.assertNotEqual(self.nutri_obj.cert_image_url, 'certifications/1_my_cert.png')
             self.assertTrue(self.nutri_obj.cert_image_url.startswith('certifications/'))
 
+            # Assert legacy GIF was converted to PNG
+            self.nutri_gif.refresh_from_db()
+            self.assertTrue(self.nutri_gif.cert_image_url.endswith('.png'), f"Expected .png, got {self.nutri_gif.cert_image_url}")
+            self.assertTrue((self.media_path / self.nutri_gif.cert_image_url).exists())
+
             # Assert old files on disk were cleaned up and new files exist
             self.assertFalse((self.media_path / 'profiles' / 'clients' / '1_my_avatar.jpg').exists())
             self.assertTrue((self.media_path / self.client_obj.profile_photo_url).exists())
             self.assertTrue((self.media_path / self.nutri_obj.cert_image_url).exists())
+
+            # Assert backup directory and mapping file were created OUTSIDE MEDIA_ROOT
+            parent_dir = self.media_path.parent
+            backup_dirs = list(parent_dir.glob('media_backup_*'))
+            mapping_files = list(parent_dir.glob('media_migration_mapping_*.json'))
+            self.assertTrue(len(backup_dirs) > 0, "Backup directory not created outside MEDIA_ROOT")
+            self.assertTrue(len(mapping_files) > 0, "Mapping file not created outside MEDIA_ROOT")
+
+            # Check mapping file content
+            import json
+            mapping_data = json.loads(mapping_files[0].read_text(encoding='utf-8'))
+            self.assertIn("migrations", mapping_data)
+            actions = [m['action'] for m in mapping_data['migrations']]
+            self.assertIn('convert_gif_to_png', actions)
+
+            # Cleanup test backups
+            for bd in backup_dirs:
+                shutil.rmtree(bd, ignore_errors=True)
+            for mf in mapping_files:
+                mf.unlink(missing_ok=True)
+
+    def test_apply_under_restricted_role_nutriplatform_app(self):
+        from django.db import connection
+        if connection.vendor != 'postgresql':
+            self.skipTest("PostgreSQL specific test for SET ROLE nutriplatform_app.")
+
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute("SET ROLE nutriplatform_app;")
+                    out = io.StringIO()
+                    call_command('audit_and_sanitize_media', '--apply', stdout=out)
+                    self.assertIn("[APPLY COMPLETE]", out.getvalue())
+                finally:
+                    cursor.execute("RESET ROLE;")
+
+            parent_dir = self.media_path.parent
+            for bd in parent_dir.glob('media_backup_*'):
+                shutil.rmtree(bd, ignore_errors=True)
+            for mf in parent_dir.glob('media_migration_mapping_*.json'):
+                mf.unlink(missing_ok=True)
+

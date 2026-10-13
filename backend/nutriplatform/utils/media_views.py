@@ -58,14 +58,19 @@ class AuthoritativeMediaServeView(APIView):
             return Response({'error': 'Invalid path.'}, status=status.HTTP_400_BAD_REQUEST)
 
         decoded = unquote(raw_path)
-        if '\\' in decoded or '..' in decoded or decoded.startswith('/') or decoded.startswith('\\'):
+        if '\\' in decoded or '..' in decoded or ':' in decoded or decoded.startswith('/') or decoded.startswith('\\'):
             return Response({'error': 'Invalid path traversal detected.'}, status=status.HTTP_400_BAD_REQUEST)
 
         clean_path = decoded.strip().lstrip('/')
         media_root = Path(settings.MEDIA_ROOT).resolve()
 
         try:
-            target_file = (media_root / clean_path).resolve()
+            raw_target = media_root / clean_path
+            if raw_target.is_symlink():
+                return Response({'error': 'Symlinks not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
+            target_file = raw_target.resolve()
+            if target_file.is_symlink():
+                return Response({'error': 'Symlinks not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Invalid path.'}, status=status.HTTP_400_BAD_REQUEST)
 
