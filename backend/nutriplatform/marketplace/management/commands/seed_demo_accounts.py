@@ -106,6 +106,7 @@ class Command(BaseCommand):
                     "amount_paid": 19.99,
                     "transaction_number": txn_num,
                     "status": "active",
+                    "start_date": now,
                     "end_date": end_date,
                 }
             )
@@ -119,6 +120,7 @@ class Command(BaseCommand):
                     "total_paid": 19.99,
                     "item_type": "subscription",
                     "status": "paid",
+                    "created_at": now,
                 }
             )
 
@@ -131,6 +133,7 @@ class Command(BaseCommand):
                     "resolved_price": 19.99,
                     "currency": "USD",
                     "status": "confirmed",
+                    "created_at": now,
                     "expires_at": end_date,
                     "metadata": {"demo_seeded": True, "transaction_number": txn_num},
                 }
@@ -138,3 +141,19 @@ class Command(BaseCommand):
             self.stdout.write(f"Provisioned active PremiumSubscription (ID {sub.id}, expires {end_date.date()}).")
         else:
             self.stdout.write("Created standard (non-premium) demo accounts.")
+
+        # 4. Demo Admin
+        admin_user, admin_user_created = User.objects.get_or_create(
+            username="demo_admin",
+            defaults={
+                "email": "demo_admin@nutriplatform.local",
+                "role": "high_admin",
+                "is_active": True,
+                "is_staff": True,
+                "is_superuser": True,
+            }
+        )
+        if admin_user_created:
+            admin_user.set_password(password)
+            admin_user.save()
+        self.stdout.write(f"Demo admin ready: demo_admin (ID {admin_user.id})")

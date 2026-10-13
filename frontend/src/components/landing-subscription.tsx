@@ -22,7 +22,7 @@ export default function SubscriptionCards() {
   );
 
   return (
-    <section className="relative overflow-hidden bg-background py-24">
+    <section id="pricing" className="relative overflow-hidden bg-background py-24">
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
@@ -119,7 +119,7 @@ export default function SubscriptionCards() {
               </div>
 
               <div className="mb-8 pb-6 border-b border-border">
-                <div className="text-3xl font-[Syne] font-bold text-foreground">
+                <div className="text-3xl font-[Syne] font-bold text-foreground tabular-nums">
                   ${prices.yearly}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
@@ -194,7 +194,7 @@ export default function SubscriptionCards() {
               </div>
 
               <div className="mb-8 pb-6 border-b border-border">
-                <div className="text-3xl font-[Syne] font-bold text-foreground">
+                <div className="text-3xl font-[Syne] font-bold text-foreground tabular-nums">
                   ${prices.monthly}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">

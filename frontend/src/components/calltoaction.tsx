@@ -19,6 +19,48 @@ export default function CallToAction() {
 
   useGSAP(
     () => {
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // Non-pinned approach trigger: dims FAQ and morphs CTA top corners flat
+        const approachTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "top top",
+            scrub: true,
+          },
+        });
+
+        const faqDimOverlay = document.getElementById("faq-dim-overlay");
+        if (faqDimOverlay) {
+          approachTl.fromTo(
+            faqDimOverlay,
+            { opacity: 0 },
+            { opacity: 0.45, ease: "none" },
+            0,
+          );
+        }
+
+        approachTl.fromTo(
+          containerRef.current,
+          { borderTopLeftRadius: "48px", borderTopRightRadius: "48px" },
+          { borderTopLeftRadius: "0px", borderTopRightRadius: "0px", ease: "none" },
+          0,
+        );
+      });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set(containerRef.current, {
+          borderTopLeftRadius: "0px",
+          borderTopRightRadius: "0px",
+        });
+        const faqDimOverlay = document.getElementById("faq-dim-overlay");
+        if (faqDimOverlay) {
+          gsap.set(faqDimOverlay, { opacity: 0 });
+        }
+      });
+
       // 1. PIN THE PREVIOUS SECTION TO CREATE A SLIDE-OVER OVERLAY EFFECT
       const faqSection =
         document.getElementById("faq-section") ||
@@ -35,8 +77,7 @@ export default function CallToAction() {
         });
       }
 
-      // 2. ORIGINAL PANEL ANIMATIONS
-      // Initialize Panel 2 to be positioned directly below Panel 1
+      // 2. ORIGINAL PANEL ANIMATIONS (Locked scroll distance +=1000)
       gsap.set(panel2Ref.current, { yPercent: 100 });
 
       const tl = gsap.timeline({
@@ -50,17 +91,30 @@ export default function CallToAction() {
         },
       });
 
-      // Slide Panel 1 slightly up and fade it out
+      // Slide Panel 1 slightly up and fade it out to 0 opacity with blur (no ghost)
       tl.to(
         panel1Ref.current,
-        { yPercent: -50, opacity: 0, ease: "power1.inOut", duration: 1 },
+        {
+          yPercent: -50,
+          opacity: 0,
+          filter: "blur(12px)",
+          ease: "power1.inOut",
+          duration: 1,
+        },
         0,
       );
 
-      // Slide Panel 2 up into view from the bottom
-      tl.to(
+      // Slide Panel 2 up into view from the bottom, clearing blur
+      tl.fromTo(
         panel2Ref.current,
-        { yPercent: 0, ease: "power1.inOut", duration: 1 },
+        { yPercent: 100, opacity: 0, filter: "blur(12px)" },
+        {
+          yPercent: 0,
+          opacity: 1,
+          filter: "blur(0px)",
+          ease: "power1.inOut",
+          duration: 1,
+        },
         0,
       );
     },
@@ -69,8 +123,9 @@ export default function CallToAction() {
 
   return (
     <section
+      id="cta"
       ref={containerRef}
-      className="relative z-20 h-screen w-full bg-background overflow-hidden text-foreground font-syne"
+      className="relative z-20 h-screen w-full bg-background overflow-hidden text-foreground font-syne rounded-t-[var(--sheet-radius)]"
     >
       {/* =========================================
           SCREEN 1: CLIENT GET STARTED

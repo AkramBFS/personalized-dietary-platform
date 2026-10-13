@@ -36,21 +36,29 @@ export default function FooterSection2() {
 
   useGSAP(
     () => {
-      // Creates a parallax shift effect as the footer gets uncovered
-      gsap.fromTo(
-        footerRef.current,
-        { yPercent: -35 }, // Starts slightly tucked upwards behind the newsletter section
-        {
-          yPercent: 0, // Slides perfectly into place as the scroll finishes
-          ease: "none",
-          scrollTrigger: {
-            trigger: footerRef.current,
-            start: "top bottom", // Activates when the footer structural box enters the viewport
-            end: "bottom bottom", // Completes when you reach the absolute bottom of the page
-            scrub: true,
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // Creates a parallax shift effect as the footer gets uncovered (locked range)
+        gsap.fromTo(
+          footerRef.current,
+          { yPercent: -35 }, // Starts slightly tucked upwards behind the newsletter section
+          {
+            yPercent: 0, // Slides perfectly into place as the scroll finishes
+            ease: "none",
+            scrollTrigger: {
+              trigger: footerRef.current,
+              start: "top bottom", // Activates when the footer structural box enters the viewport
+              end: "bottom bottom", // Completes when you reach the absolute bottom of the page
+              scrub: true,
+            },
           },
-        },
-      );
+        );
+      });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set(footerRef.current, { yPercent: 0 });
+      });
     },
     { scope: footerRef },
   );
@@ -58,7 +66,7 @@ export default function FooterSection2() {
   return (
     <footer
       ref={footerRef}
-      className="sticky bottom-0 -z-10 w-full bg-background pt-20 pb-10 will-change-transform pointer-events-auto"
+      className="sticky bottom-0 -z-10 w-full bg-canvas-deep pt-20 pb-10 will-change-transform pointer-events-auto"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* --- Main Footer Content --- */}

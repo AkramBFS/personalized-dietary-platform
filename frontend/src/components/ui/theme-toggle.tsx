@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Palette } from "lucide-react";
 
 export function ThemeToggle() {
+  const pathname = usePathname();
   const [mounted, setMounted] = React.useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
 
@@ -12,6 +14,11 @@ export function ThemeToggle() {
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Hide completely on landing page to avoid layout shift
+  if (pathname === "/") {
+    return null;
+  }
 
   if (!mounted) {
     // Return a placeholder of the same size to prevent layout shift / hydration mismatch
