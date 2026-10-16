@@ -309,51 +309,68 @@ export default function UnifiedHeroSection() {
           className="absolute inset-0 w-full h-full object-cover z-0"
         />
 
-        <div ref={overlayRef} className="absolute inset-0 bg-black/80 z-10" />
+        <div
+          ref={overlayRef}
+          aria-hidden="true"
+          className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse 55% 60% at 100% 100%, rgba(245,158,11,0.95) 0, rgba(245,158,11,0) 65%), radial-gradient(ellipse 55% 60% at 0% 100%, rgba(132,204,22,0.9) 0, rgba(132,204,22,0) 65%), radial-gradient(ellipse 50% 50% at 100% 0%, rgba(20,184,166,0.6) 0, rgba(20,184,166,0) 65%), radial-gradient(ellipse 50% 50% at 0% 0%, rgba(16,185,129,0.6) 0, rgba(16,185,129,0) 65%), radial-gradient(ellipse 40% 50% at 50% 100%, rgba(52,211,153,0.5), rgba(52,211,153,0) 70%), linear-gradient(180deg, #05352a 0, #064e3b 100%)",
+            }}
+          />
+          <svg
+            viewBox="0 0 1000 900"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[48.5%] w-[560px] h-[504px] sm:w-[680px] sm:h-[612px] md:w-[760px] md:h-[684px] lg:w-[900px] lg:h-[810px] xl:w-[940px] xl:h-[846px] -rotate-[8deg] blur-[5px]"
+          >
+            <g fill="#000" opacity=".9">
+              <path d="M500 200C560 130 700 110 810 170C930 240 990 400 950 570C910 740 790 850 680 850C610 850 560 820 500 820C440 820 390 850 320 850C210 850 90 740 50 570C10 400 70 240 190 170C300 110 440 130 500 200Z" />
+              <path d="M510 190C500 110 540 50 620 30C640 100 600 170 510 190Z" />
+            </g>
+          </svg>
+        </div>
 
         {/* ===== HERO CONTENT (Untouched) ===== */}
         <div
           ref={heroContentRef}
           className="relative z-20 mx-auto w-full max-w-7xl px-6 lg:px-8 font-sans"
         >
-          <div className="max-w-3xl mx-auto text-center">
-            <p className="mb-4 text-sm uppercase tracking-widest text-[#97E7CC] font-medium">
-              SVMB / professional dietary assessment platform
+          <div className="mx-auto flex flex-col items-center text-center pt-9 sm:pt-7 md:pt-[26px]">
+            <p className="text-[9.5px] sm:text-[12px] md:text-[13px] font-bold uppercase tracking-[0.06em] sm:tracking-[0.1em] text-emerald-400">
+              SVMB / Professional dietary assessment platform
             </p>
 
-            <h1 className="font-syne text-white text-5xl leading-[1.05] md:text-6xl lg:text-7xl tracking-tight">
-              Your personal
-              <br />
-              <span className="text-emerald-400">AI dietitian</span>,
-              <br />
-              powered by data
+            <h1 className="mt-3 sm:mt-4 md:mt-[18px] max-w-[320px] sm:max-w-[500px] md:max-w-[560px] lg:max-w-[740px] xl:max-w-[820px] font-sans font-medium text-white text-[29px] sm:text-[44px] md:text-[50px] lg:text-[68px] xl:text-[76px] leading-[1.02] tracking-[-0.02em]">
+              Your personal{" "}
+              <span className="text-emerald-400">AI dietitian</span>, powered by
+              data
             </h1>
 
-            <p className="mt-8 max-w-2xl mx-auto text-lg md:text-xl text-white/70 leading-relaxed">
+            <p className="mt-3.5 sm:mt-5 md:mt-[24px] lg:mt-[30px] max-w-[270px] sm:max-w-[420px] md:max-w-[480px] lg:max-w-[640px] text-[13px] sm:text-[15px] md:text-[16px] lg:text-[18px] leading-[1.55] text-[#b4bcb8]">
               Track calories, analyze meals from photos, and get personalized
               nutrition guidance — all in one intelligent system built to adapt
               to you.
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-5 sm:mt-7 md:mt-[36px] lg:mt-[44px] flex flex-wrap items-center justify-center gap-5 md:gap-[26px]">
               <Button
                 asChild
-                size="lg"
-                className="pr-4.5 bg-emerald-500 hover:bg-emerald-600 text-black"
+                className="h-[40px] md:h-[44px] px-4 md:px-[18px] has-[>svg]:px-4 md:has-[>svg]:px-[18px] rounded-[12px] gap-[10px] bg-emerald-400 hover:bg-emerald-400/90 text-[#04130d] text-[14px] font-bold"
               >
                 <Link href="/register">
                   Get started
-                  <ChevronRight className="ml-1 opacity-70" />
+                  <ChevronRight className="size-[14px] stroke-[2.8]" />
                 </Link>
               </Button>
 
               <Button
-                size="lg"
                 variant="ghost"
-                className="border-white/20 text-white hover:bg-white/10"
+                className="h-[40px] md:h-[44px] px-0 has-[>svg]:px-0 rounded-[12px] gap-[10px] bg-transparent hover:bg-transparent dark:hover:bg-transparent text-white hover:text-emerald-400 text-[14px] font-bold"
                 onClick={openChatbot}
               >
-                <MessageCircle className="w-5 h-5 mr-2" />
+                <MessageCircle className="size-[18px] stroke-[2]" />
                 Ask the AI
               </Button>
             </div>
