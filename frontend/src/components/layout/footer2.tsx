@@ -66,7 +66,7 @@ export default function FooterSection2() {
   return (
     <footer
       ref={footerRef}
-      className="sticky bottom-0 -z-10 w-full bg-canvas-deep pt-20 pb-10 will-change-transform pointer-events-auto"
+      className="sticky bottom-0 -z-10 w-full bg-background pt-20 pb-10 will-change-transform pointer-events-auto"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* --- Main Footer Content --- */}

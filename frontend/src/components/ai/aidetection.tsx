@@ -314,13 +314,6 @@ export default function UnifiedHeroSection() {
           aria-hidden="true"
           className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
         >
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse 55% 60% at 100% 100%, rgba(245,158,11,0.95) 0, rgba(245,158,11,0) 65%), radial-gradient(ellipse 55% 60% at 0% 100%, rgba(132,204,22,0.9) 0, rgba(132,204,22,0) 65%), radial-gradient(ellipse 50% 50% at 100% 0%, rgba(20,184,166,0.6) 0, rgba(20,184,166,0) 65%), radial-gradient(ellipse 50% 50% at 0% 0%, rgba(16,185,129,0.6) 0, rgba(16,185,129,0) 65%), radial-gradient(ellipse 40% 50% at 50% 100%, rgba(52,211,153,0.5), rgba(52,211,153,0) 70%), linear-gradient(180deg, #05352a 0, #064e3b 100%)",
-            }}
-          />
           <svg
             viewBox="0 0 1000 900"
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[48.5%] w-[560px] h-[504px] sm:w-[680px] sm:h-[612px] md:w-[760px] md:h-[684px] lg:w-[900px] lg:h-[810px] xl:w-[940px] xl:h-[846px] -rotate-[8deg] blur-[5px]"

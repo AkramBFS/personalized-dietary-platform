@@ -175,7 +175,7 @@ export const HeroHeader = ({ isLanding = false }: { isLanding?: boolean }) => {
           className="fixed top-0 left-0 w-full z-50 transition-colors duration-300 pointer-events-none"
         >
           <nav className="w-full flex justify-center pointer-events-none">
-            <div className="pointer-events-auto transition-all duration-500 ease-in-out backdrop-blur-md flex items-center w-full rounded-none px-6 py-3 border border-transparent bg-transparent">
+            <div className="pointer-events-auto transition-all duration-500 ease-in-out flex items-center w-full rounded-none px-6 py-3 border border-transparent bg-transparent">
               <div className="mx-auto w-full max-w-7xl">
                 <div className="flex items-center justify-between">
                   {/* LOGO */}

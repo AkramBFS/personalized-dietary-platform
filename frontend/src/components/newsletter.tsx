@@ -29,7 +29,7 @@ export default function NewsletterSection() {
   return (
     <section
       id="newsletter"
-      className="relative md:absolute md:inset-0 z-50 min-h-screen md:h-screen w-full overflow-hidden bg-card py-20 md:py-16 rounded-b-[3rem] flex items-center"
+      className="relative md:absolute md:inset-0 z-50 min-h-screen md:h-screen w-full overflow-hidden bg-background py-20 md:py-16 flex items-center"
     >
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
