@@ -24,6 +24,15 @@ if (typeof window !== "undefined") {
 /** Scroll distance (px) per unit of timeline duration inside the pinned stack stage. */
 const STEP_SCROLL_PX = 1000;
 
+/** Complementary transition tokens extracted from CallToAction */
+const STACK_TRANSITION_FX = {
+  blurPx: "12px",
+  recedeShiftPercent: 50,
+  dimOpacity: 0.45,
+  leadingRadius: "48px",
+  ease: "power1.inOut",
+} as const;
+
 export default function HomePage() {
   const stackStageRef = useRef<HTMLDivElement>(null);
 
@@ -41,9 +50,8 @@ export default function HomePage() {
       const servicesPanel1 = stage.querySelector<HTMLElement>('[data-services-panel="1"]');
       const servicesPanel2 = stage.querySelector<HTMLElement>('[data-services-panel="2"]');
       const servicesPanel3 = stage.querySelector<HTMLElement>('[data-services-panel="3"]');
-
-      const ctaPanel1 = stage.querySelector<HTMLElement>('[data-cta-panel="1"]');
-      const ctaPanel2 = stage.querySelector<HTMLElement>('[data-cta-panel="2"]');
+      const servicesDimEl = stage.querySelector<HTMLElement>("[data-services-dim]");
+      const faqDimEl = stage.querySelector<HTMLElement>("#faq-dim-overlay");
 
       if (!servicesEl || !pricingEl || !faqEl || !ctaEl || !newsletterEl) return;
 
@@ -57,16 +65,54 @@ export default function HomePage() {
       mm.add(
         "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
         () => {
-          // Initial off-screen / panel states
-          if (servicesPanel2) gsap.set(servicesPanel2, { xPercent: 100, filter: "blur(0px)", opacity: 1 });
-          if (servicesPanel3) gsap.set(servicesPanel3, { xPercent: 100 });
-          if (ctaPanel1) gsap.set(ctaPanel1, { yPercent: 0, opacity: 1, filter: "blur(0px)" });
-          if (ctaPanel2) gsap.set(ctaPanel2, { yPercent: 100, opacity: 0, filter: "blur(12px)" });
+          // Initial states for Services internal panels & base section
+          gsap.set(servicesEl, {
+            xPercent: 0,
+            yPercent: 0,
+            filter: "blur(0px)",
+          });
+          if (servicesPanel2) {
+            gsap.set(servicesPanel2, { xPercent: 100, filter: "blur(0px)", opacity: 1 });
+          }
+          if (servicesPanel3) {
+            gsap.set(servicesPanel3, { xPercent: 100 });
+          }
+          if (servicesDimEl) {
+            gsap.set(servicesDimEl, { opacity: 0 });
+          }
+          if (faqDimEl) {
+            gsap.set(faqDimEl, { opacity: 0 });
+          }
 
-          gsap.set(pricingEl, { yPercent: 100, xPercent: 0 });
-          gsap.set(faqEl, { xPercent: -100, yPercent: 0 });
-          gsap.set(ctaEl, { xPercent: 100, yPercent: 0 });
-          gsap.set(newsletterEl, { yPercent: 100, xPercent: 0 });
+          // Initial states for incoming stack sections (off-screen + blurred + rounded leading edge)
+          gsap.set(pricingEl, {
+            yPercent: 100,
+            xPercent: 0,
+            filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+            borderTopLeftRadius: STACK_TRANSITION_FX.leadingRadius,
+            borderTopRightRadius: STACK_TRANSITION_FX.leadingRadius,
+          });
+          gsap.set(faqEl, {
+            xPercent: -100,
+            yPercent: 0,
+            filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+            borderTopRightRadius: STACK_TRANSITION_FX.leadingRadius,
+            borderBottomRightRadius: STACK_TRANSITION_FX.leadingRadius,
+          });
+          gsap.set(ctaEl, {
+            xPercent: 100,
+            yPercent: 0,
+            filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+            borderTopLeftRadius: STACK_TRANSITION_FX.leadingRadius,
+            borderBottomLeftRadius: STACK_TRANSITION_FX.leadingRadius,
+          });
+          gsap.set(newsletterEl, {
+            yPercent: 100,
+            xPercent: 0,
+            filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+            borderTopLeftRadius: STACK_TRANSITION_FX.leadingRadius,
+            borderTopRightRadius: STACK_TRANSITION_FX.leadingRadius,
+          });
 
           const tl = gsap.timeline({
             scrollTrigger: {
@@ -111,58 +157,118 @@ export default function HomePage() {
             );
           }
 
-          // 2. SubscriptionCards (#pricing) enters from BOTTOM (equal step duration = 1)
-          tl.to(pricingEl, {
-            yPercent: 0,
-            ease: "none",
-            duration: 1,
-          });
-          tl.addLabel("pricing");
-
-          // 3. FAQs (#faq-section) enters from LEFT (equal step duration = 1)
-          tl.to(faqEl, {
-            xPercent: 0,
-            ease: "none",
-            duration: 1,
-          });
-          tl.addLabel("faq-section");
-
-          // 4. CallToAction (#cta) enters from RIGHT (equal step duration = 1)
-          tl.to(ctaEl, {
-            xPercent: 0,
-            ease: "none",
-            duration: 1,
-          });
-          tl.addLabel("cta");
-
-          // CallToAction internal panel 1 -> panel 2 transition while stuck
-          if (ctaPanel1 && ctaPanel2) {
-            tl.to(ctaPanel1, {
-              yPercent: -50,
-              opacity: 0,
-              filter: "blur(12px)",
-              ease: "power1.inOut",
-              duration: 1,
-            });
+          // 2. SubscriptionCards (#pricing) enters from BOTTOM over ContentSection (#services)
+          if (servicesDimEl) {
             tl.to(
-              ctaPanel2,
-              {
-                yPercent: 0,
-                opacity: 1,
-                filter: "blur(0px)",
-                ease: "power1.inOut",
-                duration: 1,
-              },
-              "<",
+              servicesDimEl,
+              { opacity: STACK_TRANSITION_FX.dimOpacity, ease: "none", duration: 1 },
+              "+=0",
             );
           }
+          tl.to(
+            servicesEl,
+            {
+              yPercent: -STACK_TRANSITION_FX.recedeShiftPercent,
+              filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            servicesDimEl ? "<" : "+=0",
+          );
+          tl.to(
+            pricingEl,
+            {
+              yPercent: 0,
+              filter: "blur(0px)",
+              borderTopLeftRadius: "0px",
+              borderTopRightRadius: "0px",
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            "<",
+          );
+          tl.addLabel("pricing");
 
-          // 5. NewsletterSection (#newsletter) enters from BOTTOM (equal step duration = 1)
-          tl.to(newsletterEl, {
-            yPercent: 0,
-            ease: "none",
-            duration: 1,
-          });
+          // 3. FAQs (#faq-section) enters from LEFT over SubscriptionCards (#pricing)
+          tl.to(
+            pricingEl,
+            {
+              xPercent: STACK_TRANSITION_FX.recedeShiftPercent,
+              filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            "+=0",
+          );
+          tl.to(
+            faqEl,
+            {
+              xPercent: 0,
+              filter: "blur(0px)",
+              borderTopRightRadius: "0px",
+              borderBottomRightRadius: "0px",
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            "<",
+          );
+          tl.addLabel("faq-section");
+
+          // 4. CallToAction (#cta) enters from RIGHT over FAQs (#faq-section)
+          if (faqDimEl) {
+            tl.to(
+              faqDimEl,
+              { opacity: STACK_TRANSITION_FX.dimOpacity, ease: "none", duration: 1 },
+              "+=0",
+            );
+          }
+          tl.to(
+            faqEl,
+            {
+              xPercent: -STACK_TRANSITION_FX.recedeShiftPercent,
+              filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            faqDimEl ? "<" : "+=0",
+          );
+          tl.to(
+            ctaEl,
+            {
+              xPercent: 0,
+              filter: "blur(0px)",
+              borderTopLeftRadius: "0px",
+              borderBottomLeftRadius: "0px",
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            "<",
+          );
+          tl.addLabel("cta");
+
+          // 5. NewsletterSection (#newsletter) enters from BOTTOM over CallToAction (#cta)
+          tl.to(
+            ctaEl,
+            {
+              yPercent: -STACK_TRANSITION_FX.recedeShiftPercent,
+              filter: `blur(${STACK_TRANSITION_FX.blurPx})`,
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            "+=0",
+          );
+          tl.to(
+            newsletterEl,
+            {
+              yPercent: 0,
+              filter: "blur(0px)",
+              borderTopLeftRadius: "0px",
+              borderTopRightRadius: "0px",
+              ease: STACK_TRANSITION_FX.ease,
+              duration: 1,
+            },
+            "<",
+          );
           tl.addLabel("newsletter");
 
           const syncChapterOffsets = () => {
@@ -210,17 +316,21 @@ export default function HomePage() {
         clearStackScrollAttrs();
         gsap.set(
           [
+            servicesEl,
             servicesPanel1,
             servicesPanel2,
             servicesPanel3,
-            ctaPanel1,
-            ctaPanel2,
+            servicesDimEl,
+            faqDimEl,
             pricingEl,
             faqEl,
             ctaEl,
             newsletterEl,
           ].filter(Boolean),
-          { clearProps: "transform,opacity,filter" },
+          {
+            clearProps:
+              "transform,opacity,filter,borderTopLeftRadius,borderTopRightRadius,borderBottomLeftRadius,borderBottomRightRadius",
+          },
         );
       });
     },
