@@ -11,6 +11,7 @@ import { HeroHeader } from "@/components/layout/navbar";
 import NewsletterSection from "@/components/newsletter";
 import HeroBleedBridge from "@/components/landing/HeroBleedBridge";
 import ScrollProgressIndicator from "@/components/layout/ScrollProgressIndicator";
+import HeroGlTransition from "@/components/landing/HeroGlTransition";
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
       <div className="selection:bg-brand/30 selection:text-brand min-h-screen">
         <HeroHeader isLanding />
         <ScrollProgressIndicator />
+        <HeroGlTransition />
 
         <UnifiedHeroSection />
         <HeroBleedBridge />

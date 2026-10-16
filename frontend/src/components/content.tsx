@@ -16,6 +16,10 @@ import {
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import {
+  isHeroGlReady,
+  subscribeHeroGl,
+} from "@/components/landing/heroGlStore";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -113,6 +117,7 @@ export default function ContentSection() {
   const panel2Ref = useRef<HTMLDivElement>(null);
   const panel3Ref = useRef<HTMLDivElement>(null);
   const panel3DimRef = useRef<HTMLDivElement>(null);
+  const veilRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useGSAP(
@@ -121,7 +126,7 @@ export default function ContentSection() {
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         // Arrival tween for Panel 1 (before pinning)
-        gsap.fromTo(
+        const arrival = gsap.fromTo(
           panel1Ref.current,
           { yPercent: 8, opacity: 0 },
           {
@@ -136,6 +141,62 @@ export default function ContentSection() {
             },
           },
         );
+
+        // GL mode: the scrubbed arrival above would play fully hidden under the
+        // hero transition canvas, so it is replaced by a short time-based reveal
+        // that fires at the handoff (Services pin start) and reverses on scroll
+        // back. The veil is a plate-coloured layer (no opacity/xPercent writes on
+        // panel 1, which the locked pin timeline owns). Non-pin trigger only.
+        const veil = veilRef.current;
+        const panel1 = panel1Ref.current;
+        let teardownGlMode: (() => void) | undefined;
+        if (veil && panel1) {
+          const reveal = gsap
+            .timeline({ paused: true })
+            .fromTo(
+              veil,
+              { autoAlpha: 1 },
+              { autoAlpha: 0, duration: 0.7, ease: "power2.out", immediateRender: false },
+              0,
+            )
+            .fromTo(
+              panel1,
+              { y: 28 },
+              { y: 0, duration: 0.7, ease: "power2.out", immediateRender: false },
+              0,
+            );
+          const revealST = ScrollTrigger.create({
+            trigger: containerRef.current,
+            start: "top top",
+            onEnter: () => reveal.play(),
+            onLeaveBack: () => reveal.reverse(),
+          });
+
+          const applyMode = () => {
+            if (isHeroGlReady()) {
+              arrival.scrollTrigger?.disable(false);
+              revealST.enable();
+              const past = revealST.scroll() >= revealST.start - 0.5;
+              reveal.progress(past ? 1 : 0).pause();
+              gsap.set(panel1, { yPercent: 0, opacity: 1, y: past ? 0 : 28 });
+              gsap.set(veil, { autoAlpha: past ? 0 : 1 });
+            } else {
+              revealST.disable(false);
+              reveal.pause(0);
+              gsap.set(veil, { autoAlpha: 0 });
+              gsap.set(panel1, { y: 0 });
+              arrival.scrollTrigger?.enable();
+              ScrollTrigger.update();
+            }
+          };
+          applyMode();
+          const unsubscribe = subscribeHeroGl(applyMode);
+          teardownGlMode = () => {
+            unsubscribe();
+            revealST.kill();
+            reveal.kill();
+          };
+        }
 
         // Panel 3 Dim on approach of pricing section
         const pricingEl = document.getElementById("pricing");
@@ -155,6 +216,8 @@ export default function ContentSection() {
             },
           );
         }
+
+        return () => teardownGlMode?.();
       });
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
@@ -218,6 +281,13 @@ export default function ContentSection() {
       ref={containerRef}
       className="relative z-20 h-screen w-full bg-background overflow-hidden text-foreground font-syne"
     >
+      {/* Handoff veil (GL mode only): plate-coloured, faded out by the reveal */}
+      <div
+        ref={veilRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 bg-background"
+        style={{ opacity: 0, visibility: "hidden" }}
+      />
       {/* =========================================
           SCREEN 1: SERVICES
       ========================================= */}

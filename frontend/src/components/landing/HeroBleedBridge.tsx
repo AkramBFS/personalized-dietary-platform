@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { useSyncExternalStore } from "react";
+import { isHeroGlReady, subscribeHeroGl } from "./heroGlStore";
 
 // 21-stop smootherstep alpha ramp from 0% to 55%, solid canvas from 55% to 100%
 const FOG_GRADIENT = `linear-gradient(
@@ -38,6 +41,13 @@ const NOISE_MASK = `linear-gradient(
 )`;
 
 export function HeroBleedBridge() {
+  // Fallback layer: visible until the WebGL hero transition reports ready.
+  // `visibility` (not display) keeps the net-zero-length overlap layout intact.
+  const glReady = useSyncExternalStore(
+    subscribeHeroGl,
+    isHeroGlReady,
+    () => false,
+  );
   return (
     <div
       id="hero-bleed-bridge"
@@ -45,6 +55,8 @@ export function HeroBleedBridge() {
       className="relative z-20 w-full h-[26vh] -mt-[26vh] overflow-hidden pointer-events-none select-none"
       style={{
         background: FOG_GRADIENT,
+        visibility: glReady ? "hidden" : "visible",
+        display: glReady ? "none" : "block",
       }}
     >
       {/* Tapered neutral noise: absent over transparent top and solid bottom */}

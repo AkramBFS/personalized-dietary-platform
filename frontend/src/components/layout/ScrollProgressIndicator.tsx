@@ -179,7 +179,7 @@ export function ScrollProgressIndicator() {
       <div
         id="scroll-progress-mobile"
         aria-hidden="true"
-        className="md:hidden fixed bottom-0 left-0 right-0 h-0.5 z-40 bg-white/10 pb-[env(safe-area-inset-bottom)] pointer-events-none"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-0.5 z-[45] bg-white/10 pb-[env(safe-area-inset-bottom)] pointer-events-none"
       >
         <div
           ref={mobileFillRef}
@@ -193,7 +193,7 @@ export function ScrollProgressIndicator() {
         id="scroll-progress-indicator"
         ref={railContainerRef}
         aria-label="Page scroll navigation"
-        className="hidden md:flex fixed right-3 md:right-5 top-1/2 -translate-y-1/2 z-40 items-center gap-3 opacity-0 pointer-events-none transition-opacity duration-150 motion-reduce:transition-none"
+        className="hidden md:flex fixed right-3 md:right-5 top-1/2 -translate-y-1/2 z-[45] items-center gap-3 opacity-0 pointer-events-none transition-opacity duration-150 motion-reduce:transition-none"
       >
         {/* Hover Tooltip */}
         {hoveredChapter !== null && (
