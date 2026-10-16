@@ -125,6 +125,10 @@ export default function ContentSection() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const triggerEl =
+          (containerRef.current?.closest("[data-landing-stack]") as HTMLElement | null) ||
+          containerRef.current;
+
         // Arrival tween for Panel 1 (before pinning)
         const arrival = gsap.fromTo(
           panel1Ref.current,
@@ -134,7 +138,7 @@ export default function ContentSection() {
             opacity: 1,
             ease: "power2.out",
             scrollTrigger: {
-              trigger: containerRef.current,
+              trigger: triggerEl,
               start: "top 80%",
               end: "top top",
               scrub: 1,
@@ -166,7 +170,7 @@ export default function ContentSection() {
               0,
             );
           const revealST = ScrollTrigger.create({
-            trigger: containerRef.current,
+            trigger: triggerEl,
             start: "top top",
             onEnter: () => reveal.play(),
             onLeaveBack: () => reveal.reverse(),
@@ -198,25 +202,6 @@ export default function ContentSection() {
           };
         }
 
-        // Panel 3 Dim on approach of pricing section
-        const pricingEl = document.getElementById("pricing");
-        if (pricingEl && panel3DimRef.current) {
-          gsap.fromTo(
-            panel3DimRef.current,
-            { opacity: 0 },
-            {
-              opacity: 0.4,
-              ease: "none",
-              scrollTrigger: {
-                trigger: pricingEl,
-                start: "top bottom",
-                end: "top top",
-                scrub: true,
-              },
-            },
-          );
-        }
-
         return () => teardownGlMode?.();
       });
 
@@ -224,53 +209,6 @@ export default function ContentSection() {
         gsap.set(panel1Ref.current, { yPercent: 0, opacity: 1 });
         if (panel3DimRef.current) gsap.set(panel3DimRef.current, { opacity: 0 });
       });
-
-      gsap.set(panel2Ref.current, { xPercent: 100 });
-      gsap.set(panel3Ref.current, { xPercent: 100 });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top top",
-          end: "+=3000",
-          scrub: 1,
-          pin: true,
-          anticipatePin: 1,
-        },
-      });
-
-      tl.to(
-        panel1Ref.current,
-        { xPercent: -50, opacity: 0, ease: "power1.inOut", duration: 1 },
-        0,
-      );
-      tl.to(
-        panel2Ref.current,
-        { xPercent: 0, ease: "power1.inOut", duration: 1 },
-        0,
-      );
-
-      tl.to({}, { duration: 0.3 });
-
-      tl.to(
-        panel2Ref.current,
-        {
-          filter: "blur(16px)",
-          opacity: 0.4,
-          ease: "none",
-          duration: 1,
-        },
-        "+=0",
-      );
-      tl.to(
-        panel3Ref.current,
-        {
-          xPercent: 0,
-          ease: "none",
-          duration: 1,
-        },
-        "<",
-      );
     },
     { scope: containerRef },
   );
@@ -279,7 +217,7 @@ export default function ContentSection() {
     <section
       id="services"
       ref={containerRef}
-      className="relative z-20 h-screen w-full bg-background overflow-hidden text-foreground font-syne"
+      className="relative md:absolute md:inset-0 z-10 min-h-screen md:h-screen w-full bg-background overflow-hidden text-foreground font-syne"
     >
       {/* Handoff veil (GL mode only): plate-coloured, faded out by the reveal */}
       <div
@@ -293,7 +231,8 @@ export default function ContentSection() {
       ========================================= */}
       <div
         ref={panel1Ref}
-        className="absolute inset-0 w-full h-full flex flex-col md:flex-row items-center p-8 md:p-16 gap-8 md:gap-12"
+        data-services-panel="1"
+        className="relative md:absolute md:inset-0 w-full min-h-screen md:h-full flex flex-col md:flex-row items-center p-8 md:p-16 gap-8 md:gap-12"
       >
         {/* Left Col: Headers & CTA */}
         <div className="flex-1 max-w-sm space-y-6">
@@ -386,7 +325,8 @@ export default function ContentSection() {
       ========================================= */}
       <div
         ref={panel2Ref}
-        className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-background z-10"
+        data-services-panel="2"
+        className="relative md:absolute md:inset-0 w-full py-16 md:py-0 md:h-full flex flex-col items-center justify-center bg-background z-10"
       >
         <div className="text-primary mb-6">
           <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10">
@@ -404,7 +344,8 @@ export default function ContentSection() {
       ========================================= */}
       <div
         ref={panel3Ref}
-        className="absolute inset-0 w-full h-full flex items-center justify-center bg-transparent z-20 pointer-events-none"
+        data-services-panel="3"
+        className="relative md:absolute md:inset-0 w-full py-12 md:py-0 md:h-full flex items-center justify-center bg-transparent z-20 pointer-events-none"
       >
         <div className="w-full px-8 md:px-16 flex gap-6 overflow-x-auto snap-x pointer-events-auto items-center justify-center">
           {expertsData.map((expert, i) => {
@@ -438,6 +379,7 @@ export default function ContentSection() {
       {/* Panel 3 Exit Dim Overlay */}
       <div
         ref={panel3DimRef}
+        data-services-dim=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full bg-canvas-deep opacity-0 pointer-events-none z-30"
       />

@@ -41,6 +41,11 @@ export function ScrollProgressIndicator() {
     ids.forEach((id, idx) => {
       const el = document.getElementById(id);
       if (el) {
+        const stackY = el.getAttribute("data-stack-scroll-y");
+        if (stackY !== null && stackY !== "") {
+          bps.push(idx === 0 ? 0 : Math.max(0, Math.round(Number(stackY))));
+          return;
+        }
         const spacer = el.closest(".pin-spacer") as HTMLElement | null;
         const target = spacer || el;
         const rect = target.getBoundingClientRect();

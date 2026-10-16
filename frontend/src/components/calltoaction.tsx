@@ -4,135 +4,25 @@ import Link from "next/link";
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { UserPlus, BadgeCheck, ArrowRight } from "lucide-react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 export default function CallToAction() {
   const containerRef = useRef<HTMLDivElement>(null);
   const panel1Ref = useRef<HTMLDivElement>(null);
   const panel2Ref = useRef<HTMLDivElement>(null);
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // Non-pinned approach trigger: dims FAQ and morphs CTA top corners flat
-        const approachTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: "top bottom",
-            end: "top top",
-            scrub: true,
-          },
-        });
-
-        const faqDimOverlay = document.getElementById("faq-dim-overlay");
-        if (faqDimOverlay) {
-          approachTl.fromTo(
-            faqDimOverlay,
-            { opacity: 0 },
-            { opacity: 0.45, ease: "none" },
-            0,
-          );
-        }
-
-        approachTl.fromTo(
-          containerRef.current,
-          { borderTopLeftRadius: "48px", borderTopRightRadius: "48px" },
-          { borderTopLeftRadius: "0px", borderTopRightRadius: "0px", ease: "none" },
-          0,
-        );
-      });
-
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(containerRef.current, {
-          borderTopLeftRadius: "0px",
-          borderTopRightRadius: "0px",
-        });
-        const faqDimOverlay = document.getElementById("faq-dim-overlay");
-        if (faqDimOverlay) {
-          gsap.set(faqDimOverlay, { opacity: 0 });
-        }
-      });
-
-      // 1. PIN THE PREVIOUS SECTION TO CREATE A SLIDE-OVER OVERLAY EFFECT
-      const faqSection =
-        document.getElementById("faq-section") ||
-        containerRef.current?.previousElementSibling;
-
-      if (faqSection) {
-        ScrollTrigger.create({
-          trigger: faqSection,
-          start: "bottom bottom", // Activates when the bottom of FAQ hits the bottom of the screen
-          endTrigger: containerRef.current,
-          end: "top top", // Pin stops exactly when the CTA has completely covered it
-          pin: true,
-          pinSpacing: false, // Prevents GSAP from adding extra space, forcing CTA to slide over it
-        });
-      }
-
-      // 2. ORIGINAL PANEL ANIMATIONS (Locked scroll distance +=1000)
-      gsap.set(panel2Ref.current, { yPercent: 100 });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top top",
-          end: "+=1000", // Matches the ~100vh scroll duration request
-          scrub: 1,
-          pin: true,
-          anticipatePin: 1,
-        },
-      });
-
-      // Slide Panel 1 slightly up and fade it out to 0 opacity with blur (no ghost)
-      tl.to(
-        panel1Ref.current,
-        {
-          yPercent: -50,
-          opacity: 0,
-          filter: "blur(12px)",
-          ease: "power1.inOut",
-          duration: 1,
-        },
-        0,
-      );
-
-      // Slide Panel 2 up into view from the bottom, clearing blur
-      tl.fromTo(
-        panel2Ref.current,
-        { yPercent: 100, opacity: 0, filter: "blur(12px)" },
-        {
-          yPercent: 0,
-          opacity: 1,
-          filter: "blur(0px)",
-          ease: "power1.inOut",
-          duration: 1,
-        },
-        0,
-      );
-    },
-    { scope: containerRef },
-  );
-
   return (
     <section
       id="cta"
       ref={containerRef}
-      className="relative z-20 h-screen w-full bg-background overflow-hidden text-foreground font-syne rounded-t-[var(--sheet-radius)]"
+      className="relative md:absolute md:inset-0 z-40 min-h-screen md:h-screen w-full bg-background overflow-hidden text-foreground font-syne"
     >
       {/* =========================================
           SCREEN 1: CLIENT GET STARTED
       ========================================= */}
       <div
         ref={panel1Ref}
-        className="absolute inset-0 w-full h-full flex flex-col md:flex-row items-center justify-center p-8 md:p-16 gap-8 md:gap-16"
+        data-cta-panel="1"
+        className="relative md:absolute md:inset-0 w-full min-h-screen md:h-full flex flex-col md:flex-row items-center justify-center p-8 md:p-16 gap-8 md:gap-16"
       >
         {/* Left Col: Headers & CTA */}
         <div className="flex-1 max-w-xl space-y-6">
@@ -174,7 +64,8 @@ export default function CallToAction() {
       ========================================= */}
       <div
         ref={panel2Ref}
-        className="absolute inset-0 w-full h-full flex flex-col md:flex-row-reverse items-center justify-center p-8 md:p-16 gap-8 md:gap-16 bg-card"
+        data-cta-panel="2"
+        className="relative md:absolute md:inset-0 w-full min-h-screen md:h-full flex flex-col md:flex-row-reverse items-center justify-center p-8 md:p-16 gap-8 md:gap-16 bg-card"
       >
         {/* Right Col (Visual Left due to row-reverse): Headers & CTA */}
         <div className="flex-1 max-w-xl space-y-6">

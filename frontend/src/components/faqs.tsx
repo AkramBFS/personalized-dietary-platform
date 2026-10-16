@@ -47,13 +47,6 @@ const faqItems: FAQItem[] = [
     answer:
       "Yes. Users can access the AI calorie tracking feature independently for self-monitoring. This is especially useful for maintaining weight after completing a structured program or for those enrolled in flexible or seasonal plans.",
   },
-  {
-    id: "item-5",
-    icon: "book-open",
-    question: "What additional resources are available?",
-    answer:
-      "The platform includes educational blogs, nutrition news, healthy lifestyle content, and community features where users can share experiences and testimonials. You can also subscribe to newsletters for updates and wellness tips.",
-  },
 ];
 
 // Animation variants
@@ -84,11 +77,11 @@ export default function FAQsThree() {
   return (
     <section
       id="faq-section"
-      className="relative z-10 overflow-hidden bg-background py-24"
+      className="relative md:absolute md:inset-0 z-30 min-h-screen md:h-screen w-full overflow-x-hidden md:overflow-y-auto custom-scrollbar bg-background py-20 md:py-16 flex items-center"
     >
-      <div className="mx-auto max-w-6xl px-6 lg:px-8">
-        <div className="flex flex-col gap-16 lg:flex-row lg:gap-20">
-          {/* Left Column: Context & Sticky header */}
+      <div className="mx-auto w-full max-w-6xl px-6 lg:px-8 my-auto">
+        <div className="flex flex-col gap-12 lg:flex-row lg:gap-20 items-start">
+          {/* Left Column: Context & Header */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -96,7 +89,7 @@ export default function FAQsThree() {
             transition={{ duration: 0.6 }}
             className="lg:w-2/5"
           >
-            <div className="sticky top-24">
+            <div>
               <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
                 Support & Info
               </div>

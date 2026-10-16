@@ -27,11 +27,14 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section id="newsletter" className="relative overflow-hidden bg-card py-24 rounded-b-[3rem]">
+    <section
+      id="newsletter"
+      className="relative md:absolute md:inset-0 z-50 min-h-screen md:h-screen w-full overflow-hidden bg-card py-20 md:py-16 rounded-b-[3rem] flex items-center"
+    >
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
-      <div className="mx-auto max-w-5xl px-6 lg:px-8 relative z-10">
+      <div className="mx-auto w-full max-w-5xl px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

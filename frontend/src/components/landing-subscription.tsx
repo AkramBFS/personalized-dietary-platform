@@ -22,11 +22,14 @@ export default function SubscriptionCards() {
   );
 
   return (
-    <section id="pricing" className="relative overflow-hidden bg-background py-24">
+    <section
+      id="pricing"
+      className="relative md:absolute md:inset-0 z-20 min-h-screen md:h-screen w-full overflow-x-hidden md:overflow-y-auto custom-scrollbar bg-background py-20 md:py-12 flex items-center"
+    >
       {/* Background ambient glow */}
       <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
         <div className="grid lg:grid-cols-3 gap-6 items-stretch">
           {/* Free Plan Card */}
           <motion.div

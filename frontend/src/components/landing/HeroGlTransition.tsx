@@ -257,7 +257,11 @@ function createController(host: HTMLElement) {
     }
     const all = ScrollTrigger.getAll();
     const heroST = all.find((st) => st.pin === hero);
-    const svcST = all.find((st) => st.pin === services);
+    const svcST = all.find(
+      (st) =>
+        st.pin === services ||
+        (st.pin instanceof HTMLElement && st.pin.contains(services)),
+    );
     if (!heroST || !svcST) {
       geo = null;
       return;
