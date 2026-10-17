@@ -41,11 +41,6 @@ const adminLinks: SidebarLink[] = [
     icon: FileText,
   },
   {
-    title: "Subscriptions",
-    url: "/admin/subscriptions",
-    icon: CreditCard,
-  },
-  {
     title: "Content Moderation",
     url: "/admin/moderation",
     icon: ShieldAlert,
@@ -54,6 +49,11 @@ const adminLinks: SidebarLink[] = [
     title: "Blog Management",
     url: "/admin/blog",
     icon: PenTool,
+  },
+  {
+    title: "Subscriptions",
+    url: "/admin/subscriptions",
+    icon: CreditCard,
   },
   {
     title: "Inquiries",
@@ -74,7 +74,7 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "7.5rem" } as React.CSSProperties}
+      style={{ "--sidebar-width": "5.5rem" } as React.CSSProperties}
     >
       <div className="flex min-h-screen w-full bg-background bg-main-app">
         <SharedSidebar links={adminLinks} role="high_admin" />

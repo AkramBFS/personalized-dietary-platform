@@ -57,7 +57,7 @@ const clientLinks: SidebarLink[] = [
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "7.5rem" } as React.CSSProperties}
+      style={{ "--sidebar-width": "5.5rem" } as React.CSSProperties}
     >
       <div className="flex min-h-screen w-full bg-background bg-main-app">
         <SharedSidebar links={clientLinks} role="client" />
