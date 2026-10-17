@@ -73,14 +73,17 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen bg-background w-full">
+    <SidebarProvider
+      style={{ "--sidebar-width": "7.5rem" } as React.CSSProperties}
+    >
+      <div className="flex min-h-screen w-full bg-background bg-main-app">
         <SharedSidebar links={adminLinks} role="high_admin" />
-        <SidebarInset className="flex w-full flex-1 flex-col bg-background">
+        <SidebarInset className="flex min-w-0 w-full flex-1 flex-col bg-transparent">
           <DashboardHeader role="high_admin" />
-          <main className="flex-1 w-full p-4 md:p-8">{children}</main>
+          <main className="w-full flex-1 px-4 pt-3 pb-8 md:px-8">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>
   );
 }
+

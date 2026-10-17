@@ -51,17 +51,17 @@ export function UserProfileDropdown({ user, role }: UserProfileDropdownProps) {
     <DropdownMenu onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center gap-3 p-1 pl-2 pr-3 rounded-full hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-12 items-center gap-2.5 rounded-full border border-border bg-card pl-1.5 pr-3.5 text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
           aria-label="User Profile Menu"
           aria-expanded={isOpen}
         >
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-9 w-9">
             <AvatarImage src={user.avatarUrl} alt={user.username} />
-            <AvatarFallback className="bg-primary/15 text-primary font-semibold text-sm">
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-sm">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium hidden sm:inline-block text-foreground">
+          <span className="text-sm md:text-[15px] font-semibold hidden sm:inline-block text-foreground">
             {user.username}
           </span>
           <ChevronDown

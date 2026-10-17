@@ -75,11 +75,12 @@ export function NotificationDropdown() {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="relative rounded-full w-10 h-10 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label="Notifications"
+          className="relative rounded-full w-12 h-12 p-0 bg-card border border-border text-foreground hover:bg-accent hover:text-foreground cursor-pointer"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-destructive border border-background"></span>
+            <span className="absolute top-2.5 right-3 h-2.5 w-2.5 rounded-full bg-destructive border-2 border-card"></span>
           )}
         </Button>
       </DropdownMenuTrigger>

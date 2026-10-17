@@ -94,19 +94,21 @@ export default function NutritionistLayout({ children }: { children: React.React
   const isRejected = approvalStatus === "ACCOUNT_REJECTED";
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen bg-background w-full relative">
+    <SidebarProvider
+      style={{ "--sidebar-width": "7.5rem" } as React.CSSProperties}
+    >
+      <div className="flex min-h-screen w-full bg-background bg-main-app relative">
         <SharedSidebar links={nutritionistLinks} role="nutritionist" />
-        <SidebarInset className="flex w-full flex-1 flex-col bg-background">
+        <SidebarInset className="flex min-w-0 w-full flex-1 flex-col bg-transparent">
           <DashboardHeader role="nutritionist" />
-          <main className="flex-1 w-full p-4 md:p-8">
+          <main className="w-full flex-1 px-4 pt-3 pb-8 md:px-8">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-32 px-4">
                 <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
                 <p className="text-sm font-medium text-muted-foreground">Verifying practitioner status...</p>
               </div>
             ) : isPending ? (
-              <div className="flex flex-col items-center justify-center py-20 px-4 mt-8 bg-card border border-border rounded-xl shadow-sm text-center">
+              <div className="mx-auto max-w-[1240px] flex flex-col items-center justify-center py-20 px-4 mt-6 bg-card border border-border rounded-[32px] shadow-sm text-center">
                 <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6">
                   <AlertCircle className="w-10 h-10 text-amber-600" />
                 </div>
@@ -114,7 +116,7 @@ export default function NutritionistLayout({ children }: { children: React.React
                 <p className="text-muted-foreground max-w-lg mb-8 text-lg">
                   Your credentials and certification are under review by our moderation team. You will be notified via email once approved.
                 </p>
-                <div className="p-4 bg-muted/50 border border-border rounded-lg flex items-start gap-3 max-w-md text-left">
+                <div className="p-4 bg-muted/50 border border-border rounded-2xl flex items-start gap-3 max-w-md text-left">
                   <Info className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     Typically, reviews take 1-2 business days. In the meantime, you cannot access patient data or design nutritional plans.
@@ -122,7 +124,7 @@ export default function NutritionistLayout({ children }: { children: React.React
                 </div>
               </div>
             ) : isRejected ? (
-              <div className="flex flex-col items-center justify-center py-20 px-4 mt-8 bg-card border border-destructive/20 rounded-xl shadow-sm text-center">
+              <div className="mx-auto max-w-[1240px] flex flex-col items-center justify-center py-20 px-4 mt-6 bg-card border border-destructive/20 rounded-[32px] shadow-sm text-center">
                 <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
                   <AlertTriangle className="w-10 h-10 text-destructive" />
                 </div>
@@ -131,12 +133,12 @@ export default function NutritionistLayout({ children }: { children: React.React
                   Our moderation team was unable to verify your practitioner credentials.
                 </p>
                 {rejectionReason ? (
-                  <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg max-w-md text-left mb-6">
+                  <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-2xl max-w-md text-left mb-6">
                     <p className="text-xs font-semibold uppercase tracking-wider text-destructive mb-1">Reason for Rejection</p>
                     <p className="text-sm text-foreground">{rejectionReason}</p>
                   </div>
                 ) : null}
-                <div className="p-4 bg-muted/50 border border-border rounded-lg flex items-start gap-3 max-w-md text-left">
+                <div className="p-4 bg-muted/50 border border-border rounded-2xl flex items-start gap-3 max-w-md text-left">
                   <Info className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     If you believe this was a mistake, please reach out to support with updated credentials or certification documents.
@@ -150,7 +152,7 @@ export default function NutritionistLayout({ children }: { children: React.React
         </SidebarInset>
         
         {showDevOverride ? (
-          <div className="fixed bottom-6 right-6 z-50 p-4 bg-card border border-border rounded-xl shadow-2xl flex flex-col gap-3 min-w-[200px]">
+          <div className="fixed bottom-6 right-6 z-50 p-4 bg-card border border-border rounded-2xl shadow-2xl flex flex-col gap-3 min-w-[200px]">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Dev Tools</p>
             <Button
               onClick={() => setApprovalStatus("APPROVED")}
@@ -174,4 +176,5 @@ export default function NutritionistLayout({ children }: { children: React.React
     </SidebarProvider>
   );
 }
+
 
