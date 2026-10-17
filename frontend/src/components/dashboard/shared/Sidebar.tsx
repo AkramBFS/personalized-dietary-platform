@@ -64,7 +64,12 @@ const ROLE_GROUP_SPECS: Record<SidebarProps["role"], RoleGroupSpec[]> = {
     {
       id: "support",
       label: "Support",
-      matchSuffixes: ["/inquiries"],
+      matchSuffixes: ["/inquiries", "/support"],
+    },
+    {
+      id: "system",
+      label: "System",
+      matchSuffixes: ["/settings"],
     },
   ],
   client: [
@@ -84,6 +89,11 @@ const ROLE_GROUP_SPECS: Record<SidebarProps["role"], RoleGroupSpec[]> = {
       label: "Billing",
       matchSuffixes: ["/subscription", "/invoices"],
     },
+    {
+      id: "support",
+      label: "Support & Settings",
+      matchSuffixes: ["/support", "/settings"],
+    },
   ],
   nutritionist: [
     { id: "overview", label: "Overview", matchSuffixes: ["/nutritionist"] },
@@ -102,11 +112,16 @@ const ROLE_GROUP_SPECS: Record<SidebarProps["role"], RoleGroupSpec[]> = {
       label: "Finance",
       matchSuffixes: ["/earnings"],
     },
+    {
+      id: "support",
+      label: "Support & Settings",
+      matchSuffixes: ["/support", "/settings"],
+    },
   ],
 };
 
 function groupNavigationLinks(
-  mainLinks: SidebarLink[],
+  allLinks: SidebarLink[],
   role: SidebarProps["role"],
 ): NavGroup[] {
   const specs = ROLE_GROUP_SPECS[role] ?? [];
@@ -114,7 +129,7 @@ function groupNavigationLinks(
   const groups: NavGroup[] = [];
 
   for (const spec of specs) {
-    const matched = mainLinks.filter((link) =>
+    const matched = allLinks.filter((link) =>
       spec.matchSuffixes.some((suffix) => link.url.endsWith(suffix)),
     );
     if (matched.length > 0) {
@@ -127,7 +142,7 @@ function groupNavigationLinks(
     }
   }
 
-  const remaining = mainLinks.filter((link) => !usedUrls.has(link.url));
+  const remaining = allLinks.filter((link) => !usedUrls.has(link.url));
   if (remaining.length > 0) {
     groups.push({
       id: "other",
@@ -214,6 +229,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
 
     updateScrollState();
     el.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState, { passive: true });
 
     let resizeObserver: ResizeObserver | null = null;
     if (typeof ResizeObserver !== "undefined") {
@@ -228,6 +244,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
 
     return () => {
       el.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
@@ -324,29 +341,13 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       : pathname === url || pathname.startsWith(`${url}/`);
 
   const safeLinks = useMemo(() => (Array.isArray(links) ? links : []), [links]);
-  const mainLinks = useMemo(
-    () =>
-      safeLinks.filter(
-        (link) =>
-          !link.url.endsWith("/support") && !link.url.endsWith("/settings"),
-      ),
-    [safeLinks],
-  );
-  const bottomLinks = useMemo(
-    () =>
-      safeLinks.filter(
-        (link) =>
-          link.url.endsWith("/support") || link.url.endsWith("/settings"),
-      ),
-    [safeLinks],
-  );
 
   const navGroups = useMemo(
-    () => groupNavigationLinks(mainLinks, role),
-    [mainLinks, role],
+    () => groupNavigationLinks(safeLinks, role),
+    [safeLinks, role],
   );
 
-  const renderLinkItem = (link: SidebarLink, inScrollZone = false) => {
+  const renderLinkItem = (link: SidebarLink) => {
     const isActive = isLinkActive(link.url);
 
     const linkElement = (
@@ -356,12 +357,10 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         aria-label={link.title}
         aria-current={isActive ? "page" : undefined}
         onFocus={(e) => {
-          if (inScrollZone) {
-            e.currentTarget.scrollIntoView({ block: "nearest" });
-          }
+          e.currentTarget.scrollIntoView({ block: "nearest" });
         }}
         className={cn(
-          "group/nav flex h-11 w-full items-center rounded-2xl px-1.5 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring",
+          "group/nav flex h-11 w-full shrink-0 items-center rounded-2xl px-1.5 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring",
           showFullLabels
             ? isActive
               ? "bg-primary bg-btn-primary text-primary-foreground font-bold shadow-xs"
@@ -418,14 +417,24 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       aria-label={`${rolePath} navigation`}
       data-expanded={showFullLabels ? "true" : "false"}
       data-pinned={isPinned ? "true" : "false"}
+      data-lenis-prevent
+      data-lenis-prevent-wheel
+      data-lenis-prevent-touch
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerDownCapture={handlePointerDownCapture}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
       onKeyDown={handleKeyDown}
+      onWheel={(e) => {
+        e.stopPropagation();
+        const navEl = scrollRef.current;
+        if (navEl && !navEl.contains(e.target as Node)) {
+          navEl.scrollTop += e.deltaY;
+        }
+      }}
       className={cn(
-        "flex h-full w-full flex-col border border-border bg-card text-card-foreground transition-[width,box-shadow] duration-180 ease-out motion-reduce:transition-none",
+        "flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden border border-border bg-card text-card-foreground transition-[width,box-shadow] duration-180 ease-out motion-reduce:transition-none",
         isMobile
           ? "rounded-e-[32px] border-s-0 px-4 py-5 gap-3 shadow-sm"
           : cn(
@@ -455,12 +464,12 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       </div>
 
       {/* ZONE 2: Middle (Scrollable Grouped Navigation List) */}
-      <div className="relative flex w-full flex-1 min-h-0 flex-col">
+      <div className="relative flex w-full flex-1 min-h-0 flex-col overflow-hidden">
         {/* Top soft fade indicator */}
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-x-0 top-0 z-10 h-5 bg-gradient-to-b from-card via-card/80 to-transparent transition-opacity duration-150 motion-reduce:transition-none",
+            "pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-card via-card/85 to-transparent transition-opacity duration-150 motion-reduce:transition-none",
             canScrollUp ? "opacity-100" : "opacity-0",
           )}
         />
@@ -468,9 +477,12 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         <nav
           ref={scrollRef}
           aria-label={`${rolePath} primary navigation`}
-          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          data-lenis-prevent
+          data-lenis-prevent-wheel
+          data-lenis-prevent-touch
+          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
-          <div ref={scrollContentRef} className="flex w-full flex-col">
+          <div ref={scrollContentRef} className="flex w-full flex-col pb-1">
             {navGroups.map((group, groupIndex) => (
               <div key={group.id} className="flex w-full flex-col">
                 {groupIndex > 0 && (
@@ -485,7 +497,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
                   </div>
                 )}
                 <div className="flex w-full flex-col gap-1">
-                  {group.items.map((link) => renderLinkItem(link, true))}
+                  {group.items.map((link) => renderLinkItem(link))}
                 </div>
               </div>
             ))}
@@ -501,7 +513,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
           )}
         />
 
-        {/* Optional Chevron-Down Scroll Helper */}
+        {/* Chevron-Down Scroll Helper */}
         {canScrollDown && (
           <button
             type="button"
@@ -514,11 +526,9 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         )}
       </div>
 
-      {/* ZONE 3: Bottom (Pinned Utility Links + Pin/Unpin Toggle) */}
-      <div className="mt-auto flex w-full shrink-0 flex-col gap-1 border-t border-border pt-2">
-        {bottomLinks.map((link) => renderLinkItem(link, false))}
-
-        {!isMobile && (
+      {/* ZONE 3: Bottom (Pinned Pin/Unpin Toggle) */}
+      {!isMobile && (
+        <div className="mt-auto flex w-full shrink-0 flex-col border-t border-border pt-2">
           <Tooltip open={showFullLabels ? false : undefined}>
             <TooltipTrigger asChild>
               <button
@@ -561,8 +571,8 @@ export function SharedSidebar({ links, role }: SidebarProps) {
               {isPinned ? "Unpin sidebar" : "Pin sidebar"}
             </TooltipContent>
           </Tooltip>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   );
 
@@ -595,14 +605,14 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 start-0 z-30 hidden h-svh py-4 ps-4 pe-0 transition-[width] duration-180 ease-out motion-reduce:transition-none md:flex",
+          "fixed inset-y-0 start-0 z-30 hidden h-dvh max-h-dvh py-4 ps-4 pe-0 transition-[width] duration-180 ease-out motion-reduce:transition-none md:flex",
           isExpanded ? "w-[268px]" : "w-[88px]",
         )}
       >
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="flex h-full w-full flex-col bg-transparent"
+          className="flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden bg-transparent"
         >
           {renderAsideContent()}
         </div>
@@ -610,5 +620,6 @@ export function SharedSidebar({ links, role }: SidebarProps) {
     </div>
   );
 }
+
 
 
