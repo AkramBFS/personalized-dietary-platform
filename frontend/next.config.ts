@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: '*.unsplash.com',
+      },
+      {
+        protocol: 'https',
         hostname: 'images.unsplash.com',
       },
       {
@@ -30,7 +34,7 @@ const nextConfig: NextConfig = {
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://challenges.cloudflare.com https://js.stripe.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://images.unsplash.com https://placehold.co http://127.0.0.1:8000 http://localhost:8000 https://*.stripe.com",
+      "img-src 'self' data: blob: https://*.unsplash.com https://placehold.co http://127.0.0.1:8000 http://localhost:8000 https://*.stripe.com",
       "connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://challenges.cloudflare.com https://api.stripe.com",
       "frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com",
       "object-src 'none'",
