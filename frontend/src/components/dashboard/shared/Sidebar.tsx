@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, LucideIcon, Pin, PinOff } from "lucide-react";
-import {
-  Sidebar as BaseSidebar,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { Sidebar as BaseSidebar, useSidebar } from "@/components/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -41,7 +44,7 @@ interface NavGroup {
 }
 
 const PIN_STORAGE_KEY = "svmb_sidebar_pinned";
-const HOVER_OPEN_DELAY_MS = 450;
+const HOVER_OPEN_DELAY_MS = 1500;
 const HOVER_CLOSE_DELAY_MS = 180;
 
 const ROLE_GROUP_SPECS: Record<SidebarProps["role"], RoleGroupSpec[]> = {
@@ -212,7 +215,8 @@ export function SharedSidebar({ links, role }: SidebarProps) {
     prevPathname.current = pathname;
   }, [pathname, isMobile, setOpenMobile]);
 
-  const isExpanded = !isMobile && (isPinned || isHoverExpanded || isFocusExpanded);
+  const isExpanded =
+    !isMobile && (isPinned || isHoverExpanded || isFocusExpanded);
   const showFullLabels = isMobile || isExpanded;
 
   const updateScrollState = useCallback(() => {
@@ -571,7 +575,11 @@ export function SharedSidebar({ links, role }: SidebarProps) {
                 </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={12} className="font-semibold">
+            <TooltipContent
+              side="right"
+              sideOffset={12}
+              className="font-semibold"
+            >
               {isPinned ? "Unpin sidebar" : "Pin sidebar"}
             </TooltipContent>
           </Tooltip>
@@ -626,6 +634,3 @@ export function SharedSidebar({ links, role }: SidebarProps) {
     </TooltipProvider>
   );
 }
-
-
-

@@ -26,6 +26,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { getProfileIdentity } from "@/lib/profile";
+import { getSessionUser } from "@/lib/auth";
+import { formatClientName, formatNutritionistName } from "@/lib/utils";
 
 type RoleType = "client" | "nutritionist" | "high_admin";
 
@@ -59,17 +61,36 @@ function getHeaderSectionMeta(pathname: string) {
 
 export function DashboardHeader({ role }: { role: RoleType }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ username: string; email: string; avatarUrl?: string }>(() =>
-    role === "high_admin"
+  const [user, setUser] = useState<{ username: string; email: string; avatarUrl?: string }>(() => {
+    const session = typeof window !== "undefined" ? getSessionUser() : null;
+    if (session) {
+      let displayName = session.username || "User";
+      if (role === "client") displayName = formatClientName(session.username);
+      else if (role === "nutritionist") displayName = formatNutritionistName(session.username);
+      return {
+        username: displayName,
+        email: session.email || "",
+      };
+    }
+    return role === "high_admin"
       ? { username: "Admin", email: "admin@example.com" }
-      : { username: "User", email: "user@example.com" },
-  );
+      : { username: "User", email: "user@example.com" };
+  });
 
   useEffect(() => {
     let isMounted = true;
 
-    if (role === "high_admin") {
-      return;
+    // Immediately sync with session user from localStorage if not already synced
+    const session = getSessionUser();
+    if (session) {
+      let displayName = session.username || "User";
+      if (role === "client") displayName = formatClientName(session.username);
+      else if (role === "nutritionist") displayName = formatNutritionistName(session.username);
+      setUser((prev) => ({
+        ...prev,
+        username: displayName,
+        email: session.email || prev.email,
+      }));
     }
 
     const loadIdentity = async () => {
@@ -84,10 +105,19 @@ export function DashboardHeader({ role }: { role: RoleType }) {
         }
       } catch {
         if (isMounted) {
-          setUser({
-            username: role === "client" ? "Client" : "Nutritionist",
-            email: "",
-          });
+          const currentSession = getSessionUser();
+          const fallbackUsername =
+            role === "high_admin"
+              ? currentSession?.username || "Admin"
+              : role === "client"
+                ? formatClientName(currentSession?.username) || "Client"
+                : formatNutritionistName(currentSession?.username) || "Nutritionist";
+
+          setUser((prev) => ({
+            ...prev,
+            username: fallbackUsername,
+            email: currentSession?.email || prev.email || "",
+          }));
         }
       }
     };
