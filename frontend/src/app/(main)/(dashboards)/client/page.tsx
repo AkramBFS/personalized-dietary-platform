@@ -2,29 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import {
   Calendar,
   Camera,
   CheckCircle2,
   Flame,
+  Info,
   ListTodo,
   Loader2,
   Plus,
-  RotateCw,
   Star,
   Target,
 } from "lucide-react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import Link from "next/link";
 import {
   ClientConsultation,
@@ -36,7 +25,6 @@ import {
   getClientUserPlans,
 } from "@/lib/client";
 import { formatClientName } from "@/lib/utils";
-
 
 interface ChartPoint {
   date: string;
@@ -61,6 +49,11 @@ export default function ClientDashboardPage() {
   const [nextConsultation, setNextConsultation] =
     useState<ClientConsultation | null>(null);
   const [todayIntake, setTodayIntake] = useState(0);
+  const [todayMacros, setTodayMacros] = useState({
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+  });
   const [dailyTarget, setDailyTarget] = useState<number | null>(null);
   const [goalAchieved, setGoalAchieved] = useState(false);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
@@ -85,7 +78,6 @@ export default function ClientDashboardPage() {
         if (!isMounted) return;
 
         setProfileName(formatClientName(profile.username));
-
 
         const currentPlan =
           plans.find((plan) => plan.status === "active") ?? null;
@@ -119,6 +111,11 @@ export default function ClientDashboardPage() {
         };
 
         setTodayIntake(todayLog?.total_calories_consumed ?? 0);
+        setTodayMacros({
+          protein: todayLog?.total_protein_consumed ?? 0,
+          carbs: todayLog?.total_carbs_consumed ?? 0,
+          fats: todayLog?.total_fats_consumed ?? 0,
+        });
         setDailyTarget(resolvedTargets.calories);
         setGoalAchieved(todayLog?.is_goal_achieved ?? false);
         setShowTargetsReminder(
@@ -160,6 +157,21 @@ export default function ClientDashboardPage() {
     return Math.min(100, (todayIntake / dailyTarget) * 100);
   }, [dailyTarget, todayIntake]);
 
+  const chartScaleMax = useMemo(() => {
+    const maxIntake = Math.max(0, ...chartData.map((d) => d.intake));
+    const targetVal = dailyTarget && dailyTarget > 0 ? dailyTarget : 2000;
+    return Math.max(2400, Math.ceil(Math.max(maxIntake, targetVal * 1.15) / 400) * 400);
+  }, [chartData, dailyTarget]);
+
+  const targetMarkerPercent = useMemo(() => {
+    const targetVal = dailyTarget && dailyTarget > 0 ? dailyTarget : 2000;
+    return Math.min(100, Math.max(0, (targetVal / chartScaleMax) * 100));
+  }, [dailyTarget, chartScaleMax]);
+
+  const donutCircumference = 2 * Math.PI * 40;
+  const donutStrokeDashoffset =
+    donutCircumference - (progressPercentage / 100) * donutCircumference;
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -169,291 +181,437 @@ export default function ClientDashboardPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-8 pb-10">
+    <div className="mx-auto flex max-w-[1240px] flex-col gap-4 pb-10">
       {showTargetsReminder && (
-        <Card className="border-accent/50 bg-accent/20 shadow-sm transition-all">
-          <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3 md:items-center">
-              {/* Using the accent-foreground color for the icon to make it pop */}
-              <div className="rounded-full bg-accent-foreground/10 p-2 text-accent-foreground">
+        <div className="rounded-[28px] border border-border bg-card p-5 shadow-xs transition-all">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3.5 md:items-center">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-accent text-primary">
                 <Target className="h-5 w-5" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-bold uppercase tracking-widest text-accent-foreground">
+                <p className="text-xs font-bold uppercase tracking-widest text-primary">
                   Daily Targets Missing
                 </p>
-                <p className="text-sm text-foreground/80">
+                <p className="text-sm text-muted-foreground">
                   Set your calorie, protein, carbs, and fat goals to unlock full
                   progress tracking.
                 </p>
               </div>
             </div>
 
-            {/* Using the standard primary button which adapts to each theme */}
-            <Button asChild className="w-full font-semibold md:w-auto">
+            <Button
+              asChild
+              className="w-full rounded-full px-6 font-semibold md:w-auto"
+            >
               <Link href="/client/profile">Set Targets</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-          Good morning, {profileName}!
-        </h1>
-        <Button asChild className="rounded-lg px-6 py-6 font-medium">
-          <Link href="/client/calorie-tracker">
-            <Plus className="mr-2 h-5 w-5" />
+      {/* Hero Banner with Integrated Quick Actions */}
+      <div className="relative overflow-hidden rounded-[36px] md:rounded-[44px] border border-border bg-card bg-section-hero p-7 md:px-10 md:py-9 flex flex-col justify-between gap-7 shadow-xs">
+        {/* Decorative concentric circles */}
+        <svg
+          className="pointer-events-none absolute -top-20 -right-10 h-[400px] w-[400px] opacity-60"
+          viewBox="0 0 400 400"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle
+            cx="250"
+            cy="150"
+            r="100"
+            stroke="var(--border)"
+            strokeWidth="1.5"
+          />
+          <circle
+            cx="250"
+            cy="150"
+            r="150"
+            stroke="var(--border)"
+            strokeWidth="1.5"
+          />
+          <circle
+            cx="250"
+            cy="150"
+            r="200"
+            stroke="var(--border)"
+            strokeWidth="1.5"
+          />
+          <circle
+            cx="250"
+            cy="150"
+            r="250"
+            stroke="var(--border)"
+            strokeWidth="1.5"
+          />
+        </svg>
+
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-4xl md:text-[52px] font-bold tracking-tight text-foreground leading-[1.05]">
+            Good morning, {profileName}!
+          </h1>
+          <Link
+            href="/client/calorie-tracker"
+            className="inline-flex items-center gap-3 rounded-full bg-primary bg-btn-primary text-primary-foreground px-7 py-4 text-base font-bold transition-transform hover:-translate-y-0.5 shadow-sm"
+          >
+            <Plus className="h-[18px] w-[18px] stroke-[2.5]" />
             Log New Meal
           </Link>
-        </Button>
+        </div>
+
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Quick Actions
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/client/calorie-tracker"
+              className="inline-flex items-center gap-2.5 rounded-full border border-border bg-accent/60 hover:bg-accent px-5 py-2.5 text-[13px] font-semibold text-foreground transition-colors"
+            >
+              <Camera className="h-4 w-4 text-primary" />
+              Upload Meal
+            </Link>
+            <Link
+              href="/client/consultations"
+              className="inline-flex items-center gap-2.5 rounded-full border border-border bg-accent/60 hover:bg-accent px-5 py-2.5 text-[13px] font-semibold text-foreground transition-colors"
+            >
+              <Calendar className="h-4 w-4 text-primary" />
+              Book Consultation
+            </Link>
+            <Link
+              href="/client/meal-plans"
+              className="inline-flex items-center gap-2.5 rounded-full border border-border bg-accent/60 hover:bg-accent px-5 py-2.5 text-[13px] font-semibold text-foreground transition-colors"
+            >
+              <ListTodo className="h-4 w-4 text-primary" />
+              View Digital Plan
+            </Link>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 rounded-xl bg-primary/20 p-3 text-primary">
-                <Star className="h-6 w-6" />
+      {/* Main 2-Column Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-stretch">
+        {/* Left Column: Macros Today + Next Consultation */}
+        <div className="flex flex-col gap-4">
+          {/* Macros Today Card */}
+          <div className="rounded-[28px] border border-border bg-card p-6 flex flex-col justify-between flex-1 shadow-xs">
+            <h2 className="text-[15px] font-bold text-foreground">
+              Macros Today
+            </h2>
+
+            <div className="relative w-[130px] h-[130px] mx-auto my-4 flex items-center justify-center">
+              <svg
+                viewBox="0 0 100 100"
+                className="w-full h-full -rotate-90"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke="var(--progress-track)"
+                  strokeWidth="10"
+                />
+                {progressPercentage > 0 && (
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={donutCircumference}
+                    strokeDashoffset={donutStrokeDashoffset}
+                  />
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-2xl font-bold text-foreground leading-none">
+                  {todayIntake.toFixed(0)}
+                </span>
+                <span className="text-[11px] font-semibold text-muted-foreground mt-1">
+                  kcal
+                </span>
               </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2 font-medium text-muted-foreground">
+                  <span className="w-2 h-2 rounded-full bg-protein inline-block" />
+                  Protein
+                </div>
+                <span className="font-bold text-foreground">
+                  {todayMacros.protein.toFixed(0)}g
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2 font-medium text-muted-foreground">
+                  <span className="w-2 h-2 rounded-full bg-carbs inline-block" />
+                  Carbs
+                </div>
+                <span className="font-bold text-foreground">
+                  {todayMacros.carbs.toFixed(0)}g
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2 font-medium text-muted-foreground">
+                  <span className="w-2 h-2 rounded-full bg-fats inline-block" />
+                  Fats
+                </div>
+                <span className="font-bold text-foreground">
+                  {todayMacros.fats.toFixed(0)}g
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Next Consultation Card */}
+          <div className="rounded-[28px] border border-border bg-card p-6 flex flex-col justify-between gap-5 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-accent border border-border flex items-center justify-center text-ember shrink-0">
+                <Info className="w-5 h-5" />
+              </div>
+              <span className="text-[15px] font-bold text-foreground">
+                Next Consultation
+              </span>
+            </div>
+
+            <div>
+              {nextConsultation ? (
+                <>
+                  <p className="truncate text-xl font-bold text-foreground">
+                    {new Date(
+                      `${nextConsultation.appointment_date}T00:00`,
+                    ).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                    {nextConsultation.start_time
+                      ? `, ${nextConsultation.start_time}`
+                      : ""}
+                  </p>
+                  <p
+                    className={`mt-1 mb-3 text-xs font-semibold ${
+                      nextConsultation.zoom_link
+                        ? "text-primary"
+                        : "text-ember"
+                    }`}
+                  >
+                    {nextConsultation.zoom_link
+                      ? "Zoom Link Ready"
+                      : "Pending Link"}
+                  </p>
+                  <Link
+                    href="/client/consultations"
+                    className="inline-flex items-center justify-center rounded-full border border-border bg-transparent hover:bg-accent px-5 py-2.5 text-xs font-bold text-foreground transition-colors"
+                  >
+                    Book now
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-xl font-bold text-foreground mb-3">
+                    None Scheduled
+                  </p>
+                  <Link
+                    href="/client/consultations"
+                    className="inline-flex items-center justify-center rounded-full border border-border bg-transparent hover:bg-accent px-5 py-2.5 text-xs font-bold text-foreground transition-colors"
+                  >
+                    Book now
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: 3 Stat Cards + Weekly Progress */}
+        <div className="flex flex-col gap-4">
+          {/* Top 3 Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Current Plan */}
+            <div className="rounded-[28px] border border-border bg-card p-6 pb-8 relative overflow-hidden flex flex-col justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-accent border border-border flex items-center justify-center text-ember shrink-0">
+                  <Star className="w-5 h-5" />
+                </div>
+                <span className="text-[15px] font-bold text-foreground">
                   Current Plan
-                </p>
-                <p className="truncate text-lg font-bold text-foreground">
+                </span>
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-[22px] font-bold text-foreground tracking-tight leading-tight">
                   {getPlanTitle(activePlan)}
                 </p>
-                <p className="text-sm font-medium text-primary">
+                <p className="text-xs font-bold text-primary mt-1.5">
                   {activePlan
                     ? `${activePlan.progress_percent ?? 0}% Completed`
                     : "Browse Marketplace"}
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 rounded-xl bg-secondary p-3 text-muted-foreground">
-                <Flame className="h-6 w-6" />
+              <div className="absolute bottom-4 left-6 right-6 h-1.5 rounded-full bg-progress-track overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-ember transition-all"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, activePlan?.progress_percent ?? 0))}%`,
+                  }}
+                />
               </div>
-              <div className="w-full space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            </div>
+
+            {/* Calories Today */}
+            <div className="rounded-[28px] border border-border bg-card p-6 pb-8 relative overflow-hidden flex flex-col justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-accent border border-border flex items-center justify-center text-primary shrink-0">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <span className="text-[15px] font-bold text-foreground">
                   Calories Today
-                </p>
-                <p className="text-lg font-bold text-foreground">
+                </span>
+              </div>
+
+              <div>
+                <p className="text-[22px] font-bold text-foreground tracking-tight leading-tight">
                   {todayIntake.toFixed(0)} kcal
                 </p>
                 {dailyTarget ? (
-                  <div className="mt-2 flex w-full items-center gap-3">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-progress-track">
-                      <div
-                        className="h-full bg-primary"
-                        style={{ width: `${progressPercentage}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {progressPercentage.toFixed(0)}%
-                    </span>
-                  </div>
+                  <p className="text-xs font-medium text-muted-foreground mt-1.5">
+                    {progressPercentage.toFixed(0)}%
+                  </p>
                 ) : (
-                  <p className="mt-2 text-xs text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground mt-1.5">
                     Set a daily target to track progress.
                   </p>
                 )}
                 {goalAchieved && (
-                  <p className="flex items-center gap-1 text-xs font-medium text-primary">
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-primary">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Goal achieved
                   </p>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 rounded-xl bg-secondary p-3 text-muted-foreground">
-                <Target className="h-6 w-6" />
+              <div className="absolute bottom-4 left-6 right-6 h-1.5 rounded-full bg-progress-track overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${progressPercentage}%` }}
+                />
               </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            </div>
+
+            {/* Remaining */}
+            <div className="rounded-[28px] border border-border bg-card p-6 flex flex-col justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-accent border border-border flex items-center justify-center text-protein shrink-0">
+                  <Target className="w-5 h-5" />
+                </div>
+                <span className="text-[15px] font-bold text-foreground">
                   Remaining
-                </p>
-                <p className="text-lg font-bold text-foreground">
+                </span>
+              </div>
+
+              <div>
+                <p className="text-[22px] font-bold text-foreground tracking-tight leading-tight">
                   {remainingCalories !== null
                     ? `${remainingCalories.toFixed(0)} kcal`
                     : "Target not set"}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs font-medium text-muted-foreground mt-1.5">
                   {dailyTarget !== null
                     ? `Daily goal: ${dailyTarget.toFixed(0)} kcal`
                     : "Add your daily targets in your profile."}
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 rounded-xl bg-secondary p-3 text-muted-foreground">
-                <RotateCw className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Next Consultation
-                </p>
-                {nextConsultation ? (
-                  <>
-                    <p className="truncate text-lg font-bold text-foreground">
-                      {new Date(
-                        `${nextConsultation.appointment_date}T00:00`,
-                      ).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                      {nextConsultation.start_time
-                        ? `, ${nextConsultation.start_time}`
-                        : ""}
-                    </p>
-                    <p
-                      className={`text-sm font-medium ${nextConsultation.zoom_link ? "text-blue-500" : "text-amber-500"}`}
-                    >
-                      {nextConsultation.zoom_link
-                        ? "Zoom Link Ready"
-                        : "Pending Link"}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-lg font-bold text-foreground">
-                      None Scheduled
-                    </p>
-                    <Link
-                      href="/client/consultations"
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      Book now
-                    </Link>
-                  </>
-                )}
+          {/* Weekly Progress: Intake vs Target */}
+          <div className="rounded-[28px] border border-border bg-card p-6 md:p-7 flex-1 flex flex-col justify-between shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <span className="inline-flex items-center rounded-full bg-accent border border-border px-4 py-2 text-[13px] font-bold text-foreground">
+                Weekly Progress: Intake vs Target
+              </span>
+              <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-primary inline-block" />
+                  Intake
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-0.5 bg-ember inline-block" />
+                  Target
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="border-none shadow-sm lg:col-span-2">
-          <CardContent className="p-6">
-            <h2 className="mb-6 text-xl font-bold tracking-wide text-foreground">
-              Weekly Progress: Intake vs Target
-            </h2>
-            <div className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--border)"
-                    className="opacity-30"
-                  />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 13 }}
-                    dy={10}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 13 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                      color: "var(--card-foreground)",
-                    }}
-                    formatter={(value) => [
-                      `${Number(value).toFixed(0)} kcal`,
-                      "Intake",
-                    ]}
-                    labelFormatter={(_, payload) =>
-                      payload?.[0]?.payload?.date ?? ""
-                    }
-                  />
-                  {dailyTarget !== null && (
-                    <ReferenceLine
-                      y={dailyTarget}
-                      stroke="var(--muted-foreground)"
-                      strokeDasharray="3 3"
-                      label={{
-                        position: "insideTopLeft",
-                        value: "Target",
-                        fill: "var(--muted-foreground)",
-                        fontSize: 13,
-                      }}
-                    />
-                  )}
-                  <Line
-                    type="monotone"
-                    dataKey="intake"
-                    stroke="var(--primary)"
-                    strokeWidth={3}
-                    dot={{ fill: "var(--primary)", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="flex flex-col gap-3">
+              {/* Scale Header */}
+              <div className="grid grid-cols-[44px_1fr_92px] gap-4 mb-1">
+                <div />
+                <div className="flex justify-between text-[11px] font-medium text-muted-foreground px-0.5">
+                  <span>0</span>
+                  <span>{Math.round(chartScaleMax * 0.25)}</span>
+                  <span>{Math.round(chartScaleMax * 0.5)}</span>
+                  <span>{Math.round(chartScaleMax * 0.75)}</span>
+                  <span>{chartScaleMax}</span>
+                </div>
+                <div />
+              </div>
+
+              {/* 7 Day Horizontal Bars */}
+              <div className="flex flex-col gap-3.5">
+                {chartData.map((point) => {
+                  const barPct = Math.min(
+                    100,
+                    Math.max(0, (point.intake / chartScaleMax) * 100),
+                  );
+                  const pctOfTarget =
+                    dailyTarget && dailyTarget > 0
+                      ? Math.round((point.intake / dailyTarget) * 100)
+                      : 0;
+
+                  return (
+                    <div
+                      key={point.date}
+                      className="grid grid-cols-[44px_1fr_92px] items-center gap-4"
+                    >
+                      <span className="text-xs font-semibold text-foreground">
+                        {point.name}
+                      </span>
+                      <div className="relative h-3 rounded-full bg-progress-track flex items-center">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${barPct}%` }}
+                        />
+                        <div
+                          className="absolute -top-1.5 -bottom-1.5 w-0 border-l-2 border-dashed border-ember z-10"
+                          style={{ left: `${targetMarkerPercent}%` }}
+                          title={
+                            dailyTarget
+                              ? `Target: ${dailyTarget.toFixed(0)} kcal`
+                              : "Target: 2000 kcal"
+                          }
+                        />
+                      </div>
+                      <span className="text-[11px] font-medium text-muted-foreground text-right tabular-nums">
+                        {point.intake.toFixed(0)} ({pctOfTarget}%)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <h2 className="mb-2 mt-4 text-xl font-bold tracking-wide text-foreground lg:mb-1 lg:mt-0">
-            Quick Actions
-          </h2>
-          <Button
-            asChild
-            className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm"
-          >
-            <Link href="/client/calorie-tracker">
-              <Camera className="mb-1 h-8 w-8" />
-              <span className="text-base font-semibold">Upload Meal</span>
-            </Link>
-          </Button>
-          <Button
-            asChild
-            className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm"
-          >
-            <Link href="/client/consultations">
-              <Calendar className="mb-1 h-8 w-8" />
-              <span className="text-base font-semibold">Book Consultation</span>
-            </Link>
-          </Button>
-          <Button
-            asChild
-            className="flex h-auto w-full flex-col items-center justify-center gap-3 rounded-xl py-6 shadow-sm"
-          >
-            <Link href="/client/meal-plans">
-              <ListTodo className="mb-1 h-8 w-8" />
-              <span className="text-base font-semibold">View Digital Plan</span>
-            </Link>
-          </Button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

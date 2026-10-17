@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Flame, Target } from "lucide-react";
 
 interface CalorieStatsProps {
@@ -15,42 +14,44 @@ export default function CalorieStats({ intakeCalories, targetCalories }: Calorie
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <Card className="bg-card border-none shadow-sm shadow-card/50">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="mt-1 rounded-xl bg-secondary p-3 text-muted-foreground">
-              <Flame className="h-6 w-6" />
-            </div>
-            <div className="w-full space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Calories Today
-              </p>
-              <p className="text-lg font-bold text-foreground">{Math.round(intakeCalories)} kcal</p>
-              <div className="mt-2 flex w-full items-center gap-3">
-                <div className="h-2 w-full overflow-hidden rounded-full bg-input">
-                  <div className="h-full bg-brand" style={{ width: `${progressPercent}%` }} />
-                </div>
-                <span className="text-xs text-muted-foreground">{Math.round(progressPercent)}%</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-[28px] border border-border bg-card p-5.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Calories Today
+          </span>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-primary">
+            <Flame className="h-5 w-5" />
+          </span>
+        </div>
+        <div className="mt-3.5 mb-2 text-[28px] font-bold leading-[1.1] tracking-tight text-foreground xl:text-[32px]">
+          {Math.round(intakeCalories)} kcal
+        </div>
+        <div className="text-sm text-muted-foreground">{Math.round(progressPercent)}%</div>
+        <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-progress-track">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
 
-      <Card className="bg-card border-none shadow-sm shadow-card/50">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="mt-1 rounded-xl bg-secondary p-3 text-muted-foreground">
-              <Target className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Remaining</p>
-              <p className="text-lg font-bold text-foreground">{Math.round(remainingCalories)} kcal</p>
-              <p className="text-sm text-muted-foreground">Daily target: {Math.round(targetCalories)} kcal</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-[28px] border border-border bg-card p-5.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Remaining
+          </span>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-protein">
+            <Target className="h-5 w-5" />
+          </span>
+        </div>
+        <div className="mt-3.5 mb-2 text-[28px] font-bold leading-[1.1] tracking-tight text-foreground xl:text-[32px]">
+          {Math.round(remainingCalories)} kcal
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Daily goal: {Math.round(targetCalories)} kcal
+        </div>
+      </div>
     </div>
   );
 }
+
