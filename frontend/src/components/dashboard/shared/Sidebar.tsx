@@ -11,6 +11,7 @@ import {
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Logo, LogoIcon } from "@/components/layout/logo";
@@ -40,8 +41,8 @@ interface NavGroup {
 }
 
 const PIN_STORAGE_KEY = "svmb_sidebar_pinned";
-const HOVER_OPEN_DELAY_MS = 120;
-const HOVER_CLOSE_DELAY_MS = 100;
+const HOVER_OPEN_DELAY_MS = 450;
+const HOVER_CLOSE_DELAY_MS = 180;
 
 const ROLE_GROUP_SPECS: Record<SidebarProps["role"], RoleGroupSpec[]> = {
   high_admin: [
@@ -257,8 +258,9 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
-    if (!isHoverExpanded) {
+    if (!isHoverExpanded && !openTimerRef.current) {
       openTimerRef.current = setTimeout(() => {
+        openTimerRef.current = null;
         setIsHoverExpanded(true);
       }, HOVER_OPEN_DELAY_MS);
     }
@@ -271,6 +273,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       openTimerRef.current = null;
     }
     closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
       setIsHoverExpanded(false);
     }, HOVER_CLOSE_DELAY_MS);
   };
@@ -279,12 +282,13 @@ export function SharedSidebar({ links, role }: SidebarProps) {
     isPointerDownRef.current = true;
     setTimeout(() => {
       isPointerDownRef.current = false;
-    }, 0);
+    }, 200);
   };
 
-  const handleFocusCapture = () => {
-    if (isMobile) return;
-    if (!isPointerDownRef.current) {
+  const handleFocusCapture = (e: React.FocusEvent<HTMLElement>) => {
+    if (isMobile || isPointerDownRef.current) return;
+    const target = e.target;
+    if (target instanceof HTMLElement && target.matches(":focus-visible")) {
       setIsFocusExpanded(true);
     }
   };
@@ -360,7 +364,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
           e.currentTarget.scrollIntoView({ block: "nearest" });
         }}
         className={cn(
-          "group/nav flex h-11 w-full shrink-0 items-center rounded-2xl px-1.5 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring",
+          "group/nav flex h-11 w-full shrink-0 items-center rounded-2xl px-1.5 transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring",
           showFullLabels
             ? isActive
               ? "bg-primary bg-btn-primary text-primary-foreground font-bold shadow-xs"
@@ -372,7 +376,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
       >
         <span
           className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center rounded-[14px] transition-colors duration-150 motion-reduce:transition-none",
+            "grid h-10 w-10 shrink-0 place-items-center rounded-[14px] transition-colors duration-200 motion-reduce:transition-none",
             showFullLabels
               ? isActive
                 ? "bg-black/15 text-primary-foreground"
@@ -386,7 +390,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         </span>
         <span
           className={cn(
-            "truncate whitespace-nowrap text-sm transition-[opacity,transform,max-width] duration-150 ease-out motion-reduce:transition-none",
+            "truncate whitespace-nowrap text-sm transition-[opacity,transform,max-width] duration-200 ease-out motion-reduce:transition-none",
             showFullLabels
               ? "ms-3 max-w-[168px] opacity-100 translate-x-0"
               : "ms-0 max-w-0 opacity-0 -translate-x-1 overflow-hidden pointer-events-none",
@@ -434,7 +438,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         }
       }}
       className={cn(
-        "flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden border border-border bg-card text-card-foreground transition-[width,box-shadow] duration-180 ease-out motion-reduce:transition-none",
+        "flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden border border-border bg-card text-card-foreground transition-[width,box-shadow] duration-300 ease-out motion-reduce:transition-none",
         isMobile
           ? "rounded-e-[32px] border-s-0 px-4 py-5 gap-3 shadow-sm"
           : cn(
@@ -469,7 +473,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-card via-card/85 to-transparent transition-opacity duration-150 motion-reduce:transition-none",
+            "pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-card via-card/85 to-transparent transition-opacity duration-200 motion-reduce:transition-none",
             canScrollUp ? "opacity-100" : "opacity-0",
           )}
         />
@@ -508,7 +512,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-card via-card/85 to-transparent transition-opacity duration-150 motion-reduce:transition-none",
+            "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-card via-card/85 to-transparent transition-opacity duration-200 motion-reduce:transition-none",
             canScrollDown ? "opacity-100" : "opacity-0",
           )}
         />
@@ -537,13 +541,13 @@ export function SharedSidebar({ links, role }: SidebarProps) {
                 aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar"}
                 aria-pressed={isPinned}
                 className={cn(
-                  "group/pin flex h-10 w-full items-center rounded-2xl px-1.5 text-muted-foreground transition-colors duration-150 motion-reduce:transition-none hover:bg-accent/70 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring cursor-pointer",
+                  "group/pin flex h-10 w-full items-center rounded-2xl px-1.5 text-muted-foreground transition-colors duration-200 motion-reduce:transition-none hover:bg-accent/70 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring cursor-pointer",
                   isPinned && "text-primary font-semibold",
                 )}
               >
                 <span
                   className={cn(
-                    "grid h-10 w-10 shrink-0 place-items-center rounded-[14px] transition-colors duration-150 motion-reduce:transition-none",
+                    "grid h-10 w-10 shrink-0 place-items-center rounded-[14px] transition-colors duration-200 motion-reduce:transition-none",
                     isPinned
                       ? "text-primary"
                       : "text-muted-foreground group-hover/pin:text-primary",
@@ -557,7 +561,7 @@ export function SharedSidebar({ links, role }: SidebarProps) {
                 </span>
                 <span
                   className={cn(
-                    "truncate whitespace-nowrap text-xs font-semibold transition-[opacity,transform,max-width] duration-150 ease-out motion-reduce:transition-none",
+                    "truncate whitespace-nowrap text-xs font-semibold transition-[opacity,transform,max-width] duration-200 ease-out motion-reduce:transition-none",
                     showFullLabels
                       ? "ms-3 max-w-[168px] opacity-100 translate-x-0"
                       : "ms-0 max-w-0 opacity-0 -translate-x-1 overflow-hidden pointer-events-none",
@@ -587,37 +591,39 @@ export function SharedSidebar({ links, role }: SidebarProps) {
 
   // Desktop: icon-only rail (72px + 16px start padding = 88px footprint) that overlays at 252px (+ 16px start padding = 268px) on hover/focus, or offsets page when pinned
   return (
-    <div
-      className="group peer hidden text-sidebar-foreground md:block"
-      data-state={isExpanded ? "expanded" : "collapsed"}
-      data-pinned={isPinned ? "true" : "false"}
-      data-slot="sidebar"
-    >
-      {/* Page layout footprint: stays at 88px (72px rail + 16px padding) unless pinned */}
+    <TooltipProvider delayDuration={600}>
       <div
-        data-slot="sidebar-gap"
-        className={cn(
-          "relative shrink-0 bg-transparent transition-[width] duration-180 ease-out motion-reduce:transition-none",
-          isPinned ? "w-[268px]" : "w-[88px]",
-        )}
-      />
-      {/* Fixed rail container: floats above page content (z-30) when expanded */}
-      <div
-        data-slot="sidebar-container"
-        className={cn(
-          "fixed inset-y-0 start-0 z-30 hidden h-dvh max-h-dvh py-4 ps-4 pe-0 transition-[width] duration-180 ease-out motion-reduce:transition-none md:flex",
-          isExpanded ? "w-[268px]" : "w-[88px]",
-        )}
+        className="group peer hidden text-sidebar-foreground md:block"
+        data-state={isExpanded ? "expanded" : "collapsed"}
+        data-pinned={isPinned ? "true" : "false"}
+        data-slot="sidebar"
       >
+        {/* Page layout footprint: stays at 88px (72px rail + 16px padding) unless pinned */}
         <div
-          data-sidebar="sidebar"
-          data-slot="sidebar-inner"
-          className="flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden bg-transparent"
+          data-slot="sidebar-gap"
+          className={cn(
+            "relative shrink-0 bg-transparent transition-[width] duration-300 ease-in-out motion-reduce:transition-none",
+            isPinned ? "w-[268px]" : "w-[88px]",
+          )}
+        />
+        {/* Fixed rail container: floats above page content (z-30) when expanded */}
+        <div
+          data-slot="sidebar-container"
+          className={cn(
+            "fixed inset-y-0 start-0 z-30 hidden h-dvh max-h-dvh py-4 ps-4 pe-0 transition-[width] duration-300 ease-in-out motion-reduce:transition-none md:flex",
+            isExpanded ? "w-[268px]" : "w-[88px]",
+          )}
         >
-          {renderAsideContent()}
+          <div
+            data-sidebar="sidebar"
+            data-slot="sidebar-inner"
+            className="flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden bg-transparent"
+          >
+            {renderAsideContent()}
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
